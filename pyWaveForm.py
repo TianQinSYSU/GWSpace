@@ -11,6 +11,7 @@ import numpy as np
 from utils import to_m1m2, sYlm
 from GCB import GCBWaveform
 from BHB import BHBWaveform
+from EMRI import EMRIWaveform
 
 
 class WaveForm:

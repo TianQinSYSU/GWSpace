@@ -33,7 +33,7 @@ class TDResponse:
             tt = np.arange(- 7*dt, YRSID_SI + 7*dt, dt)
             ret = self.orbit.get_position(tt)
 
-        self.LT = self.orbit.armLT        
+        self.LT = self.orbit.armLT         
    
     def H(self, tf, nl):
         '''
@@ -51,9 +51,22 @@ class TDResponse:
         u = self.wf.u
         v = self.wf.v
         hpssb, hcssb = self.wf(tf)
+        tf_size = tf.shape[0]
+        h_size = hpssb.shape[0]
+        if tf_size > h_size:
+            hp = np.zeros_like(tf)
+            hc = np.zeros_like(tf)
+            hp[:h_size] = hpssb
+            hc[:h_size] = hcssb
+        elif tf_size < h_size:
+            hp = hpssb[-tf_size:]
+            hc = hcssb[-tf_size:]
+        else:
+            hp = hpssb
+            hc = hcssb
                 
         xi_p, xi_c = cal_zeta(u,v, nl)
-        return hpssb * xi_p + hcssb * xi_c
+        return hp * xi_p + hc * xi_c
     
     def Evaluate_yslr(self, tf, TDIgen=1):
         if TDIgen == 1:
@@ -80,7 +93,6 @@ class TDResponse:
         
         tt = [tf - kp1, tf - kp2, tf - kp3]
 
-        
         for i in range(TDIdelay+1):
             tag = self.LT * i
             H3_p2[i] = self.H(tf - kp2 - tag, n3)

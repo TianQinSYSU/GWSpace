@@ -12,15 +12,15 @@ from Constants import *
 
 import sys, os
 try:
-    import bbh
+    from FastEMRI import *
 except:
     few_path = './Waveforms/FastEMRIWaveforms'
     abs_few_path = os.path.abspath(few_path)
     
     if abs_few_path not in sys.path:
         sys.path.append(abs_few_path)
-
-from FastEMRI import *
+        
+    from FastEMRI import *
 
 
 class EMRIWaveform:
@@ -63,7 +63,6 @@ class EMRIWaveform:
             Phi_phi0=0, Phi_theta0=0, Phi_r0=0, 
             model = "FastSchwarzschildEccentricFlux",
             model_insp = "SchwarzEccFlux",
-            specific_modes=None, 
             inspiral_kwargs=inspiral_kwargs,
             amplitude_kwargs=amplitude_kwargs,
             Ylm_kwargs=Ylm_kwargs,
@@ -125,7 +124,7 @@ class EMRIWaveform:
         (teuk_modes_in, ylms_in, ls, ms, ns) = mode_selector(teuk_modes, ylms, modeinds, eps=eps)
         return (teuk_modes_in, ylms_in, ls, ms, ns)
 
-    def __call__(self, Tobs, dt, modes=None, eps=1e-5):
+    def __call__(self, Tobs, dt, eps=1e-5, modes=None):
         '''
         Calculate the time domain waveforms
         -----------------------------------
@@ -192,7 +191,7 @@ if __name__ == "__main__":
     Phi_r0 = 3.0
 
     emri = EMRIWaveform(M, mu, a, p0, e0, x0, dist, qS, phiS, qK, phiK,
-            Phi_phi0=0, Phi_theta0=0, Phi_r0=0)
+            Phi_phi0=Phi_phi0, Phi_theta0=Phi_theta0, Phi_r0=Phi_r0)
 
     tf = np.arange(0, T * YRSID_SI, dt)
 

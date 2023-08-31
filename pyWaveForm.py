@@ -9,8 +9,29 @@
 
 import numpy as np
 from utils import to_m1m2, sYlm
+
+import sys, os
+try:
+    import bbh
+except:
+    bbh_path = './Waveforms/bbh'
+    abs_bbh_path = os.path.abspath(bbh_path)
+    
+    if abs_bbh_path not in sys.path:
+        sys.path.append(abs_bbh_path)
+
+try:
+    import few
+except:
+    few_path = './Waveforms/FastEMRIWaveforms'
+    abs_few_path = os.path.abspath(few_path)
+    
+    if abs_few_path not in sys.path:
+        sys.path.append(abs_few_path)
+
+
 from GCB import GCBWaveform
-from BHB import BHBWaveform
+from BHB import *
 from EMRI import EMRIWaveform
 
 
@@ -33,13 +54,7 @@ class WaveForm:
     
     def __init__(self, pars):
         self.pars = pars
-        lambd, beta = pars['lambda'], pars['beta']
-        
-        self.u, self.v, self.k = self.refFrame(lambd, beta)
-        
-        self.psi = pars['psi']
-        self.iota = pars['iota']
-        
+                
         if pars['type'] == 'GCB':
             Mc = pars["Mc"]
             DL = pars["DL"]
@@ -79,16 +94,59 @@ class WaveForm:
                 self.varphi = pars['varphi']
             except:
                 self.varphi = 0.
+        elif pars['type'] == 'EMRI':
+            self.M = pars['M']
+            self.mu = pars['mu']
+            self.a = pars['a']
+            self.p0 = pars['p0']
+            self.e0 = pars['e0']
+            self.x0 = pars['x0']
+            self.dist = pars['dist']
+            
+            self.qS = pars['qS']
+            self.phiS = pars['phiS']
+            self.qK = pars['qK']
+            self.phiK = pars['phiK']
+            self.Phi_phi0 = pars['Phi_phi0']
+            self.Phi_theta0 = pars['Phi_theta0']
+            self.Phi_r0 = pars['Phi_r0']
+
+
+            self.gw = EMRIWaveform(
+                    self.M, self.mu, self.a, self.p0, self.e0,
+                    self.x0, self.dist, self.qS, self.phiS,
+                    self.qK, self.phiK, self.Phi_phi0,
+                    self.Phi_theta0, self.Phi_r0)
+            #self.gw.theta
+
+            print("The center mass is", self.M)
+        try:
+            lambd, beta = pars['lambda'], pars['beta']
+        except:
+            lambd = np.pi/2 - self.gw.theta
+            beta = self.gw.phi
+        
+        self.u, self.v, self.k = self.refFrame(lambd, beta)
+        
+        self.psi = pars['psi']
+        self.iota = pars['iota']
+
 
     def amp_phase(self, freq, mode=[(2,2)]):
         '''
         Generate the amp and phase in frequency domain
         ----------------------------------------------
+        Parameters:
+        -----------
+        - freq: frequency list
+        - mode: mode of GW
+
         Return:
+        -------
         - amp:
         - phase:
-        - time: tf
-        - timep: dt/df
+        - tf: time of freq
+        - tfp: dt/df
         '''
         h22 = self.gw.h22_FD(freq, self.fRef, self.tc)
         
@@ -101,9 +159,15 @@ class WaveForm:
         return (amp, phase, tf, tfp)
 
         
-    def __call__(self, time):
+    def __call__(self, tf, eps=1e-5, modes=None):
         if self.pars['type'] == 'GCB':
-            hpS, hcS = self.gw(time)
+            hpS, hcS = self.gw(tf)
+        elif self.pars['type'] == 'EMRI':
+            Tobs = tf[-1]/YRSID_SI
+            dt = tf[1] - tf[0]
+            #T = Tobs - int(Tobs * YRSID_SI/dt - tf.shape[0]) * dt/YRSID_SI
+            #print("the total observ time is ", Tobs)
+            hpS, hcS = self.gw(Tobs, dt, eps, modes)
 
         cs2p = np.cos(2 * self.psi)
         sn2p = np.sin(2 * self.psi)
@@ -111,6 +175,7 @@ class WaveForm:
         
         hp_SSB = -(1+csi*csi) * hpS *cs2p + 2*csi * hcS * sn2p
         hc_SSB = -(1+csi*csi) * hpS *sn2p - 2*csi * hcS * cs2p
+
         return (hp_SSB, hc_SSB)
         
     def refFrame(self, lambd, beta):
@@ -125,10 +190,9 @@ class WaveForm:
         
         return (u,v,k)
 
+##===================================
 
-if __name__ == '__main__':
-    print("This is waveform generation code")
-
+def test_GCB():
     Tobs = 10000 #const.YRSID_SI / 4
     delta_f = 1/Tobs    
     delta_T = 1
@@ -162,8 +226,12 @@ if __name__ == '__main__':
     plt.ylabel(r"$h_+, h_\times$")
 
     plt.legend(loc="best")
-    
+    plt.show()
 
+    return
+
+
+def test_BHB():
     print("Testing of BHB waveform")
     BHBpars = {"type": "BHB",
            "m1": 3.5e6,
@@ -208,4 +276,56 @@ if __name__ == '__main__':
     plt.xlabel('freq')
     
     plt.show()
+
+    return
+
+def test_EMRI():
+    print("This is a test of loading EMRI waveform")
+    # parameters
+    Tobs = 0.3 * YRSID_SI  # years
+    dt = 15.0  # seconds
+
+    pars = {"type": "EMRI",
+            'M': 1e6,
+            'a': 0.1,
+            'mu': 1e1,
+            'p0': 12.0,
+            'e0': 0.2,
+            'x0': 1.0,
+            'qK': 0.2,
+            'phiK': 0.2,
+            'qS': 0.3,
+            'phiS': 0.3,
+            'dist': 1.0,
+            'Phi_phi0': 1.0,
+            'Phi_theta0': 2.0,
+            'Phi_r0': 3.0,
+            'psi': 0.4,
+            'iota': 0.2,
+          }
+
+    wf = WaveForm(pars)
+
+    tf = np.arange(0, Tobs, dt)
+
+    hp, hc = wf(tf)
+
+    import matplotlib.pyplot as plt
+
+    plt.figure()
+
+    plt.plot(tf[:2000], hp[:2000])
+    plt.plot(tf[:2000], hc[:2000])
+
+    plt.show()
+
+    return 
+
+
+if __name__ == '__main__':
+    print("This is waveform generation code")
+    #test_GCB()
+    #test_BHB()
+    test_EMRI()
+    
 

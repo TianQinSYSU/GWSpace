@@ -22,28 +22,6 @@ def TDI_XYZ2AET(X,Y,Z):
     T = 1/np.sqrt(3) * (X+Y+Z)
     return (A,E,T)
 
-
-class TDICombination:
-    '''
-    TDI Combination
-    -----------------
-    '''
-
-    def __init__(self, LT, TDIgen=1, domain="Freq"):
-        '''
-        Parameters
-        ----------
-        - TDItags: arrays for TDItags, (y12, y23, y31, y21, y32, y13)
-        - TDIgen: the TDI generation
-            - default: 1 for the first generation
-        - domain: the frequency or time domain
-            - default: Freq
-        '''
-        self.TDIgen = TDIgen
-        self.domain = domain
-        self.LT = LT
-
-
 def XYZ_TD(yslr, TDIgen=1):
     """
     Generate TDI XYZ in the TDIgen generation

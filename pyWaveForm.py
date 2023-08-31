@@ -33,6 +33,7 @@ except:
 from GCB import GCBWaveform
 from BHB import *
 from EMRI import EMRIWaveform
+from Burst import BurstWaveform
 
 
 class WaveForm:
@@ -118,8 +119,14 @@ class WaveForm:
                     self.qK, self.phiK, self.Phi_phi0,
                     self.Phi_theta0, self.Phi_r0)
             #self.gw.theta
+        elif pars['type'] == 'Burst':
+            self.amp = pars['amp']
+            self.tau = pars['tau']
+            self.fc = pars['fc']
+            self.tc = pars['tc']
 
-            print("The center mass is", self.M)
+            self.gw = BurstWaveform(
+                    self.amp, self.tau, self.fc, self.tc)
         try:
             lambd, beta = pars['lambda'], pars['beta']
         except:

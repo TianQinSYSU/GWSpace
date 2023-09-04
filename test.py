@@ -1,31 +1,31 @@
 #!/usr/bin/env python
-#-*- coding: utf-8 -*-  
-#==================================
+# -*- coding: utf-8 -*-
+# ==================================
 # File Name: test.py
 # Author: ekli
 # Mail: lekf123@163.com
 # Created Time: 2023-08-25 10:54:38
-#==================================
+# ==================================
 
+import os
 import sys
-from utils import yaml_readinpars
 import numpy as np
 
-import sys, os
 try:
     from FastEMRI import *
 except:
     few_path = './Waveforms/FastEMRIWaveforms'
     abs_few_path = os.path.abspath(few_path)
-    
+
     if abs_few_path not in sys.path:
         sys.path.append(abs_few_path)
-        
+
     from FastEMRI import *
 
 from EMRI import EMRIWaveform
 
 if __name__ == "__main__":
+    from Constants import YRSID_SI
     print("This is a test of loading EMRI waveform")
     # parameters
     T = 0.01  # years
@@ -46,7 +46,7 @@ if __name__ == "__main__":
             'Phi_phi0': 1.0,
             'Phi_theta0': 2.0,
             'Phi_r0': 3.0,
-          }
+            }
     M = pars['M']
     mu = pars['mu']
     a = pars['a']
@@ -54,7 +54,7 @@ if __name__ == "__main__":
     e0 = pars['e0']
     x0 = pars['x0']
     dist = pars['dist']
-    
+
     qS = pars['qS']
     phiS = pars['phiS']
     qK = pars['qK']
@@ -63,11 +63,10 @@ if __name__ == "__main__":
     Phi_theta0 = pars['Phi_theta0']
     Phi_r0 = pars['Phi_r0']
 
-    
     emri = EMRIWaveform(M, mu, a, p0, e0, x0, dist, qS, phiS, qK, phiK,
-            Phi_phi0=0, Phi_theta0=0, Phi_r0=0)
+                        Phi_phi0=0, Phi_theta0=0, Phi_r0=0)
 
-    tf = np.arange(0, T * YRSID_SI, dt)
+    tf = np.arange(0, T*YRSID_SI, dt)
 
     hp, hc = emri(T, dt)
 
@@ -79,9 +78,3 @@ if __name__ == "__main__":
     plt.plot(tf[:2000], hc[:2000])
 
     plt.show()
-    
-
-
-
-
-

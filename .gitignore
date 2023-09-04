@@ -1,3 +1,7 @@
 **/__pycache__
 **/build
 gitpush.sh
+
+*.so
+
+.idea

@@ -246,9 +246,6 @@ def generate_TQ_AmpPhase(para_list, Tobs):
     deltaF = 1 / Tobs
     f_max, f_min = freq_bound(Tobs,t0,Mc,eta)
 
-    if (f_max < f_min):   # If (f_max < 1e-4 Hz) or (f_min > 1 Hz), this will happen.
-        return [], [], [] # TianQin will not detect the signal in this case.
-
     fRef_in = 0
     wf = IMRPhenomDGenerateFD(phi0,fRef_in,deltaF,m1_SI,m2_SI,chi1,chi2,f_min,f_max,distance)
 

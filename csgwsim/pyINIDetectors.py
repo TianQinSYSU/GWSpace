@@ -55,7 +55,3 @@ class INILISA:
         self.Smos = 2.25e-22  # m^2/Hz, 1.5e-11**2
 
 
-if __name__ == '__main__':
-    print("This is initial pars for detectors")
-    tq = INITianQin()
-    print(f"Armlength for TianQin is: {tq.armLength}")

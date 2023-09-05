@@ -5,3 +5,5 @@ gitpush.sh
 *.so
 
 .idea
+
+tests/csgwsim

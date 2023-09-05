@@ -15,7 +15,7 @@ rm *.so
 python setup.py build
 cp build/lib.*/*.so ./
 
-echo "Done the compile of bbh waveform"
+echo "Finish compiling bbh waveforms"
 cd ../../
 
 echo "====================================="
@@ -27,5 +27,5 @@ rm *.so
 python setup.py build --gsl /opt/gsl-2.7.1 --lapack /opt/lapack-3.11.0
 cp build/lib.*/*.so ./
 
-echo "Done the compile of the bbh waveform"
+echo "Finish compiling FastEMRIWaveforms"
 cd ../../

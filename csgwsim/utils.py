@@ -25,9 +25,9 @@ class parameter(object):
 
     """
 
-    def __init__(self, value, unit="1", toSenconds=False):
+    def __init__(self, value, unit="1", toSeconds=False):
         self.unit = unit
-        if toSenconds:
+        if toSeconds:
             self.value = value*ParsValue2Second[unit]()
         else:
             self.value = value
@@ -36,12 +36,12 @@ class parameter(object):
         return self.value
 
 
-def Length2Sencond():
+def Length2Second():
     return 1.0/C_SI
 
 
 ParsValue2Second = {
-    "m": Length2Sencond,
+    "m": Length2Second,
 }
 
 
@@ -57,7 +57,7 @@ def dot_arr_H_arr(u, H, v):
     Parameter:
     - u: np array with shape of (3, ndim)
     - v: np array with shape of (3, ndim)
-    - H: np array with shappe of (3, 3)
+    - H: np array with shape of (3, 3)
     ------------------------------------
     Return:
     - ss = n.H.n
@@ -183,7 +183,7 @@ def sinc(x):
     return np.sin(x)/x
 
 
-def VectorDirectProcuct(u, v):
+def VectorDirectProduct(u, v):
     """
     Vector direct product
     ---------------------
@@ -530,6 +530,6 @@ def epsilon(i, j, k):
 
 
 if __name__ == '__main__':
-    Larm = parameter(value=10, unit="m", toSenconds=True)
+    Larm = parameter(value=10, unit="m", toSeconds=True)
     print("Unit of Larm is %s" % Larm.unit)
     print("value of Larm is %e" % Larm.value)

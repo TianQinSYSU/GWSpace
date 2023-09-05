@@ -1,4 +1,4 @@
-// Created by dice on 2022/3/23.
+// Created by Han Wang on 2022/3/23.
 
 #ifndef _INSPIRALECCENTRICFD_H
 #define _INSPIRALECCENTRICFD_H

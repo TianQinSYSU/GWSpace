@@ -10,11 +10,7 @@ add_executable(EccentricFD_main main.c InspiralEccentricFD.c InspiralOptimizedCo
 target_link_libraries(EccentricFD_main m gsl gslcblas)
 
 # If you have different gsl path, please change the following three line
-#set_target_properties(EccentricFD_main PROPERTIES LINK_FLAGS "-Wl,-rpath,/public/software/gsl-2.7.1/lib")
-
-#include_directories("/public/software/gsl-2.7.1/include")
-#link_directories("/public/software/gsl-2.7.1/lib")
-
+# TODO: need to implement this automatically!
 set_target_properties(EccentricFD_main PROPERTIES LINK_FLAGS "-Wl,-rpath,/opt/gsl-2.7.1/lib")
 
 include_directories("/opt/gsl-2.7.1/include")

@@ -1,4 +1,5 @@
 /*  Copyright (C) 2014 E. A. Huerta, Prayush Kumar
+ *                2022 Han Wang
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -529,6 +530,7 @@ int SimInspiralEccentricFD(
 }
 
 
+// Han Wang: Add two funcs to output as (amplitude & phase) or (h & phase)
 int SimInspiralEccentricFDAmpPhase(
         AmpPhaseFDWaveform ***h_amp_phase,
         const double phiRef,                    /**< Orbital coalescence phase (rad) */

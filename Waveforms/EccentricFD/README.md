@@ -33,4 +33,4 @@ And also we can run `eccentric_fd.py` after getting `libEccFD.so`, to test if th
 
 ----
 
-Author: Han Wang
+Author: [Han Wang](https://github.com/HumphreyWang)

@@ -1,4 +1,4 @@
-// Created by dice on 2022/3/26.
+// Created by Han Wang on 2022/3/26.
 // Copy some structures from `pyIMRPhenomD`(to avoid using `lal`)
 
 #include "InspiralEccentricFD.h"

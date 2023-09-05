@@ -1,5 +1,5 @@
-// Based on: EccentricFD waveform from `lalsuite`
-// Edited by dice
+// Created by Han Wang.
+// Tests for the edited EccentricFD waveform
 
 #include "InspiralEccentricFD.h"
 

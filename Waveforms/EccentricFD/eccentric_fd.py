@@ -1,5 +1,6 @@
 # coding: utf-8
-# In[0]:
+# 2022 Han Wang
+# wangh657@mail2.sysu.edu.cn
 
 """connect to EccFD library"""
 import os
@@ -15,8 +16,6 @@ MSUN_SI = 1.988546954961461467461011951140572744e30
 MPC_SI = 3.085677581491367278913937957796471611e22
 
 
-# In[1]:
-
 class _EccFDWaveform(Structure):
     """Note: The 'data' actually should be POINTER(c_complex), but ctypes do not have that,
     so we finally use buffer to restore the data, then any types of number in POINTER() is OK.
@@ -31,7 +30,7 @@ class _EccFDWaveform(Structure):
 def gen_ecc_fd_waveform(mass1, mass2, eccentricity, distance,
                         coa_phase=0., inclination=0., long_asc_nodes=0.,
                         delta_f=None, f_lower=None, f_final=0., obs_time=0.):
-    """Note: Thanks to https://stackoverflow.com/questions/5658047, that is SO BRILLIANT!"""
+    """Note: Thanks to https://stackoverflow.com/questions/5658047"""
     f = _rlib.SimInspiralEccentricFD
     htilde = POINTER(_EccFDWaveform)()
     # **htilde, phiRef, deltaF, m1_SI, m2_SI, fStart, fEnd, i, r, inclination_azimuth, e_min
@@ -46,8 +45,6 @@ def gen_ecc_fd_waveform(mass1, mass2, eccentricity, distance,
     _rlib.DestroyComplex16FDWaveform(htilde)
     return hp_.view(complex128), hc_.view(complex128)
 
-
-# In[2]:
 
 class _EccFDAmpPhase(Structure):
     _fields_ = [("amp_p", POINTER(c_double)),  # complex double
@@ -101,14 +98,12 @@ def gen_ecc_fd_and_phase(mass1, mass2, eccentricity, distance,
 
 def _arr_from_buffer(p, length):
     """https://stackoverflow.com/questions/7543675
-      frombuffer is faster than fromiter because it create array without copying
+      frombuffer is faster than fromiter because it creates array without copying
      https://stackoverflow.com/questions/4355524
       The copy() is used for the np.ndarray to acquire ownership,
       then you can safely free pointers to avoid memory leaks."""
     return frombuffer(cast(p, POINTER(c_double*length)).contents, float64).copy()
 
-
-# In[3]:
 
 if __name__ == '__main__':
     from time import time, strftime

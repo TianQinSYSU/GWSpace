@@ -8,7 +8,6 @@
 # ==================================
 
 import numpy as np
-from Constants import *
 from pyTDResponse import TDResponse
 
 

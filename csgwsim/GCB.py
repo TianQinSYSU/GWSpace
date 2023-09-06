@@ -59,4 +59,15 @@ class GCBWaveform(object):
         return hp, hc
 
 
+class FastGB(object):
+    '''
+    Calculate the GCB waveform using fast/slow 
+    '''
+
+    def __init__(self, pars, N):
+        self.N = N
+        pass
+
+
+
 

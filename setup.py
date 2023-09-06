@@ -24,6 +24,6 @@ setup(
     author_email='lienk@mail.sysu.edu.cn',
     url='https://github.com/....',
     license=license,
-    packages=find_packages(exclude=('tests', 'docs'))
+    packages=find_packages(exclude=('tests', 'docs', 'Waveforms'))
 )
 

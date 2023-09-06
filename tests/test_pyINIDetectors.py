@@ -7,8 +7,10 @@
 # Created Time: 2023-09-05 17:54:36
 #==================================
 
+from active_python_path import csgwsim as gws
+
 
 if __name__ == '__main__':
     print("This is initial pars for detectors")
-    tq = INITianQin()
+    tq = gws.INITianQin()
     print(f"Armlength for TianQin is: {tq.armLength}")

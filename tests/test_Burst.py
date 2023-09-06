@@ -7,11 +7,13 @@
 # Created Time: 2023-09-05 14:21:33
 #==================================
 
-from csgwsim import BurstWaveform
+import numpy as np
+from active_python_path import csgwsim as gws
+#from csgwsim import BurstWaveform
 
 if __name__ == "__main__":
     print("This is a test of Burst")
-    Burst = BurstWaveform(amp=0.5, tau=1000, fc=0.001, tc=5000)
+    Burst = gws.BurstWaveform(amp=0.5, tau=1000, fc=0.001, tc=5000)
 
     Tobs = 10000  # YRSID_SI / 4
     delta_f = 1/Tobs

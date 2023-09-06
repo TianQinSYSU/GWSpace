@@ -14,7 +14,7 @@ import yaml
 # import pyfftw as fft
 # import sys
 
-from Constants import *
+from csgwsim.Constants import C_SI
 
 
 class parameter(object):

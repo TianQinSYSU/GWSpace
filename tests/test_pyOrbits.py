@@ -7,17 +7,23 @@
 # Created Time: 2023-09-05 17:55:52
 #==================================
 
+from active_python_path import csgwsim
+
+import numpy as np
+GCBWaveform = csgwsim.GCBWaveform
+INITianQin = csgwsim.INITianQin
+YRSID_SI = csgwsim.Constants.YRSID_SI
+DAY = csgwsim.Constants.DAY
+
 
 if __name__ == '__main__':
     print("Here is the analytical orbits")
-    from pyINIDetectors import *
-
     import time
 
     st = time.time()
 
     TQ = INITianQin()
-    TQOrbit = Orbit(TQ)
+    TQOrbit = csgwsim.Orbit(TQ)
 
     dt = 3600
 

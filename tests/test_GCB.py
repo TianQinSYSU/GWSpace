@@ -7,7 +7,11 @@
 # Created Time: 2023-09-05 14:22:52
 #==================================
 
-from csgwsim import GCBWaveform
+from active_python_path import csgwsim
+
+import numpy as np
+GCBWaveform = csgwsim.GCBWaveform
+
 
 if __name__ == '__main__':
     print("This is waveform for GCB")

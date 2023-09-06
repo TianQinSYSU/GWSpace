@@ -7,9 +7,9 @@
 # Created Time: 2023-08-01 10:23:11
 # ==================================
 
-# import numpy as np
+import numpy as np
 # from scipy.interpolate import InterpolatedUnivariateSpline as Spline
-# from Constants import *
+from csgwsim.Constants import C_SI, PI_2, YRSID_SI, EarthOrbitOmega_SI, EarthEccentricity, Perihelion_Ang, AU_T, PI_3
 
 
 class Orbit(object):

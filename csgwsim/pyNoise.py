@@ -8,7 +8,7 @@
 # ==================================
 
 import numpy as np
-from Constants import C_SI, PI,
+from csgwsim.Constants import C_SI, PI
 import matplotlib.pyplot as plt
 
 

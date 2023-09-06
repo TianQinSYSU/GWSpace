@@ -8,7 +8,7 @@
 # ==================================
 
 import numpy as np
-from Constants import *
+from csgwsim.Constants import PI, MSUN_SI, C_SI, G_SI, MPC_SI
 
 
 class GCBWaveform(object):

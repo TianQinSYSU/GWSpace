@@ -7,14 +7,11 @@
 # Created Time: 2023-09-05 14:06:18
 #==================================
 
-from BHB import *
-from Burst import *
-from EMRI import *
-from GCB import *
-from pyWaveForm import *
-from pyINIDetectors import *
-from pyOrbits import *
-from pyTDResponse import *
-from pyFDResponse import *
-from pyNoise import *
-from TDI import *
+import csgwsim.Constants as Constants
+import csgwsim.utils as utils
+from csgwsim.pyNoise import *
+from csgwsim.GCB import *
+from csgwsim.Burst import *
+
+from csgwsim.pyINIDetectors import *
+from csgwsim.pyOrbits import *

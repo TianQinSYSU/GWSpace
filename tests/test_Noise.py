@@ -7,24 +7,28 @@
 # Created Time: 2023-09-05 15:03:28
 #==================================
 
-from csgwsim import TianQinNoise, LISANoise, noise_XYZ, noise_AET
+import numpy as np
+from active_python_path import csgwsim as gws
+#from csgwsim import TianQinNoise, LISANoise, noise_XYZ, noise_AET
 import matplotlib.pyplot as plt
-from Constants import PI, C_SI
+#from Constants import PI, C_SI
+PI = gws.Constants.PI
+C_SI = gws.Constants.C_SI
 
 
 if __name__ == "__main__":
     freq_ = np.logspace(-5, 0, 1001)
-    la = LISANoise()
+    la = gws.LISANoise()
     lisa_sa, lisa_sp = la.noises(freq_)
 
-    tq = TianQinNoise()
+    tq = gws.TianQinNoise()
     tq_sa, tq_sp = tq.noises(freq_)
 
-    LA, LE, LT = noise_AET(freq_, lisa_sa, lisa_sp, la.armL)
-    TA, TE, TT = noise_AET(freq_, tq_sa, tq_sp, tq.armL)
+    LA, LE, LT = gws.noise_AET(freq_, lisa_sa, lisa_sp, la.armL)
+    TA, TE, TT = gws.noise_AET(freq_, tq_sa, tq_sp, tq.armL)
 
-    LX, LXY = noise_XYZ(freq_, lisa_sa, lisa_sp, la.armL)
-    TX, TXY = noise_XYZ(freq_, tq_sa, tq_sp, tq.armL)
+    LX, LXY = gws.noise_XYZ(freq_, lisa_sa, lisa_sp, la.armL)
+    TX, TXY = gws.noise_XYZ(freq_, tq_sa, tq_sp, tq.armL)
     # =======================================
     plt.figure()
     plt.title("Sensitivity of TianQin and LISA---with displacement")
@@ -91,17 +95,17 @@ if __name__ == "__main__":
     plt.legend(loc="best")
 
     # **************************************
-    la = LISANoise()
+    la = gws.LISANoise()
     lisa_sa, lisa_sp = la.noises(freq_, unit="displacement")
 
-    tq = TianQinNoise()
+    tq = gws.TianQinNoise()
     tq_sa, tq_sp = tq.noises(freq_, unit="displacement")
 
-    LA, LE, LT = noise_AET(freq_, lisa_sa, lisa_sp, la.armL)
-    TA, TE, TT = noise_AET(freq_, tq_sa, tq_sp, tq.armL)
+    LA, LE, LT = gws.noise_AET(freq_, lisa_sa, lisa_sp, la.armL)
+    TA, TE, TT = gws.noise_AET(freq_, tq_sa, tq_sp, tq.armL)
 
-    LX, LXY = noise_XYZ(freq_, lisa_sa, lisa_sp, la.armL)
-    TX, TXY = noise_XYZ(freq_, tq_sa, tq_sp, tq.armL)
+    LX, LXY = gws.noise_XYZ(freq_, lisa_sa, lisa_sp, la.armL)
+    TX, TXY = gws.noise_XYZ(freq_, tq_sa, tq_sp, tq.armL)
 
     # =======================================
     plt.figure()

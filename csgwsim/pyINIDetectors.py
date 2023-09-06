@@ -8,7 +8,7 @@
 # ==================================
 
 import numpy as np
-from Constants import *
+from csgwsim.Constants import PI, DAY, AU_SI
 
 
 class INITianQin:

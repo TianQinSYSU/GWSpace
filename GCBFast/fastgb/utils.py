@@ -8,6 +8,61 @@
 #==================================
 
 import numpy as np
+import sys, time
+
+class countdown(object):
+    def __init__(self,totalitems,interval=10000):
+        self.t0    = time.time()
+        self.total = totalitems
+        self.int   = interval
+
+        self.items = 0
+        self.tlast = self.t0
+        self.ilast = 0
+
+        self.longest = 0
+
+    def pad(self,outstring):
+        if len(outstring) < self.longest:
+            return outstring + " " * (self.longest - len(outstring))
+        else:
+            self.longest = len(outstring)
+            return outstring
+
+    def status(self,local=False,status=None):
+        self.items = self.items + 1
+
+        if self.items % self.int != 0:
+            return
+
+        t = time.time()
+
+        speed      = float(self.items) / (t - self.t0)
+        localspeed = float(self.items - self.ilast) / (t - self.tlast)
+
+        if self.total != 0:
+            eta      = (self.total - self.items) / speed
+            localeta = (self.total - self.items) / localspeed
+        else:
+            eta, localeta = 0, 0
+
+        self.tlast = t
+        self.ilast = self.items
+
+        print(self.pad("\r%d/%d done, %d s elapsed (%f/s), ETA %d s%s" % (self.items,self.total,t - self.t0,
+                                                                          localspeed if local else speed,
+                                                                          localeta if local else eta,
+                                                                          ", " + status if status else "")   ), end=' ')
+        sys.stdout.flush()
+
+    def end(self,status=None):
+        t = time.time()
+
+        speed = self.items / (t - self.t0)
+
+        print(self.pad("\r%d finished, %d s elapsed (%d/s)%s" % (self.items,t - self.t0,speed,", " + status if status else "")))
+        sys.stdout.flush()
+
 
 class FrequencyArray(np.ndarray):
     """
@@ -299,19 +354,83 @@ class FrequencyArray(np.ndarray):
 
 # print 2 * a, type(a), (2*a).kmin
 
+def wrapper(*args, **kwargs):
+    """Function to convert array and C/C++ class arguments to ptrs
 
-def simplesnr(f,h,i=None,years=1.0,noisemodel='SciRDv1',includewd=None):
+    This function checks the object type. If it is a cupy or numpy array,
+    it will determine its pointer by calling the proper attributes. If you design
+    a Cython class to be passed through python, it must have a :code:`ptr`
+    attribute.
+
+    If you use this function, you must convert input arrays to size_t data type in Cython and
+    then properly cast the pointer as it enters the c++ function. See the
+    Cython codes
+    `here <https://github.com/BlackHolePerturbationToolkit/FastEMRIWaveforms/tree/master/src>`_
+    for examples.
+
+    args:
+        *args (list): list of the arguments for a function.
+        **kwargs (dict): dictionary of keyword arguments to be converted.
+
+    returns:
+        Tuple: (targs, tkwargs) where t indicates target (with pointer values
+            rather than python objects).
+
     """
-    TODO To be described
-    @param other is the other TDI data
+    # declare target containers
+    targs = []
+    tkwargs = {}
+
+    # args first
+    for arg in args:
+        # numpy arrays
+        if isinstance(arg, np.ndarray):
+            targs.append(arg.__array_interface__["data"][0])
+            continue
+
+        try:
+            # cython classes
+            targs.append(arg.ptr)
+            continue
+        except AttributeError:
+            # regular argument
+            targs.append(arg)
+
+    # kwargs next
+    for key, arg in kwargs.items():
+        if isinstance(arg, np.ndarray):
+            # numpy arrays
+            tkwargs[key] = arg.__array_interface__["data"][0]
+            continue
+
+        try:
+            # cython classes
+            tkwargs[key] = arg.ptr
+            continue
+        except AttributeError:
+            # other arguments
+            tkwargs[key] = arg
+
+    return (targs, tkwargs)
+
+
+def pointer_adjust(func):
+    """Decorator function for cupy/numpy agnostic cython
+
+    This decorator applies :func:`few.utils.utility.wrapper` to functions
+    via the decorator construction.
+
+    If you use this decorator, you must convert input arrays to size_t data type in Cython and
+    then properly cast the pointer as it enters the c++ function. See the
+    Cython codes
+    `here <https://github.com/BlackHolePerturbationToolkit/FastEMRIWaveforms/tree/master/src>`_
+    for examples.
+
     """
-    if i == None:
-     h0 = h * np.sqrt(16.0/5.0)    # rms average over inclinations
-    else:
-     h0 = h * np.sqrt((1 + np.cos(i)**2)**2 + (2.*np.cos(i))**2)
 
-    snr = h0 * np.sqrt(years * 365.25*24*3600) / np.sqrt(lisasens(f,noisemodel,years))
-    #print "snr = ", snr, np.sqrt(years * 365.25*24*3600), h0 * np.sqrt(years * 365.25*24*3600) , np.sqrt(lisasens(f,noisemodel,years))
-    return snr
+    def func_wrapper(*args, **kwargs):
+        # get pointers
+        targs, tkwargs = wrapper(*args, **kwargs)
+        return func(*targs, **tkwargs)
 
-
+    return func_wrapper

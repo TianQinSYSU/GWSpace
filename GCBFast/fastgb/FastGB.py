@@ -5,19 +5,44 @@
 # the SWIG interface file instead.
 
 if __package__ or "." in __name__:
-    from . import _FastGB
+    from fastgb import _FastGB
 else:
     import _FastGB
 
 def ComputeXYZ_FD(params, N, Tobs, dt, XLS, YLS, ZLS, XSL, YSL, ZSL):
-    return _FastGB.call_Fast_GB(params, N, Tobs, dt, XLS, YLS, ZLS, XSL, YSL, ZSL)
+    return _FastGB.ComputeXYZ_FD(params, N, Tobs, dt, XLS, YLS, ZLS, XSL, YSL, ZSL, len(params))
 
 
 import numpy as np
 import math
-import FrequencyArray
-import LISAConstants as LC
-from countdown import countdown
+from fastgb.utils import FrequencyArray
+from fastgb.utils import countdown
+from fastgb.pyNoise import TianQinNoise, LISANoise
+
+YRSID_SI = 31558149.763545600  
+## siderial year [sec] (http://hpiers.obspm.fr/eop-pc/models/constants.html)
+
+
+def simplesnr(f,h,i=None,years=1.0, detector='LISA', includewd=None):
+    """
+    TODO To be described
+    @param other is the other TDI data
+    """
+    if i == None:
+        h0 = h * np.sqrt(16.0/5.0)    # rms average over inclinations
+    else:
+        h0 = h * np.sqrt((1 + np.cos(i)**2)**2 + (2.*np.cos(i))**2)
+
+    if detector == "LISA":
+        la = LISANoise()
+        sens = la.sensitivity(f, includewd)
+    elif detector == "TianQin":
+        tq = TianQinNoise()
+        sens = tq.sensitivity(f)
+
+    snr = h0 * np.sqrt(years * 365.25*24*3600) / np.sqrt(sens)
+    return snr
+
 
 class FastGB:
 #FastBinaryCache = {}
@@ -42,7 +67,7 @@ class FastGB:
             if length == None:
                 length = int(T/dt)/2 + 1    # was "NFFT = int(T/dt)", and "NFFT/2+1" passed to np.zeros
 
-            buf = tuple(FrequencyArray.FrequencyArray(np.zeros(length,dtype=np.complex128),kmin=kmin,df=1.0/T) for i in range(3))
+            buf = tuple(FrequencyArray(np.zeros(length,dtype=np.complex128),kmin=kmin,df=1.0/T) for i in range(3))
 
             if status: c = countdown(len(table),10000)
             for line in table:
@@ -55,7 +80,7 @@ class FastGB:
   def buffersize(self,f,A,algorithm='ldc',oversample=1):
 
 
-      YEAR = LC.YRSID_SI
+      YEAR = YRSID_SI
       Acut = simplesnr(f,A,years=self.Tobs/YEAR)
       mult = 8
       if((self.Tobs/YEAR) <= 8.0): mult = 8
@@ -121,7 +146,7 @@ class FastGB:
       f0 = self.Frequency
 # f0 = self.Frequency + 0.5 * self.FrequencyDerivative * T
       if buffer == None:
-          retX, retY, retZ = map(lambda a: FrequencyArray.FrequencyArray(a[::2] + 1.j* a[1::2], \
+          retX, retY, retZ = map(lambda a: FrequencyArray(a[::2] + 1.j* a[1::2], \
                                 dtype = np.complex128, kmin = int(f0*T) - M/2, df= 1.0/T), (Xf, Yf, Zf))
           return (retX,retY,retZ)
       else:
@@ -150,7 +175,7 @@ class FastGB:
 
 #length = int(length)
             print ("Stas", type(length), type(kmin), type(1.0/T))
-            buf = tuple(FrequencyArray.FrequencyArray(np.zeros(length,dtype=np.complex128),kmin=kmin,df=1.0/T) for i in range(3))
+            buf = tuple(FrequencyArray(np.zeros(length,dtype=np.complex128),kmin=kmin,df=1.0/T) for i in range(3))
 
             if status: c = countdown(len(table),10000)
             for line in table:

@@ -10,47 +10,51 @@
 import numpy as np
 cimport numpy as np
 from libc.stdlib cimport malloc, free
+cimport cython
 
 cdef extern from "GB.h":
-    void Fast_GB(double *params, long N, double Tobs, double dt, 
-            double *XLS, double *YLS, double *ZLS,
-            double* XSL, double* YSL, double* ZSL, 
-            int NP);
+    void Fast_GB(double* pars, long N, double Tobs, double dt,
+                 double* XLS, double* YLS, double* ZLS,
+                 double* XSL, double* YSL, double* ZSL, int NP)
 
-def call_Fast_GB(params, N, Tobs, dt):
-    cdef double *c_params = <double *> malloc(len(params) * sizeof(double))
-    cdef double *XLS = <double *> malloc(N * sizeof(double))
-    cdef double *YLS = <double *> malloc(N * sizeof(double))
-    cdef double *ZLS = <double *> malloc(N * sizeof(double))
-    cdef double *XSL = <double *> malloc(N * sizeof(double))
-    cdef double *YSL = <double *> malloc(N * sizeof(double))
-    cdef double *ZSL = <double *> malloc(N * sizeof(double))
-    #cdef double *XLS = NULL
-    #cdef double *YLS = NULL
-    #cdef double *ZLS = NULL
-    #cdef double *XSL = NULL
-    #cdef double *YSL = NULL
-    #cdef double *ZSL = NULL
 
-    for i in range(len(params)):
-        c_params[i] = params[i]
+# Define the Cython functions
+#@cython.boundscheck(False)
+#@cython.wraparound(False)
+cpdef ComputeXYZ_FD(double[:] params, long N, double Tobs, double dt,
+        double[:] XLS, double[:] YLS, double[:] ZLS, 
+        double[:] XSL, double[:] YSL, double[:] ZSL, int NP):
+    cdef double f0, df0, lat, lng, Amp, incl, psi, phi0
+    cdef double* pars = <double*>malloc(NP * sizeof(double))
+    
+    f0 = params[0]
+    df0 = params[1]
+    lat = params[2]
+    lng = params[3]
+    Amp = params[4]
+    incl = params[5]
+    psi = params[6]
+    phi0 = params[7]
+    
+    pars[0] = f0 * Tobs
+    pars[1] = np.cos(np.pi/2. - lat)
+    pars[2] = lng
+    pars[3] = np.log(Amp)
+    pars[4] = np.cos(incl)
+    pars[5] = psi
+    pars[6] = phi0
+    pars[7] = df0 * Tobs * Tobs
 
-    Fast_GB(c_params, N, Tobs, dt, XLS, YLS, ZLS, XSL, YSL, ZSL, len(params))
+    #cdef double* c_pars = &paras[0]
+    cdef double* c_XLS = &XLS[0]
+    cdef double* c_YLS = &YLS[0]
+    cdef double* c_ZLS = &ZLS[0]
+    cdef double* c_XSL = &XSL[0]
+    cdef double* c_YSL = &YSL[0]
+    cdef double* c_ZSL = &ZSL[0]
 
-    result_XLS = [XLS[i] for i in range(N)]
-    result_YLS = [YLS[i] for i in range(N)]
-    result_ZLS = [ZLS[i] for i in range(N)]
-    result_XSL = [XSL[i] for i in range(N)]
-    result_YSL = [YSL[i] for i in range(N)]
-    result_ZSL = [ZSL[i] for i in range(N)]
+    Fast_GB(pars, N, Tobs, dt, c_XLS, c_YLS, c_ZLS, c_XSL, c_YSL, c_ZSL, NP)
 
-    free(c_params)
-    free(XLS)
-    free(YLS)
-    free(ZLS)
-    free(XSL)
-    free(YSL)
-    free(ZSL)
-
-    return result_XLS, result_YLS, result_ZLS, result_XSL, result_YSL, result_ZSL
+    free(pars)
+    return
 

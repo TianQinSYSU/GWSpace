@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <stddef.h>
 
@@ -7,12 +8,12 @@
 #include <gsl/gsl_fft_complex.h>
 
 #include "Constants.h"
-#include "LISA.h"
+#include "spacecrafts.h"
 #include "GB.h"
 
 
 void Fast_GB(double *params, long N, double Tobs, double dt, double *XLS, double *YLS, double *ZLS,
-							double* XSL, double* YSL, double* ZSL, int NP)
+							double* XSL, double* YSL, double* ZSL, int NP, char detector[])
 {
 	long n;     // iterator
 	double t;	// time
@@ -28,10 +29,17 @@ void Fast_GB(double *params, long N, double Tobs, double dt, double *XLS, double
 
 
 	get_basis_tensors(wfm);      //  Tensor construction for building slowly evolving LISA response
-
+    // printf("This is for the detector %s\n", detector);
 	for(n=0; n<N; n++)
 	{
 		t = wfm->T*(double)(n)/(double)N; // First time sample must be at t=0 for phasing
+
+        // add by ekli
+        if (strcmp(detector, "TianQin")) {
+            spacecraft_TianQin(t, wfm->x, wfm->y, wfm->z);
+        } else if (strcmp(detector, "LISA")) {
+            spacecraft_LISA(t, wfm->x, wfm->y, wfm->z);
+        }
 
 		calc_xi_f(wfm ,t);		  // calc frequency and time variables
 		calc_sep_vecs(wfm);       // calculate the S/C separation vectors
@@ -65,7 +73,7 @@ void calc_xi_f(struct Waveform *wfm, double t)
 	if (wfm->NP > 7) dfdt_0   = wfm->params[7]/wfm->T/wfm->T;
 	if (wfm->NP > 8) d2fdt2_0 = wfm->params[8]/wfm->T/wfm->T/wfm->T;
 
-	spacecraft(t, wfm->x, wfm->y, wfm->z); // Calculate position of each spacecraft at time t
+    // spacecraft(t, wfm->x, wfm->y, wfm->z); // Calculate position of each spacecraft at time t
 
 	for(i=0; i<3; i++)
 	{
@@ -574,8 +582,8 @@ void get_transfer(struct Waveform *wfm, double t)
 				//Argument of complex exponentials
 				arg2 = PI2*f0*wfm->xi[i] + phi0 - df*t;
 
-				if (wfm->NP > 7) arg2 += PI*dfdt_0*wfm->xi[i]*wfm->xi[i];
-				if (wfm->NP > 8) arg2 += PI*d2fdt2_0*wfm->xi[i]*wfm->xi[i]*wfm->xi[i]/3.0 ;
+				if (wfm->NP > 7) arg2 += M_PI*dfdt_0*wfm->xi[i]*wfm->xi[i];
+				if (wfm->NP > 8) arg2 += M_PI*d2fdt2_0*wfm->xi[i]*wfm->xi[i]*wfm->xi[i]/3.0 ;
 
 				//Transfer function
 				sinc = 0.25*sin(arg1)/arg1;
@@ -627,7 +635,7 @@ void XYZ(double ***d, double f0, long q, long M, double dt, double Tobs, double 
 	//double phiLS = 2.0*pi*f0*(dt/2.0-L/clight);
 	//double cLS = cos(phiLS); double sLS = sin(phiLS);
 
-	phiSL = PI/2.0-2.0*PI*f0*(Larm/C);
+	phiSL = M_PI/2.0-2.0*M_PI*f0*(Larm/C);
 	cSL = cos(phiSL);
 	sSL = sin(phiSL);
 

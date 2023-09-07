@@ -15,7 +15,12 @@ cimport cython
 cdef extern from "GB.h":
     void Fast_GB(double* pars, long N, double Tobs, double dt,
                  double* XLS, double* YLS, double* ZLS,
-                 double* XSL, double* YSL, double* ZSL, int NP)
+                 double* XSL, double* YSL, double* ZSL, 
+                 int NP, char detector[])
+
+cdef extern from "spacecrafts.h":
+    void spacecraft_LISA(double t, double *x, double *y, double *z);
+    void spacecraft_TianQin(double t, double *x, double *y, double *z);
 
 
 # Define the Cython functions
@@ -23,7 +28,9 @@ cdef extern from "GB.h":
 #@cython.wraparound(False)
 cpdef ComputeXYZ_FD(double[:] params, long N, double Tobs, double dt,
         double[:] XLS, double[:] YLS, double[:] ZLS, 
-        double[:] XSL, double[:] YSL, double[:] ZSL, int NP):
+        double[:] XSL, double[:] YSL, double[:] ZSL, 
+        int NP, str detector):
+
     cdef double f0, df0, lat, lng, Amp, incl, psi, phi0
     cdef double* pars = <double*>malloc(NP * sizeof(double))
     
@@ -53,8 +60,21 @@ cpdef ComputeXYZ_FD(double[:] params, long N, double Tobs, double dt,
     cdef double* c_YSL = &YSL[0]
     cdef double* c_ZSL = &ZSL[0]
 
-    Fast_GB(pars, N, Tobs, dt, c_XLS, c_YLS, c_ZLS, c_XSL, c_YSL, c_ZSL, NP)
+    #cdef char* c_detector = &detector[0]
+
+    Fast_GB(pars, N, Tobs, dt, c_XLS, c_YLS, c_ZLS, c_XSL, c_YSL, c_ZSL, NP, detector.encode('utf-8'))
 
     free(pars)
     return
 
+cpdef Compute_position(double t, double[:] x, double[:] y, double[:] z, str detector):
+    cdef double* c_x = &x[0]
+    cdef double* c_y = &y[0]
+    cdef double* c_z = &z[0]
+
+    if detector == "LISA":
+        spacecraft_LISA(t, c_x, c_y, c_z)
+    elif detector == "TianQin":
+        spacecraft_TianQin(t, c_x, c_y, c_z)
+
+    return

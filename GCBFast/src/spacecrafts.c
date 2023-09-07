@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "LISA.h"
+#include "spacecrafts.h"
 #include "Constants.h"
 
 void instrument_noise(double f, double *SAE, double *SXYZ)
@@ -67,56 +67,39 @@ void spacecraft_LISA(double t, double *x, double *y, double *z)
 
 void spacecraft_TianQin(double t, double *x, double *y, double *z)
 {
+    // earth position
+    // kappa_earth = LISA + 20 
+    double alpha = EarthOrbitOmega_SI * t + kappa + 0.3490658503988659;
+    double beta = Perihelion_Ang;
+    double sna = sin(alpha - beta);
+    double csa = cos(alpha - beta);
+    double ecc = EarthEccentricity;
+    double ecc2 = ecc*ecc;
 
-    double alpha = PI2*t*3.168753575e-8;
-    
-    //calculate alpha_n
-    double kappa1 = 0.;
-    double kappa2 = 2.0943951023932; //2.*pi/3.;
-    double kappa3 = 4.18879020478639;//4.*pi/3.;
-    double lambda = PIon2;
-    double fsc = 3.170979198e-06; //1/(3.65day);
-
-    double an_1 = PI2*t*fsc + kappa1 + lambda;
-    double an_2 = PI2*t*fsc + kappa2 + lambda;
-    double an_3 = PI2*t*fsc + kappa3 + lambda;
-    
-    double R = AU;
-    double R1 = 1.0e8;
-
-    double beta = -2.102137 - M_PI + M_PI/4.;
-    double beta1 = 0;
-
-    double phi_s = 120.5*RAD2DEG;
-    double theta_s = -4.7*RAD2DEG;
-    
-    double sp = sin(phi_s);
-    double st = sin(theta_s);
-    double cp = cos(phi_s);
-    double ct = cos(theta_s);
-
-    double sab = sin(alpha-beta);
-    double cab = cos(alpha-beta);
-
-    double ecc = 0.0167;
-
-    //TianQin orbit function
-    double x_earth = R*cab + R*ecc*(cos(2*(alpha-beta))-3)/2.0;
-    double y_earth = R*sab + R*ecc*sin(2*(alpha-beta))/2.0;
+    double x_earth = AU *( csa + ecc * (1+sna*sna) - 1.5*ecc2 * csa*sna*sna);
+    double y_earth = AU * (sna + ecc *sna*csa + 0.5*ecc2 * sna*(1-3*sna*sna));
     double z_earth = 0.0;
-
-
-    x[0] = R1*(cp*st*sin(an_1-beta1) + cos(an_1-beta1)*sp) + x_earth;
-    y[0] = R1*(sp*st*sin(an_1-beta1) - cos(an_1-beta1)*cp) + y_earth;
-    z[0] = -R1*sin(an_1-beta1)*ct + z_earth;
     
-    x[1] = R1*(cp*st*sin(an_2-beta1) + cos(an_2-beta1)*sp) + x_earth;
-    y[1] = R1*(sp*st*sin(an_2-beta1) - cos(an_2-beta1)*cp) + y_earth;
-    z[1] = -R1*sin(an_2-beta1)*ct + z_earth;
+    //TianQin orbit function
+    //calculate alpha_n
+    double alpha_tq = Omega_tq * t + lambda_tq;
     
-    x[2] = R1*(cp*st*sin(an_3-beta1) + cos(an_3-beta1)*sp) + x_earth;
-    y[2] = R1*(sp*st*sin(an_3-beta1) - cos(an_3-beta1)*cp) + y_earth;
-    z[2] = -R1*sin(an_3-beta1)*ct + z_earth;
+    double sp = sin(J0806_phi);
+    double cp = cos(J0806_phi);
+    double st = sin(J0806_theta);
+    double ct = cos(J0806_theta);
+
+    for (int i=0; i<3; i++){
+        alpha = alpha_tq + i * 2.*PI/3.;
+        csa = cos(alpha); sna = sin(alpha);
+
+        x[i] = ct * cp * csa - sp * sna;
+        y[i] = ct * sp * csa + cp * sna;
+        z[i] = - st * csa;
+
+        x[i] *= Radius_tq; y[i] *= Radius_tq; z[i] *= Radius_tq;
+        x[i] += x_earth; y[i] += y_earth; z[i] += z_earth;
+    }
 
     return;
 }

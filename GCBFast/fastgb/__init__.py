@@ -8,4 +8,3 @@
 #==================================
 
 from fastgb import FastGB
-from fastgb.pyNoise import *

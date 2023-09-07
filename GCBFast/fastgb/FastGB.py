@@ -9,15 +9,14 @@ if __package__ or "." in __name__:
 else:
     import _FastGB
 
-def ComputeXYZ_FD(params, N, Tobs, dt, XLS, YLS, ZLS, XSL, YSL, ZSL):
-    return _FastGB.ComputeXYZ_FD(params, N, Tobs, dt, XLS, YLS, ZLS, XSL, YSL, ZSL, len(params))
+def ComputeXYZ_FD(params, N, Tobs, dt, XLS, YLS, ZLS, XSL, YSL, ZSL, detector="TianQin"):
+    return _FastGB.ComputeXYZ_FD(params, N, Tobs, dt, XLS, YLS, ZLS, XSL, YSL, ZSL, len(params), detector)
 
 
 import numpy as np
 import math
 from fastgb.utils import FrequencyArray
 from fastgb.utils import countdown
-from fastgb.pyNoise import TianQinNoise, LISANoise
 
 YRSID_SI = 31558149.763545600  
 ## siderial year [sec] (http://hpiers.obspm.fr/eop-pc/models/constants.html)
@@ -46,7 +45,7 @@ def simplesnr(f,h,i=None,years=1.0, detector='LISA', includewd=None):
 
 class FastGB:
 #FastBinaryCache = {}
-  def __init__(self, name=" ", dt=15.0, Tobs=6.2914560e7, orbit="analytic"):
+  def __init__(self, name=" ", dt=15.0, Tobs=6.2914560e7, orbit="analytic", detector="TianQin"):
         self.outputlist = ( ('Frequency',                  'Hertz',     'GW frequency'),\
                             ('FrequencyDerivative',        'Hertz/s',    'GW frequency derivative'),\
                             ('EclipticLatitude',           'Radian',     'standard ecliptic latitude'),\
@@ -57,29 +56,10 @@ class FastGB:
                             ('InitialPhase',               'Radian',     'GW phase at t = 0') )
         self.Tobs = Tobs
         self.dt = dt
+        self.detector = detector
 
-
-
-  def fourier(self,simulator='synthlisa',table=None,T=6.2914560e7,dt=15,algorithm='mldc',oversample=1,kmin=0,length=None,status=True):
-        if (np.any(table) == None):
-            return self.onefourier(simulator=simulator,T=T,dt=dt,algorithm=algorithm,oversample=oversample)
-        else:
-            if length == None:
-                length = int(T/dt)/2 + 1    # was "NFFT = int(T/dt)", and "NFFT/2+1" passed to np.zeros
-
-            buf = tuple(FrequencyArray(np.zeros(length,dtype=np.complex128),kmin=kmin,df=1.0/T) for i in range(3))
-
-            if status: c = countdown(len(table),10000)
-            for line in table:
-                self.onefourier(simulator=simulator,vector=line,buffer=buf,T=T,dt=dt,algorithm=algorithm,oversample=oversample)
-                if status: c.status()
-            if status: c.end()
-
-            return buf
 
   def buffersize(self,f,A,algorithm='ldc',oversample=1):
-
-
       YEAR = YRSID_SI
       #Acut = simplesnr(f,A,years=self.Tobs/YEAR)
       mult = 8
@@ -131,7 +111,7 @@ class FastGB:
 # vector must be ordered as required by Fast_GB
 #Fast_GB(double *params, long N, double *XLS, double *ALS, double *ELS, int NP)
 
-          ComputeXYZ_FD(params, N, self.Tobs, self.dt, XLS, YLS, ZLS, XSL, YSL, ZSL)
+          ComputeXYZ_FD(params, N, self.Tobs, self.dt, XLS, YLS, ZLS, XSL, YSL, ZSL, self.detector)
 ### TODO Need to transform to SL if required
           Xf = XLS
           Yf = YLS
@@ -185,6 +165,7 @@ class FastGB:
             if status: c.end()
 
             return buf
+  
   def TDI(self,T=6.2914560e7,dt=15.0,simulator='synthlisa',table=None,algorithm='mldc',oversample=1):
           X, Y, Z = self.fourier(simulator,table,T=T,dt=dt,algorithm=algorithm,oversample=oversample)
 

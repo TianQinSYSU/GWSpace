@@ -81,7 +81,16 @@ def test_generate_date():
     # 处理得到的数据，方便画图
     J0806_FD_highos = np.array(J0806_FD_highos).T
     J0806_FD_highos[:,1:] = J0806_FD_highos[:,1:]*2
-    df_J0806_highos = pd.DataFrame(np.abs(J0806_FD_highos),columns=['f','TDI X (FD)', 'TDI Y (FD)', 'TDI Z (FD)'])
+    #df_J0806_highos = pd.DataFrame(np.abs(J0806_FD_highos),columns=['f','TDI X (FD)', 'TDI Y (FD)', 'TDI Z (FD)'])
+
+    for i in range(1,4):
+        #plt.subplot(1,3,i)
+        plt.plot(J0806_FD_highos[1:,0], abs(J0806_FD_highos[1:,i]))
+        plt.xlim(0.00620,0.00624)
+        plt.xscale('log')
+        plt.yscale('log')
+
+    plt.show()
 
 def test_generate_date_with_FB():
     f0=[0.00622028]

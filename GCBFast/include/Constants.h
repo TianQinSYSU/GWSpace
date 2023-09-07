@@ -9,7 +9,7 @@
 
 /* Pi's and frinds */
 //use math.h (M_PI) for PI
-#define PI 3.141592653589793
+#define PI 3.141592653589793238462643383279502884
 #define PI2   6.283185307179586
 #define PIon2 1.57079632679
 #define PIon4 0.78539816339
@@ -42,6 +42,24 @@
 #define G 6.67e-11
 
 
+#define EarthEccentricity 0.01671
+// Orbital eccentricity for earth:
+// https://handwiki.org/wiki/Astronomy:Orbital_eccentricity
+
+
+#define EarthOrbitOmega_SI 1.99098659277e-7  
+/* Orbital pulsation: 2pi/year - use sidereal year as found on http://hpiers.obspm.fr/eop-pc/models/constants.html */
+
+// vernal equinox is Septemper equinox (09-22/23)
+// perihelion is at about 01-03/04
+// (31 + 30 + 31 + 11)/365.2425 * 2 * PI
+#define Perihelion_Ang 1.772  /* angle measured from the vernal equinox to the perihelion */
+
+/***********************************************************/
+/* ecliptic longitude and latitude of J0806.3+1527 */
+/***********************************************************/
+#define J0806_phi 2.103121748653167  // 120.5
+#define J0806_theta 1.65282680163863 // -4.7 = 90 + 4.7
 
 
 #endif /* Constants_h */

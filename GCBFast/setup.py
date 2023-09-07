@@ -29,7 +29,7 @@ include_gsl_dir = gsl_prefix+"/include"
 
 # Update these paths accordingly
 c_include_dirs = ['include', include_gsl_dir, numpy.get_include()]
-c_sources = ['src/LISA.c', 'src/GB.c']
+c_sources = ['src/spacecrafts.c', 'src/GB.c']
 
 extensions = [
     Extension("fastgb._FastGB", ["src/_FastGB.pyx"] + c_sources,

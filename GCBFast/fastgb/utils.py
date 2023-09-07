@@ -304,7 +304,9 @@ class FrequencyArray(np.ndarray):
         ...
         @param dt is ...
         """
-        n = int(1.0/(dt*self.df))
+        #n = int(1.0/(dt*self.df))
+        n = round(1.0/(dt * self.df)) 
+        # by liyn (in case the int() function would cause loss of n)
 
         ret = np.zeros(int(n/2+1),dtype=self.dtype)
         ret[self.kmin:self.kmin+len(self)] = self[:]

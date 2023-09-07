@@ -54,6 +54,7 @@ install_requires = setup_requires + [
 argv_replace = []
 constants = ''
 gsl_prefix = '/usr'
+lapack_prefix = '/usr'
 compile_bhb = False
 compile_few = False
 compile_eccFD = False

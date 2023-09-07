@@ -1,0 +1,17 @@
+# fastgb
+
+## build the code
+
+```
+python setup.py build --with-gsl=/path/to/yourgslpath
+```
+
+## test the code
+
+```
+cd tests
+ln -s ../build/lib.**/fastgb ./
+
+python test_fastgb.py
+```
+

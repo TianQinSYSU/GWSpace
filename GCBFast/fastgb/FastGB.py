@@ -81,7 +81,7 @@ class FastGB:
 
 
       YEAR = YRSID_SI
-      Acut = simplesnr(f,A,years=self.Tobs/YEAR)
+      #Acut = simplesnr(f,A,years=self.Tobs/YEAR)
       mult = 8
       if((self.Tobs/YEAR) <= 8.0): mult = 8
       if((self.Tobs/YEAR) <= 4.0): mult = 4
@@ -93,12 +93,13 @@ class FastGB:
       if(f > 0.03):  N = 512*mult
       if(f > 0.1):   N = 1024*mult
 
-      M = int(math.pow(2.0,1 + int(np.log(Acut)/np.log(2.0))))
+      #M = int(math.pow(2.0,1 + int(np.log(Acut)/np.log(2.0))))
 
-      if(M > 8192):
-        M = 8192
+      #if(M > 8192):
+      #  M = 8192
+      #M = 8192
 
-      M = N = max(M,N)
+      #M = N = max(M,N)
 
       N *= oversample
 

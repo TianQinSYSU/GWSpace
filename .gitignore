@@ -6,4 +6,6 @@ gitpush.sh
 
 .idea
 
+.ipynb_checkpoints/
+
 tests/csgwsim

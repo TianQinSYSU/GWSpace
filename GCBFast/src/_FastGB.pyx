@@ -31,6 +31,10 @@ cpdef ComputeXYZ_FD(double[:] params, long N, double Tobs, double dt,
         double[:] XSL, double[:] YSL, double[:] ZSL, 
         int NP, str detector):
 
+    if (NP != 8):
+        print("Only 8 parameters are accepted: %d"%NP)
+        return
+
     cdef double f0, df0, lat, lng, Amp, incl, psi, phi0
     cdef double* pars = <double*>malloc(NP * sizeof(double))
     

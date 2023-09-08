@@ -2,12 +2,16 @@
 
 ## build the code
 
+In the main folder, to build the software
+
 ```
 python setup.py build --with-gsl=/path/to/yourgslpath
 ```
+The compiled file will be stored in the `build/lib.**` folder
 
 ## test the code
 
+Due to that we only compile the code in the local, so one can link the compiled lib to the tests folder. Using the following command to link the file.
 ```
 cd tests
 ln -s ../build/lib.**/fastgb ./

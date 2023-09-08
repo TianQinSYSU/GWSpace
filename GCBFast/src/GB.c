@@ -505,8 +505,8 @@ void get_basis_tensors(struct Waveform *wfm)
 	{
 		for(j=0;j<3;j++)
 		{
-			//wfm->eplus[i][j]  = u[i]*u[j] - v[i]*v[j];
-			wfm->eplus[i][j]  = v[i]*v[j] - u[i]*u[j];
+			wfm->eplus[i][j]  = u[i]*u[j] - v[i]*v[j]; // liyn: "The initial procedure is "eplus=vv-uu", here changed to "uu-vv"
+			//wfm->eplus[i][j]  = v[i]*v[j] - u[i]*u[j];
 			wfm->ecross[i][j] = u[i]*v[j] + v[i]*u[j];
 			//wfm->ecross[i][j] = -u[i]*v[j] - v[i]*u[j];
 		}
@@ -576,8 +576,8 @@ void get_transfer(struct Waveform *wfm, double t)
 			{
 				//Argument of transfer function
 				// FIXME
-				//arg1 = 0.5*wfm->fonfs[i]*(1. - wfm->kdotr[i][j]);
-				arg1 = 0.5*wfm->fonfs[i]*(1. + wfm->kdotr[i][j]);
+				arg1 = 0.5*wfm->fonfs[i]*(1. - wfm->kdotr[i][j]); //ynli: The initial procedure used "1+kr", here changed to "1-kr"
+				//arg1 = 0.5*wfm->fonfs[i]*(1. + wfm->kdotr[i][j]);
 
 				//Argument of complex exponentials
 				arg2 = PI2*f0*wfm->xi[i] + phi0 - df*t;
@@ -727,6 +727,7 @@ void XYZ(double ***d, double f0, long q, long M, double dt, double Tobs, double 
 	return;
 }
 
+/*
 long get_N(double *params, double Tobs)
 {
 	// This determines the number of samples to take of the slowly evolving bit
@@ -772,3 +773,5 @@ long get_N(double *params, double Tobs)
 
 	return N;
 }
+
+*/

@@ -155,7 +155,7 @@ class FastGB:
                 length = int(0.5*T/dt) + 1    # was "NFFT = int(T/dt)", and "NFFT/2+1" passed to numpy.zeros
 
 #length = int(length)
-            print ("Stas", type(length), type(kmin), type(1.0/T))
+            ##print ("Stas", type(length), type(kmin), type(1.0/T))
             buf = tuple(FrequencyArray(np.zeros(length,dtype=np.complex128),kmin=kmin,df=1.0/T) for i in range(3))
 
             if status: c = countdown(len(table),10000)

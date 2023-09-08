@@ -35,9 +35,9 @@ void Fast_GB(double *params, long N, double Tobs, double dt, double *XLS, double
 		t = wfm->T*(double)(n)/(double)N; // First time sample must be at t=0 for phasing
 
         // add by ekli
-        if (strcmp(detector, "TianQin")) {
+        if (strcmp(detector, "TianQin") == 0) {
             spacecraft_TianQin(t, wfm->x, wfm->y, wfm->z);
-        } else if (strcmp(detector, "LISA")) {
+        } else if (strcmp(detector, "LISA") == 0) {
             spacecraft_LISA(t, wfm->x, wfm->y, wfm->z);
         }
 

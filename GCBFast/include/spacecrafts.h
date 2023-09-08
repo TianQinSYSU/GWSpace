@@ -30,7 +30,7 @@
 // lambda for tianqin spacecrafts
 #define lambda_tq 0.00
 #define fsc_tq 3.1709791983764586e-06 // 3.65 day
-#define Omega_tq 7.27220521664304e-05 // 2 pi f_sc
+#define Omega_tq 1.9923849908611068e-05 // 2 pi f_sc
 #define Armlength_tq 1.7320508075688772
 #define Radius_tq 1.0e8 
 

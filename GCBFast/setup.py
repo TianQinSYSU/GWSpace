@@ -13,7 +13,6 @@ from distutils.core import setup, Extension
 from distutils.core import setup
 from distutils.extension import Extension
 from distutils.sysconfig import get_python_lib
-from setuptools import find_packages
 import sys
 
 argv_replace = []

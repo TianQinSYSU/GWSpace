@@ -96,6 +96,28 @@ def to_m1m2(m_chirp, eta):
 
 ## ==========================
 
+def icrs_to_ecliptic(ra, dec, center='bary'):
+    """Convert ICRS(Equatorial) to Ecliptic frame.
+     https://docs.astropy.org/en/stable/coordinates/index.html
+     Reminder: Both dec & latitude range (pi/2, -pi/2) [instead of (0, pi)].
+    :param ra: float, right ascension
+    :param dec: float, declination
+    :param center: {'bary', str}, 'bary' or 'geo'  # Actually it won't have too much difference
+    :return: longitude, latitude: float
+    """
+    from astropy.coordinates import SkyCoord, BarycentricTrueEcliptic, GeocentricTrueEcliptic
+    import astropy.units as u
+
+    co = SkyCoord(ra * u.rad, dec * u.rad)
+    if center == 'bary':
+        cot = co.transform_to(BarycentricTrueEcliptic)
+    elif center == 'geo':
+        cot = co.transform_to(GeocentricTrueEcliptic)
+    else:
+        raise ValueError("'center' should be 'bary' or 'geo'")
+    return cot.lon.rad, cot.lat.rad
+
+
 def deg2rad(deg):
     """
     Convert degree to radian

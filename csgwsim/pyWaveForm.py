@@ -10,9 +10,10 @@
 # import os
 # import sys
 import numpy as np
+from numpy import sin, cos, sqrt
 
 from utils import to_m1m2
-from Constants import MSUN_SI, MPC_SI, YRSID_SI, PI, C_SI, G_SI
+from Constants import MSUN_SI, MSUN_unit, MPC_SI, YRSID_SI, PI, C_SI, G_SI
 from Waveforms.PyIMRPhenomD import IMRPhenomD as pyIMRD
 from Waveforms.PyIMRPhenomD import IMRPhenomD_const as PyIMRC
 from ..Waveforms.FastEMRIWaveforms.FastEMRI import *
@@ -46,172 +47,107 @@ from ..Waveforms.FastEMRIWaveforms.FastEMRI import *
 #     from FastEMRI import *
 
 
-class WaveForm(object):
+# Note1: one can use __slots__=('mass1', 'mass2', 'etc') to fix the attributes
+#        then the class will not have __dict__ anymore, and attributes in __slots__ are read-only.
+# Note2: One can use @DynamicAttrs to avoid warnings of 'no attribute'.
+class BasicWaveform(object):
     """
     Class for waveform
     -------------------------------
     Parameters:
     - pars: dict of parameters for different sources
     such as:
-        - pars['type']: GCB; BHB; EMRI; SGWB for different sources
-        - pars['lambda']: longitude of the source in ecliptic coordinates
-        - pars['beta']: latitude of the source in ecliptic coordinates
-        - pars['psi']: polarization angle
-        - pars['iota']: inclination angle
-        - pars['Mc']: chirp mass
-        - pars['DL']: luminosity distance
+        - type: GCB; BHB; EMRI; SGWB for different sources
+        - lambda: longitude of the source in ecliptic coordinates
+        - beta: latitude of the source in ecliptic coordinates
+        - psi: polarization angle
+        - iota: inclination angle
+        - Mc: chirp mass
+        - DL: luminosity distance
         - etc
     """
+    __slots__ = ('DL', 'mass1', 'mass2', 'Lambda', 'Beta', 'phi_c',
+                 'T_obs', 'tc', 'iota', 'var_phi', 'psi', 'add_para')
 
-    def __init__(self, pars):
-        self.pars = pars
+    def __init__(self, mass1, mass2, T_obs=None, DL=1., Lambda=None, Beta=None,
+                 phi_c=0., tc=0., iota=0., var_phi=0., psi=0, **kwargs):
+        self.DL = DL
+        self.mass1 = mass1
+        self.mass2 = mass2
+        self.Lambda = Lambda
+        self.Beta = Beta
+        self.phi_c = phi_c
+        self.T_obs = T_obs
+        self.tc = tc
+        self.iota = iota
+        self.var_phi = var_phi
+        self.psi = psi
+        self.add_para = kwargs
 
-        if pars['type'] == 'GCB':
-            Mc = pars["Mc"]
-            DL = pars["DL"]
-            phi0 = pars["phi0"]
-            f0 = pars["f0"]
-            if "fdot" in pars.keys():
-                fdot = pars['fdot']
-            else:
-                fdot = None
-            if "fddot" in pars.keys():
-                fddot = pars['fddot']
-            else:
-                fddot = None
-            self.gw = GCBWaveform(Mc, DL, phi0, f0, fdot, fddot)
-        elif pars['type'] == 'BHB':
-            if 'Mc' in pars.keys():
-                Mc = pars['Mc']
-                eta = pars['eta']
-                m1, m2 = to_m1m2(Mc, eta)
-            elif 'm1' in pars.keys():
-                m1 = pars["m1"]
-                m2 = pars["m2"]
+        if (self.mass1 is None) or (self.mass2 is None) or (self.T_obs is None):
+            raise ValueError('mass1, mass2 and T_obs should NOT be None')
 
-            chi1 = pars['chi1']
-            chi2 = pars['chi2']
-            DL = pars['DL']
-            phic = pars['phic']
-            MfRef_in = pars['MfRef_in']
-            self.tc = pars['tc']
-            self.gw = BHBWaveform(m1, m2, chi1, chi2, DL, phic, MfRef_in)
+    # @property
+    # def redshift(self):
+    #     return float(dl_to_z(self.DL))
 
-            try:
-                self.fRef = pars['fRef']
-            except:
-                self.fRef = 0.
-            try:
-                self.varphi = pars['varphi']
-            except:
-                self.varphi = 0.
-        elif pars['type'] == 'EMRI':
-            self.M = pars['M']
-            self.mu = pars['mu']
-            self.a = pars['a']
-            self.p0 = pars['p0']
-            self.e0 = pars['e0']
-            self.x0 = pars['x0']
-            self.dist = pars['dist']
+    # @property
+    # def z(self):
+    #     return self.redshift
 
-            self.qS = pars['qS']
-            self.phiS = pars['phiS']
-            self.qK = pars['qK']
-            self.phiK = pars['phiK']
-            self.Phi_phi0 = pars['Phi_phi0']
-            self.Phi_theta0 = pars['Phi_theta0']
-            self.Phi_r0 = pars['Phi_r0']
+    @property
+    def Mt(self):
+        return self.mass1 + self.mass2  # Total mass (solar mass)
 
-            self.gw = EMRIWaveform(
-                self.M, self.mu, self.a, self.p0, self.e0,
-                self.x0, self.dist, self.qS, self.phiS,
-                self.qK, self.phiK, self.Phi_phi0,
-                self.Phi_theta0, self.Phi_r0)
-            # self.gw.theta
-        elif pars['type'] == 'Burst':
-            self.amp = pars['amp']
-            self.tau = pars['tau']
-            self.fc = pars['fc']
-            self.tc = pars['tc']
+    @property
+    def eta(self):
+        return self.mass1 * self.mass2 / self.Mt**2  # Symmetric mass ratio
 
-            self.gw = BurstWaveform(
-                self.amp, self.tau, self.fc, self.tc)
-        try:
-            lambd, beta = pars['lambda'], pars['beta']
-        except:
-            lambd = np.pi/2-self.gw.theta
-            beta = self.gw.phi
+    @property
+    def Mc(self):
+        return self.eta**(3/5) * self.Mt  # Chirp mass (solar mass)
 
-        self.u, self.v, self.k = self.refFrame(lambd, beta)
+    @property
+    def vec_u(self):
+        return np.array([sin(self.Lambda), -cos(self.Lambda), 0])
 
-        self.psi = pars['psi']
-        self.iota = pars['iota']
+    @property
+    def vec_v(self):
+        return np.array([-sin(self.Beta)*cos(self.Lambda),
+                         -sin(self.Beta)*sin(self.Lambda),
+                         cos(self.Beta)])
 
-    def amp_phase(self, freq, mode=[(2, 2)]):
-        """
-        Generate the amp and phase in frequency domain
-        ----------------------------------------------
-        Parameters:
-        -----------
-        - freq: frequency list
-        - mode: mode of GW
+    @property
+    def vec_k(self):
+        return np.array([-cos(self.Beta)*cos(self.Lambda),
+                         -cos(self.Beta)*sin(self.Lambda),
+                         -sin(self.Beta)])  # Vector of sources
 
-        Return:
-        -------
-        - amp:
-        - phase:
-        - tf: time of freq
-        - tfp: dt/df
-        """
-        h22 = self.gw.h22_FD(freq, self.fRef, self.tc)
+    def _p0(self):
+        """See "LDC-manual-002.pdf" (Eq. 12, 13) & Marsat et al. (Eq. 14)"""
+        sib, csb = sin(self.Beta), cos(self.Beta)
+        sil, csl = sin(self.Lambda), cos(self.Lambda)
+        sil2, csl2 = sin(2*self.Lambda), cos(2*self.Lambda)
 
-        amp = {}
-        phase = {}
-        tf = {}
-        tfp = {}
-        amp[(2, 2)] = h22.amp
-        phase[(2, 2)] = h22.phase
-        tf[(2, 2)] = h22.time
-        tfp[(2, 2)] = h22.timep
+        p0_plus = np.array([-sib**2 * csl**2 + sil**2, (sib**2+1)*(-sil*csl),  sib*csb*csl,
+                            (sib**2+1)*(-sil*csl),     -sib**2*sil**2+csl**2,  sib*csb*sil,
+                            sib*csb*csl,                sib*csb*sil,          -csb**2]).reshape(3, 3)
+        p0_cross = np.array([-sib*sil2, sib*csl2,  csb*sil,
+                             sib*csl2,  sib*sil2, -csb*csl,
+                             csb*sil,  -csb*csl,   0]).reshape(3, 3)
+        return p0_plus, p0_cross
 
-        return amp, phase, tf, tfp
-
-    def __call__(self, tf, eps=1e-5, modes=None):
-        if self.pars['type'] == 'GCB':
-            hpS, hcS = self.gw(tf)
-        elif self.pars['type'] == 'EMRI':
-            Tobs = tf[-1]/YRSID_SI
-            dt = tf[1]-tf[0]
-            # T = Tobs - int(Tobs * YRSID_SI/dt - tf.shape[0]) * dt/YRSID_SI
-            # print("the total observ time is ", Tobs)
-            hpS, hcS = self.gw(Tobs, dt, eps, modes)
-
-        cs2p = np.cos(2*self.psi)
-        sn2p = np.sin(2*self.psi)
-        csi = np.cos(self.iota)
-
-        hp_SSB = -(1+csi*csi)*hpS*cs2p+2*csi*hcS*sn2p
-        hc_SSB = -(1+csi*csi)*hpS*sn2p-2*csi*hcS*cs2p
-
-        return hp_SSB, hc_SSB
-
-    @staticmethod
-    def refFrame(lambd, beta):
-        csl = np.cos(lambd)
-        snl = np.sin(lambd)
-        csb = np.cos(beta)
-        snb = np.sin(beta)
-
-        u = np.array([snl, -csl, 0])
-        v = np.array([-snb*csl, -snb*snl, csb])
-        k = np.array([-csb*csl, -csb*snl, -snb])
-
-        return u, v, k
+    def polarization(self):
+        """See "LDC-manual-002.pdf" (Eq. 19)"""
+        p0_plus, p0_cross = self._p0()
+        p_plus = p0_plus*cos(2*self.psi) + p0_cross*sin(2*self.psi)
+        p_cross = - p0_plus*sin(2*self.psi) + p0_cross*cos(2*self.psi)
+        return p_plus, p_cross
 
 
 class BurstWaveform(object):
     """
-    A sin-Gaussian waveforms for pooly modelled burst source
+    A sin-Gaussian waveforms for poorly modelled burst source
     --------------------------------------------------------
     """
 
@@ -228,7 +164,7 @@ class BurstWaveform(object):
         return h.real, h.imag
 
 
-class BHBWaveform(object):
+class BHBWaveform(BasicWaveform):
     """
     This is Waveform for BHB
     ------------------------
@@ -237,19 +173,67 @@ class BHBWaveform(object):
     - chi1, chi2: spin of the two black holes
     - DL: in MPC
     """
+    __slots__ = ('chi1', 'chi2', 'ra', 'dec', 'h22')
+    # _true_para_key = ('DL', 'Mc', 'eta', 'chi1', 'chi2', 'phi_c', 'iota', 'tc', 'var_phi', 'psi', 'Lambda', 'Beta')
+    # fisher_key = ('Mc', 'eta', 'chi1', 'chi2', 'DL', 'phi_c', 'iota', 'tc', 'Lambda', 'Beta', 'psi')
 
-    def __init__(self, m1, m2, chi1=0., chi2=0., DL=1.0, phic=0, MfRef_in=0):
+    def __init__(self, mass1, mass2, DL=1., Lambda=None, Beta=None,
+                 phi_c=0., T_obs=None, tc=0., iota=0., var_phi=0., psi=0., chi1=0., chi2=0.,
+                 ra=None, dec=None, **kwargs):
 
-        # set parameters for a black hole binary system
+        BasicWaveform.__init__(self, mass1, mass2, DL, Lambda, Beta,
+                               phi_c, T_obs, tc, iota, var_phi, psi, **kwargs)
         self.chi1 = chi1
         self.chi2 = chi2
-        self.m1_SI = m1*MSUN_SI
-        self.m2_SI = m2*MSUN_SI
-        self.distance = DL*MPC_SI
-        self.phic = phic
-        self.MfRef_in = MfRef_in
+        self.ra = ra
+        self.dec = dec
+        # self.MfRef_in = MfRef_in
+        # self.fRef = fRef  # 0.
 
-    def h22_FD(self, freq, fRef=0, t0=0):
+        if (self.Lambda is not None) and (self.Beta is not None):
+            # print(f'[WaveParas]<Sky location is given by Ecliptic frame:'
+            #       f'\n(lon, lat) in rad:({self.Lambda:.3f}, {self.Beta:.3f})>')
+            pass
+        else:
+            try:
+                from utils import icrs_to_ecliptic
+                self.Lambda, self.Beta = icrs_to_ecliptic(ra, dec)
+                print(f'[WaveParas]<Sky location is given by ICRS frame:'
+                      f'\n(ra, dec) in rad:({ra:.3f}, {dec:.3f})>')
+            except AttributeError:
+                raise ValueError('ParameterClass without *valid* sky location parameters!') from None
+
+        # if not det_frame_para:
+        #     self.raw_source_masses = {'mass1': self.mass1, 'mass2': self.mass2,
+        #                               'M': self.M, 'Mc': self.Mc}
+        #     self.mass1 *= 1+self.z
+        #     self.mass2 *= 1+self.z
+
+    # def __eq__(self, other):
+    #     return all([getattr(self, key) == getattr(other, key) for key in self._true_para_key])
+
+    @property
+    def f_min(self):
+        return 5**(3/8)/(8*np.pi) * (MSUN_unit*self.Mc)**(-5/8) * self.T_obs**(-3/8)
+
+    def _y22(self):
+        """See "LDC-manual-002.pdf" (Eq. 31)"""
+        y22_o = sqrt(5/4/PI) * cos(self.iota/2)**4 * np.exp(2j*self.var_phi)
+        y2_2_conj = sqrt(5/4/PI) * sin(self.iota/2)**4 * np.exp(2j*self.var_phi)
+        return y22_o, y2_2_conj
+
+    # p_lm(self, l=2, m=2):
+    #     y_lm_o = spin_weighted_spherical_harmonic(-2, l, m, self.iota, self.var_phi)
+    #     y_l_m_conj = spin_weighted_spherical_harmonic(-2, l, -m, self.iota, self.var_phi).conjugate()
+    @property
+    def p22(self):
+        """See Marsat et al. (Eq. 16) https://journals.aps.org/prd/abstract/10.1103/PhysRevD.103.083011"""
+        y22_o, y2_2_conj = self._y22()
+        p0_plus, p0_cross = self._p0()
+        return (1/2 * y22_o * np.exp(-2j*self.psi) * (p0_plus + 1j*p0_cross) +
+                1/2 * y2_2_conj * np.exp(2j*self.psi) * (p0_plus - 1j*p0_cross))
+
+    def h22_FD(self, freq, fRef=0., t0=0.):
         NF = freq.shape[0]
 
         amp_imr = np.zeros(NF)
@@ -264,18 +248,62 @@ class BHBWaveform(object):
         # Create structure for Amp/phase/time FD waveform
         self.h22 = pyIMRD.AmpPhaseFDWaveform(NF, freq, amp_imr, phase_imr, time_imr, timep_imr, fRef, t0)
 
-        # Generate h22 FD amplitude and phse on a given set of frequencies
+        # Generate h22 FD amplitude and phase on a given set of frequencies
         self.h22 = pyIMRD.IMRPhenomDGenerateh22FDAmpPhase(
             self.h22, freq,
-            self.phic, self.MfRef_in,
-            self.m1_SI, self.m2_SI,
+            self.phi_c, self.MfRef_in,
+            self.mass1*MSUN_SI, self.mass2*MSUN_SI,
             self.chi1, self.chi2,
-            self.distance)
+            self.DL*MPC_SI)
 
         return self.h22
 
+    def amp_phase(self, freq, mode):
+        """
+        Generate the amp and phase in frequency domain
+        ----------------------------------------------
+        Parameters:
+        -----------
+        - freq: frequency list
+        - mode: mode of GW
+        # FIXME: Default argument value is mutable if mode=[(2, 2)], use tuple instead, btw it is unused
 
-class GCBWaveform(object):
+        Return:
+        -------
+        - amp:
+        - phase:
+        - tf: time of freq
+        - tfp: dt/df
+        """
+        h22 = self.h22_FD(freq, self.fRef, self.tc)
+
+        amp = {(2, 2): h22.amp}
+        phase = {(2, 2): h22.phase}
+        tf = {(2, 2): h22.time}
+        tfp = {(2, 2): h22.timep}
+
+        return amp, phase, tf, tfp
+
+    # def gen_ori_waveform(self, delta_f=None, f_min=None, f_max=1.):
+    #     """Generate f-domain TDI waveform(IMRPhenomD, h22 mode)"""
+    #     from pyIMRPhenomD import IMRPhenomDh22AmpPhase
+    #     if delta_f is None:
+    #         delta_f = 1/self.T_obs
+    #     freq_phd = np.arange(np.ceil(f_min/delta_f)*delta_f, f_max, delta_f)
+    #     # freq_phd = np.arange(f_min, f_max, delta_f)  # TODO
+    #     wf_phd_class = IMRPhenomDh22AmpPhase(freq_phd, *self.wave_para_phenomd())
+    #     freq, amp, phase = wf_phd_class.GetWaveform()  # freq, amp, phase
+    #     # these are actually cython pointers, we should also use .copy() to acquire ownership
+    #     wf = (freq.copy(), amp.copy(), phase.copy())
+    #
+    #     return wf
+
+
+class BHBWaveformEcc(BHBWaveform):
+    pass
+
+
+class GCBWaveform(BasicWaveform):
     """
     This is Waveform for GCB.
     ------------------------
@@ -297,7 +325,11 @@ class GCBWaveform(object):
     hpS, hcS = GCB(tf)
     """
 
-    def __init__(self, Mc, DL, phi0, f0, fdot=None, fddot=None):
+    def __init__(self, Mc, DL, phi0, f0, fdot=None, fddot=None, **kwargs):
+        eta = 0.25  # FIXME
+        m1, m2 = to_m1m2(Mc, eta)
+        BasicWaveform.__init__(self, m1, m2, DL, **kwargs)
+        self.phi0 = phi0
         self.f0 = f0
         # self.fdot = fdot
         if fdot is None:
@@ -313,24 +345,33 @@ class GCBWaveform(object):
         self.amp = 2*(G_SI*Mc*MSUN_SI)**(5/3)
         self.amp = self.amp/C_SI**4/(DL*MPC_SI)
         self.amp = self.amp*(PI*f0)**(2/3)
-        self.phi0 = phi0
 
     def __call__(self, t):
         phase = 2*PI*(self.f0+0.5*self.fdot*t +
                       1/6*self.fddot*t*t)*t+self.phi0
-        hp = self.amp*np.cos(phase)
-        hc = self.amp*np.sin(phase)
-        return hp, hc
+        hp = self.amp*cos(phase)
+        hc = self.amp*sin(phase)
+
+        # TODO: What do we really want from __call__? Original wf or SSB wf?
+        #  Could we not use __call__ but add two normal methods in class?
+        cs2p = cos(2*self.psi)
+        sn2p = sin(2*self.psi)
+        csi = cos(self.iota)
+
+        hp_SSB = -(1+csi*csi)*hp*cs2p+2*csi*hc*sn2p
+        hc_SSB = -(1+csi*csi)*hp*sn2p-2*csi*hc*cs2p
+
+        return hp_SSB, hc_SSB
 
 
-class FastGB(object):
+class FastGB(GCBWaveform):
     """
-    Calculate the GCB waveform using fast/slow
+    Calculate the GCB waveform using fast/slow TODO
     """
 
-    def __init__(self, pars, N):
+    def __init__(self, N, Mc, DL, phi0, f0, **kwargs):
+        super().__init__(Mc, DL, phi0, f0, **kwargs)
         self.N = N
-        pass
 
 
 class EMRIWaveform(object):
@@ -377,7 +418,7 @@ class EMRIWaveform(object):
                  amplitude_kwargs=amplitude_kwargs,
                  Ylm_kwargs=Ylm_kwargs,
                  sum_kwargs=sum_kwargs,
-                 use_gpu=use_gpu):
+                 use_gpu=use_gpu):  # TODO: make it a subclass of BasicWaveform
         self.M = M
         self.mu = mu
         self.a = a
@@ -475,3 +516,30 @@ class EMRIWaveform(object):
         )
 
         return h.real, h.imag
+
+    def get_ssb_wf(self, tf, eps=1e-5, modes=None):
+        # TODO: What do we really want from __call__? Original wf or SSB wf?
+        #  Could we not use __call__ but add two normal methods in class?
+        Tobs = tf[-1]/YRSID_SI
+        dt = tf[1]-tf[0]
+        # T = Tobs - int(Tobs * YRSID_SI/dt - tf.shape[0]) * dt/YRSID_SI
+        # print("the total observ time is ", Tobs)
+        hpS, hcS = self(Tobs, dt, eps, modes)
+
+        cs2p = cos(2*self.psi)
+        sn2p = sin(2*self.psi)
+        csi = cos(self.iota)
+
+        hp_SSB = -(1+csi*csi)*hpS*cs2p+2*csi*hcS*sn2p
+        hc_SSB = -(1+csi*csi)*hpS*sn2p-2*csi*hcS*cs2p
+
+        return hp_SSB, hc_SSB
+
+
+waveforms = {'burst': BurstWaveform,
+             'bhb_PhenomD': BHBWaveform,
+             'bhb_EccFD': BHBWaveformEcc,
+             'gcb': GCBWaveform,
+             'gcb_fast': FastGB,
+             'emri': EMRIWaveform,
+             }  # all available waveforms

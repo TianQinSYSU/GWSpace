@@ -17,7 +17,7 @@
 # Created Time: 2023-08-01 14:55:20
 # ==================================
 
-# import numpy as np
+import numpy as np
 # from Constants import *
 from utils import dot_arr, cal_zeta, sYlm
 from pyOrbits import Orbit
@@ -41,9 +41,9 @@ class FDResponse:
 
         self.LT = self.orbit.armLT
 
-        self.u = self.wf.u
-        self.v = self.wf.v
-        self.k = self.wf.k
+        self.u = self.wf.vec_u
+        self.v = self.wf.vec_v
+        self.k = self.wf.vec_k
 
     def EvaluateGslr(self, tf, freq):
 

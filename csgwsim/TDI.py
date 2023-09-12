@@ -133,7 +133,7 @@ if __name__ == "__main__":
 
     print("Mc" in GCBpars.keys())
 
-    # GCBwf = WaveForm(GCBpars)
+    # GCBwf = BasicWaveform(GCBpars)
     # hpssb, hcssb = GCBwf(tf)
 
     TQ = INITianQin()

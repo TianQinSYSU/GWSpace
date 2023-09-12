@@ -21,7 +21,7 @@ class FDResponse:
     """
 
     def __init__(self, pars, INI, initial_T=False):
-        self.wf = WaveForm(pars)
+        self.wf = BasicWaveform(pars)
         self.orbit = Orbit(INI)
         if initial_T:
             if INI.detector == "TianQin":
@@ -31,9 +31,9 @@ class FDResponse:
 
         self.LT = self.orbit.armLT
 
-        self.u = self.wf.u
-        self.v = self.wf.v
-        self.k = self.wf.k
+        self.u = self.wf.vec_u
+        self.v = self.wf.vec_v
+        self.k = self.wf.vec_k
 
     def EvaluateGslr(self, tf, freq):
 
@@ -179,7 +179,7 @@ if __name__ == "__main__":
     NF = 10240
     freq = 10**np.linspace(-4, 0, NF)
 
-    BHBwf = WaveForm(pars)
+    BHBwf = BasicWaveform(pars)
 
     amp, phase, tf, tfp = BHBwf.amp_phase(freq)
 

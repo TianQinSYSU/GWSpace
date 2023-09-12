@@ -24,7 +24,7 @@ class TDResponse(object):
     """
 
     def __init__(self, pars, INI, initial_T=False):
-        self.wf = WaveForm(pars)
+        self.wf = BasicWaveform(pars)
         self.orbit = Orbit(INI)
         if initial_T:
             if INI.detector == 'TianQin':
@@ -47,8 +47,8 @@ class TDResponse(object):
         ------
         -
         """
-        u = self.wf.u
-        v = self.wf.v
+        u = self.wf.vec_u
+        v = self.wf.vec_v
         hpssb, hcssb = self.wf(tf)
         tf_size = tf.shape[0]
         h_size = hpssb.shape[0]
@@ -84,7 +84,7 @@ class TDResponse(object):
         p2 = p0+p2L
         p3 = p0+p3L
 
-        k = self.wf.k
+        k = self.wf.vec_k
 
         kp1 = dot_arr(k, p1)
         kn1 = dot_arr(k, n1)
@@ -168,7 +168,7 @@ if __name__ == "__main__":
 
     print("Mc" in GCBpars.keys())
 
-    # GCBwf = WaveForm(GCBpars)
+    # GCBwf = BasicWaveform(GCBpars)
     # hpssb, hcssb = GCBwf(tf)
 
     TQ = INITianQin()

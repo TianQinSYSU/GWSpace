@@ -213,4 +213,55 @@ def noise_AET(freq, Sa, Sp, armL, includewd=None):
     return ae, ae, tt
 
 
+class WhiteNoise:
+    '''
+    White noise generator
+    ---------------------
+    for constant powser spectrum density
+    '''
 
+    def __init__(self, f_sample: float, psd: float = 1., seed=None) -> None:
+        '''
+        Creat a White Noise instance
+        ----------------------------
+        Parameters:
+        - f_sample: sampling frequencies in Hz.
+        - psd: constant value of the two-sided power
+            spectrum density
+        - seed: for the random number generator
+        '''
+        self._fs = f_sample
+        self._rms = np.sqrt(f_sample * psd)
+        self._rng = np.random.default_rng(seed)
+
+    @property
+    def fs(self) -> float:
+        '''Get the sampling frequency.'''
+        return self._fs
+
+    @property
+    def rms(self) -> float:
+        '''Get the noise signal RMS value.'''
+        return self._rms
+
+    @property
+    def get_sample(self) -> float:
+        '''Retrieve a single sample.'''
+        return self._rng.normal(loc=0., scale=self.rms)
+
+    def get_series(self, npts: int) -> np.ndarray:
+        '''Retrieve an array of npts samples.'''
+        return self._rng.normal(loc=0., scale=self.rms, size=npts)
+
+
+def white_noise(fs, size, asd):
+    '''
+    Generate a white noise
+    ----------------------
+    Parameters:
+    - fs
+    - size
+    - asd
+    '''
+    gen = WhiteNoise(fs, asd**2 / 2)
+    return gen.get_series(size)

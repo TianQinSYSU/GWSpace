@@ -15,3 +15,4 @@ from csgwsim.Burst import *
 
 from csgwsim.pyINIDetectors import *
 from csgwsim.pyOrbits import *
+from csgwsim.FastGB import *

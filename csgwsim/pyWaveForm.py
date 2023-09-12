@@ -230,6 +230,7 @@ class BHBWaveform(BasicWaveform):
         """See Marsat et al. (Eq. 16) https://journals.aps.org/prd/abstract/10.1103/PhysRevD.103.083011"""
         y22_o, y2_2_conj = self._y22()
         p0_plus, p0_cross = self._p0()
+        
         return (1/2 * y22_o * np.exp(-2j*self.psi) * (p0_plus + 1j*p0_cross) +
                 1/2 * y2_2_conj * np.exp(2j*self.psi) * (p0_plus - 1j*p0_cross))
 
@@ -346,7 +347,7 @@ class GCBWaveform(BasicWaveform):
         self.amp = self.amp/C_SI**4/(DL*MPC_SI)
         self.amp = self.amp*(PI*f0)**(2/3)
 
-    def __call__(self, t):
+    def get_hphc(self, t): # FIXME // name of the fucntion
         phase = 2*PI*(self.f0+0.5*self.fdot*t +
                       1/6*self.fddot*t*t)*t+self.phi0
         hp = self.amp*cos(phase)
@@ -474,7 +475,7 @@ class EMRIWaveform(object):
         (teuk_modes_in, ylms_in, ls, ms, ns) = mode_selector(teuk_modes, ylms, modeinds, eps=eps)
         return teuk_modes_in, ylms_in, ls, ms, ns
 
-    def __call__(self, Tobs, dt, eps=1e-5, modes=None):
+    def get_hphc(self, Tobs, dt, eps=1e-5, modes=None): # FIXME // change name
         """
         Calculate the time domain waveforms
         -----------------------------------

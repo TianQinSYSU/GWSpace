@@ -1,5 +1,6 @@
 # coding: utf-8
-# In[0]:
+# 2021-2023 Han Wang
+# wangh657@mail2.sysu.edu.cn
 
 """Gravitational Wave Parameter Class. Including convenient convention functions for various usages"""
 import numpy as np
@@ -20,9 +21,6 @@ _default = {'DL': 49.102,  # Luminosity distance (Mpc)
             'iota': 0.6459,  # Inclination angle
             'var_phi': 0,  # Observer phase
             'psi': 1.744, }  # Polarization angle
-
-
-# In[1]:
 
 
 # Note1: one can use __slots__=('mass1', 'mass2', 'etc') to fix the attributes
@@ -351,8 +349,6 @@ class WaveParasEcc(WaveParas):
         wf, freq = self.gen_ori_waveform(delta_f, f_min, f_max)
         return self.gen_tdi_from_wf(wf, freq, det, channel)
 
-
-# In[2]:
 
 waveform_approx = {'PhenomD': WaveParasPhenomD,
                    'EccFD': WaveParasEcc}

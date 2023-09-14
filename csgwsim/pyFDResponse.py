@@ -10,7 +10,7 @@
 # import numpy as np
 # from Constants import *
 from utils import dot_arr, cal_zeta, sYlm
-from pyOrbits import Orbit
+from pyOrbits import detectors
 from pyWaveForm import *
 
 
@@ -20,11 +20,11 @@ class FDResponse:
     --------------------------------
     """
 
-    def __init__(self, pars, INI, initial_T=False):
-        self.wf = BasicWaveform(pars)
-        self.orbit = Orbit(INI)
+    def __init__(self, pars, det='TQ', initial_T=False):
+        self.wf = BasicWaveform(**pars)  # TODO
+        self.orbit = detectors[det]()
         if initial_T:
-            if INI.detector == "TianQin":
+            if det == "TQ":
                 dt = 3600
             tt = np.arange(-7*dt, YRSID_SI+7*dt, dt)
             ret = self.orbit.get_position(tt)
@@ -151,7 +151,6 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import time
 
-    from pyINIDetectors import INITianQin
     from TDI import XYZ_FD, AET_FD
 
     print("This is a test for frequency domain response")
@@ -173,13 +172,12 @@ if __name__ == "__main__":
             "tc": 0,
             }
 
-    TQ = INITianQin()
-    fd = FDResponse(pars, TQ)
+    fd = FDResponse(pars)
 
     NF = 10240
     freq = 10**np.linspace(-4, 0, NF)
 
-    BHBwf = BasicWaveform(pars)
+    BHBwf = BasicWaveform(**pars)
 
     amp, phase, tf, tfp = BHBwf.amp_phase(freq)
 

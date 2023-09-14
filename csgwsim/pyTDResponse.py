@@ -10,7 +10,7 @@
 # import numpy as np
 from utils import dot_arr, cal_zeta
 # from Constants import *
-from pyOrbits import Orbit
+from pyOrbits import detectors
 from pyWaveForm import *
 
 
@@ -23,11 +23,11 @@ class TDResponse(object):
     - INI: class of initial detector parameters
     """
 
-    def __init__(self, pars, INI, initial_T=False):
-        self.wf = BasicWaveform(pars)
-        self.orbit = Orbit(INI)
+    def __init__(self, pars, det='TQ', initial_T=False):
+        self.wf = BasicWaveform(**pars)  # TODO
+        self.orbit = detectors[det]()
         if initial_T:
-            if INI.detector == 'TianQin':
+            if det == 'TQ':
                 dt = 3600
             tt = np.arange(- 7*dt, YRSID_SI+7*dt, dt)
             ret = self.orbit.get_position(tt)
@@ -143,8 +143,6 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import time
 
-    from pyINIDetectors import INITianQin
-
     print("This is TD response generation code")
 
     Tobs = 4*DAY  # YRSID_SI / 4
@@ -171,8 +169,7 @@ if __name__ == "__main__":
     # GCBwf = BasicWaveform(GCBpars)
     # hpssb, hcssb = GCBwf(tf)
 
-    TQ = INITianQin()
-    td = TDResponse(GCBpars, TQ)
+    td = TDResponse(GCBpars)
 
     st = time.time()
     yslr_ = td.Evaluate_yslr(tf_)

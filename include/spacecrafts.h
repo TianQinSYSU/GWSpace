@@ -1,5 +1,5 @@
-#ifndef SPACETRAFTS_H
-#define SPACETRAFTS_H
+#ifndef SPACECRAFTS_H
+#define SPACECRAFTS_H
 
 
 /* Photon shot noise power */
@@ -47,4 +47,4 @@ void spacecraft_LISA(double t, double *x, double *y, double *z);
 void spacecraft_TianQin(double t, double *x, double *y, double *z);
 
 
-#endif /* SPACETRAFTS_H */
+#endif /* SPACECRAFTS_H */

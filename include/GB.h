@@ -63,7 +63,7 @@ struct Waveform
 	// S/C position
 	double *x, *y, *z;
 
-	// Time varrying quantities (Re & Im) broken up into convenient segments
+	// Time varying quantities (Re & Im) broken up into convenient segments
 	double **TR, **TI;
 
 	//Package cij's into proper form for TDI subroutines

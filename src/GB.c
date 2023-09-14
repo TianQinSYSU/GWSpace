@@ -596,7 +596,7 @@ void get_transfer(struct Waveform *wfm, double t)
 				tran1r = aevol*(wfm->dplus[i][j]*wfm->DPr + wfm->dcross[i][j]*wfm->DCr);
 				tran1i = aevol*(wfm->dplus[i][j]*wfm->DPi + wfm->dcross[i][j]*wfm->DCi);
 
-				//Real and imaginry components of complex exponential
+				//Real and imaginary components of complex exponential
 				tran2r = cos(arg1 + arg2);
 				tran2i = sin(arg1 + arg2);
 

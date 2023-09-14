@@ -50,7 +50,7 @@
 #define EarthOrbitOmega_SI 1.99098659277e-7  
 /* Orbital pulsation: 2pi/year - use sidereal year as found on http://hpiers.obspm.fr/eop-pc/models/constants.html */
 
-// vernal equinox is Septemper equinox (09-22/23)
+// vernal equinox is September equinox (09-22/23)
 // perihelion is at about 01-03/04
 // (31 + 30 + 31 + 11)/365.2425 * 2 * PI
 #define Perihelion_Ang 1.772  /* angle measured from the vernal equinox to the perihelion */

@@ -11,7 +11,6 @@ from active_python_path import csgwsim
 
 import numpy as np
 GCBWaveform = csgwsim.GCBWaveform
-INITianQin = csgwsim.INITianQin
 YRSID_SI = csgwsim.Constants.YRSID_SI
 DAY = csgwsim.Constants.DAY
 
@@ -22,8 +21,7 @@ if __name__ == '__main__':
 
     st = time.time()
 
-    TQ = INITianQin()
-    TQOrbit = csgwsim.Orbit(TQ)
+    TQOrbit = csgwsim.TianQinOrbit()
 
     dt = 3600
 

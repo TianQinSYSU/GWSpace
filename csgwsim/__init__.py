@@ -11,6 +11,5 @@ import csgwsim.Constants as Constants
 import csgwsim.utils as utils
 from .pyNoise import *
 
-from .pyINIDetectors import *
 from .pyOrbits import *
 from .FastGB import *

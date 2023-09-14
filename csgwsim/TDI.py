@@ -108,8 +108,6 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import time
 
-    from pyINIDetectors import INITianQin
-
     print("This is TDI TD response generation code")
 
     Tobs = 4*DAY  # YRSID_SI / 4
@@ -136,8 +134,7 @@ if __name__ == "__main__":
     # GCBwf = BasicWaveform(GCBpars)
     # hpssb, hcssb = GCBwf(tf)
 
-    TQ = INITianQin()
-    td = TDResponse(GCBpars, TQ)
+    td = TDResponse(GCBpars)
 
     st = time.time()
     yslr_ = td.Evaluate_yslr(tf)

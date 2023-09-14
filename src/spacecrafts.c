@@ -93,9 +93,9 @@ void spacecraft_TianQin(double t, double *x, double *y, double *z)
         alpha = alpha_tq + i * 2.*PI/3.;
         csa = cos(alpha); sna = sin(alpha);
 
-        x[i] = ct * cp * csa - sp * sna;
-        y[i] = ct * sp * csa + cp * sna;
-        z[i] = - st * csa;
+        x[i] = ct * cp * sna + sp * csa;
+        y[i] = ct * sp * sna - cp * csa;
+        z[i] = - st * sna;
 
         x[i] *= Radius_tq; y[i] *= Radius_tq; z[i] *= Radius_tq;
         x[i] += x_earth; y[i] += y_earth; z[i] += z_earth;

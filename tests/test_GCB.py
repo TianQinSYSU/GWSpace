@@ -1,17 +1,17 @@
 #!/usr/bin/env python
-#-*- coding: utf-8 -*-  
-#==================================
+# -*- coding: utf-8 -*-
+# ==================================
 # File Name: test_GCB.py
 # Author: ekli
 # Mail: lekf123@163.com
 # Created Time: 2023-09-05 14:22:52
-#==================================
+# ==================================
+
+import numpy as np
 
 from active_python_path import csgwsim
 
-import numpy as np
 GCBWaveform = csgwsim.GCBWaveform
-
 
 if __name__ == '__main__':
     print("This is waveform for GCB")

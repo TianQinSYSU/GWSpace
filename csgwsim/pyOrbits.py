@@ -20,7 +20,7 @@ class Orbit(object):
     Parameters:
     - INI: initial parameters of detectors
     ----------------------------------------
-    How to using it:
+    How to use it:
     ```python
     TQ = INITianQin()
     TQOrbit = Orbit(TQ)
@@ -120,7 +120,7 @@ class Orbit(object):
             else:
                 pp0 = "v0"
 
-            pp1 = "%sL"%pp
+            pp1 = "%sL" % pp
 
             x = self._get_pos[pp0]["x"](tf)
             y = self._get_pos[pp0]["y"](tf)
@@ -183,10 +183,10 @@ class Orbit(object):
             vy *= fact
             vz *= fact
 
-            return (np.array([x, y, z]), np.array([vx, vy, vz]))
+            return np.array([x, y, z]), np.array([vx, vy, vz])
         return np.array([x, y, z])
 
-    def alpha_detecter(self, time, n):
+    def alpha_detector(self, time, n):
         kappa = 2*PI_3*(n-1)+self.kappa
         return self.Omega*time+kappa-self.perigee
 
@@ -222,7 +222,7 @@ class Orbit(object):
 
         for i in range(len(ps)):
             n = ps[i]+1
-            alp = self.alpha_detecter(time, n)
+            alp = self.alpha_detector(time, n)
             csa = np.cos(alp)
             sna = np.sin(alp)
 
@@ -241,6 +241,3 @@ class Orbit(object):
                 xyz[j, 2] = self.RT*snt*sna*self.Omega
 
         return xyz
-
-
-

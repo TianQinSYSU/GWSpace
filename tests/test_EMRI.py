@@ -1,18 +1,19 @@
 #!/usr/bin/env python
-#-*- coding: utf-8 -*-  
-#==================================
+# -*- coding: utf-8 -*-
+# ==================================
 # File Name: test_EMRI.py
 # Author: ekli
 # Mail: lekf123@163.com
 # Created Time: 2023-09-05 14:13:36
-#==================================
+# ==================================
+
+import numpy as np
 
 from csgwsim.Constants import YRSID_SI
 from csgwsim import EMRIWaveform
 
-
 if __name__ == "__main__":
-     print("This is a test of loading EMRI waveform")
+    print("This is a test of loading EMRI waveform")
     # parameters
     T = 0.01  # years
     dt = 15.0  # seconds

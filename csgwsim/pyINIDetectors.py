@@ -38,7 +38,7 @@ class INILISA:
         self.detector = "LISA"
         # LISA
         self.armLength = 25*1e8  # Arm-length (changed from 5e9 to 2.5e9 after 2017)
-        self.radius  # FIXME
+        self.radius = 25*1e8/np.sqrt(3)  # FIXME
         # ecc_lisa = 0.004824185218078991  # Eccentricity
         self.ecc = self.armLength/(2*np.sqrt(3)*AU_SI)
         self.kappa_0 = 0
@@ -53,5 +53,3 @@ class INILISA:
         self.Sacc = 9e-30  # m^2 s^-4 /Hz, 3e-15**2
         # The single-link optical metrology noise is quoted as:
         self.Smos = 2.25e-22  # m^2/Hz, 1.5e-11**2
-
-

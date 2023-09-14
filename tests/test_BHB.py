@@ -1,14 +1,17 @@
 #!/usr/bin/env python
-#-*- coding: utf-8 -*-  
-#==================================
+# -*- coding: utf-8 -*-
+# ==================================
 # File Name: test_BHB.py
 # Author: ekli
 # Mail: lekf123@163.com
 # Created Time: 2023-09-05 14:02:42
-#==================================
+# ==================================
+
+import numpy as np
 
 from csgwsim.Constants import DAY
 from csgwsim import BHBWaveform
+
 
 def test_BHB():
     print("This is the BHB waveform")

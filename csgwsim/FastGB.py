@@ -19,7 +19,7 @@ from csgwsim.utils import FrequencyArray
 from csgwsim.utils import countdown
 
 YRSID_SI = 31558149.763545600  
-## siderial year [sec] (http://hpiers.obspm.fr/eop-pc/models/constants.html)
+## sidereal year [sec] (http://hpiers.obspm.fr/eop-pc/models/constants.html)
 
 
 class FastGB:

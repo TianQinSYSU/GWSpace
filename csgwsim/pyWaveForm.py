@@ -16,7 +16,7 @@ from utils import to_m1m2
 from Constants import MSUN_SI, MSUN_unit, MPC_SI, YRSID_SI, PI, C_SI, G_SI
 from Waveforms.PyIMRPhenomD import IMRPhenomD as pyIMRD
 from Waveforms.PyIMRPhenomD import IMRPhenomD_const as PyIMRC
-from Waveforms.FastEMRIWaveforms.FastEMRI import *
+from Waveforms.FastEMRIWaveforms.FastEMRI import GenerateEMRIWaveform, EMRIInspiral, GetYlms, RomanAmplitude, ModeSelector
 
 # try:
 #     import bbh

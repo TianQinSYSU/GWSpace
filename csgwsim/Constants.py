@@ -62,6 +62,9 @@ EarthEccentricity = 0.01671
 EarthOrbitOmega_SI = 2*PI/YRSID_SI
 EarthOrbitFreq_SI = 1/YRSID_SI
 
+# mass of earth: https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
+Earth_mass = 5.9722e24 # [kg]
+
 # vernal equinox is September equinox (09-22/23)
 # perihelion is at about 01-03/04
 # (31 + 30 + 31 + 11)/365.2425 * 2 * PI

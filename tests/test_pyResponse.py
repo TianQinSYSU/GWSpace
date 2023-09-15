@@ -20,8 +20,7 @@ if __name__ == "__main__":
 
     print("Testing of BHB waveform")
 
-    pars = {"type": "BHB",
-            "m1": 3.5e6,
+    pars = {"m1": 3.5e6,
             "m2": 2.1e5,
             "chi1": 0.2,
             "chi2": 0.1,
@@ -99,8 +98,7 @@ if __name__ == "__main__":
     tf_ = np.arange(0, Tobs, delta_T)
 
     print("Testing of GCB waveform")
-    GCBpars = {"type": "GCB",
-               "Mc": 0.5,
+    GCBpars = {"Mc": 0.5,
                "DL": 0.3,
                "phi0": 0.0,
                "f0": 0.001,

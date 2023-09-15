@@ -1,17 +1,15 @@
 #!/usr/bin/env python
-#-*- coding: utf-8 -*-  
-#==================================
+# -*- coding: utf-8 -*-
+# ==================================
 # File Name: test_TDI.py
 # Author: ekli
 # Mail: lekf123@163.com
 # Created Time: 2023-09-06 09:48:18
-#==================================
+# ==================================
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import time
-
-    from pyINIDetectors import INITianQin
 
     print("This is TDI TD response generation code")
 
@@ -39,8 +37,7 @@ if __name__ == "__main__":
     # GCBwf = BasicWaveform(GCBpars)
     # hpssb, hcssb = GCBwf(tf)
 
-    TQ = INITianQin()
-    td = TDResponse(GCBpars, TQ)
+    td = TDResponse(GCBpars, )
 
     st = time.time()
     yslr_ = td.Evaluate_yslr(tf)

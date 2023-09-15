@@ -9,7 +9,6 @@
 
 import numpy as np
 from csgwsim.Constants import C_SI, PI
-import matplotlib.pyplot as plt
 from scipy import interpolate
 
 

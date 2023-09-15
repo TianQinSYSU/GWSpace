@@ -8,10 +8,6 @@
 # ==================================
 
 import numpy as np
-from pyResponse import TDResponse
-
-
-# from pyFDResponse import FDResponse
 
 
 def TDI_XYZ2AET(X, Y, Z):
@@ -45,6 +41,8 @@ def XYZ_TD(yslr, TDIgen=1):
              - y32["0L"]-y23["1L"]-y12["2L"]-y21["3L"])
         Z = (y23["0L"]+y32["1L"]+y13["2L"]+y31["3L"]
              - y13["0L"]-y31["1L"]-y23["2L"]-y32["3L"])
+    else:
+        raise NotImplementedError
 
     return X, Y, Z
 
@@ -102,67 +100,3 @@ def AET_FD(yslr, freq, LT, TDIgen=1):
     T = 1/np.sqrt(3)*(Dt2-1)*T
 
     return np.array([A, E, T])
-
-
-if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-    import time
-
-    print("This is TDI TD response generation code")
-
-    Tobs = 4*DAY  # YRSID_SI / 4
-    delta_f = 1/Tobs
-    delta_T = 1
-    f_max = 1/(2*delta_T)
-
-    tf = np.arange(0, Tobs, delta_T)
-
-    print("Testing of GCB waveform")
-    GCBpars = {"type": "GCB",
-               "Mc": 0.5,
-               "DL": 0.3,
-               "phi0": 0.0,
-               "f0": 0.001,
-               "psi": 0.2,
-               "iota": 0.3,
-               "lambda": 0.4,
-               "beta": 1.2,
-               }
-
-    print("Mc" in GCBpars.keys())
-
-    # GCBwf = BasicWaveform(GCBpars)
-    # hpssb, hcssb = GCBwf(tf)
-
-    td = TDResponse(GCBpars, )
-
-    st = time.time()
-    yslr_ = td.Evaluate_yslr(tf)
-    ed = time.time()
-
-    print("Time cost is %f s for %d points" % (ed-st, tf.shape[0]))
-
-    x, y, z = XYZ_TD(yslr_)
-
-    plt.figure()
-
-    plt.plot(tf, x, '-r')
-
-    plt.figure()
-    plt.plot(tf, y, '--b')
-
-    plt.figure()
-    plt.plot(tf, z, ':g')
-
-    a, e, t = TDI_XYZ2AET(x, y, z)
-
-    plt.figure()
-    plt.plot(tf, a, '-r')
-
-    plt.figure()
-    plt.plot(tf, e, '--b')
-
-    plt.figure()
-    plt.plot(tf, t, ':g')
-
-    plt.show()

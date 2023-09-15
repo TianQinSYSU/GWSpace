@@ -39,7 +39,7 @@ C_SI = 299792458.
 G_SI = 6.67259e-11
 MSUN_SI = 1.988546954961461467461011951140572744e30
 MTSUN_SI = 4.9254923218988636432342917247829673e-6
-MSUN_unit = G_SI*MSUN_SI / C_SI**3  # 4.926e-6  # the factor of mass(in solar mass) from the nature unit to SI
+MSUN_unit = G_SI*MSUN_SI/C_SI**3  # 4.926e-6  # the factor of mass(in solar mass) from the nature unit to SI
 PC_SI = 3.085677581491367278913937957796471611e16
 KPC_SI = 3.085677581491367278913937957796471611e19
 MPC_SI = 3.085677581491367278913937957796471611e22
@@ -63,7 +63,7 @@ EarthOrbitOmega_SI = 2*PI/YRSID_SI
 EarthOrbitFreq_SI = 1/YRSID_SI
 
 # mass of earth: https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
-Earth_mass = 5.9722e24 # [kg]
+Earth_mass = 5.9722e24  # [kg]
 
 # vernal equinox is September equinox (09-22/23)
 # perihelion is at about 01-03/04
@@ -79,8 +79,7 @@ J0806_theta = 1.65282680163863  # -4.7 = 90 + 4.7
 EPOCH_J2000_0_TAI_UTC = 32  # Leap seconds (TAI-UTC) on the J2000.0 epoch (2000 JAN 1 12h UTC)
 EPOCH_J2000_0_GPS = 630763213  # GPS seconds of the J2000.0 epoch (2000 JAN 1 12h UTC)
 
-##=========================
 # cosmological constants
-H0 = 67.4 # in km/s/Mpc: Planck 2018 1807.06209
-H0_SI = H0 * 1.e3/MPC_SI # in /s
-Omeag_m = 0.315 # Planck 2018 1807.06209
+H0 = 67.4  # in km/s/Mpc: Planck 2018 1807.06209
+H0_SI = H0*1.e3/MPC_SI  # in /s
+Omega_m = 0.315  # Planck 2018 1807.06209

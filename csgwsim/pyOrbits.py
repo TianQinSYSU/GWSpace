@@ -62,10 +62,6 @@ class TianQinOrbit(Orbit):
         self.p_23 = self.orbit_2+self.orbit_3
         self.p_31 = self.orbit_3+self.orbit_1
 
-        # self.p_0_12 = self.p_12 - 2*self.p_0
-        # self.p_0_23 = self.p_23 - 2*self.p_0
-        # self.p_0_31 = self.p_31 - 2*self.p_0
-
         # The unit vector between three spacecrafts
         self.Uni_vec_12 = (self.orbit_2-self.orbit_1)/self.L_T
         self.Uni_vec_13 = (self.orbit_3-self.orbit_1)/self.L_T

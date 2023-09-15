@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # ==================================
-# File Name: pyFDResponse.py
+# File Name: pyResponse.py
 # Author: ekli
 # Mail: lekf123@163.com
 # Created Time: 2023-08-01 14:55:20
 # ==================================
 
-# import numpy as np
-# from Constants import *
+import numpy as np
+from Constants import YRSID_SI
 from utils import dot_arr, cal_zeta, sYlm
 from pyOrbits import detectors
-from pyWaveForm import *
+from pyWaveForm import BasicWaveform
 
 
 class FDResponse:
@@ -147,80 +147,119 @@ class FDResponse:
         return yslr
 
 
-if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-    import time
+class TDResponse(object):
+    """
+    Response in the time domain
+    ---------------------------
+    parameter:
+    - pars: dict for gravitational wave parameters
+    """
 
-    from TDI import XYZ_FD, AET_FD
+    def __init__(self, pars, time, det='TQ'):
+        self.wf = BasicWaveform(**pars)  # TODO
+        self.orbit = detectors[det](time)
+        self.LT = self.orbit.armLength
 
-    print("This is a test for frequency domain response")
+    def H(self, tf, nl):
+        """
+        Calculate n^i h_{ij} n^j
+        ------------------------
+        Parameters
+        ----------
+        - tf: time array
+        - nl: unit vector from sender to receiver
 
-    print("Testing of BHB waveform")
+        Return
+        ------
+        -
+        """
+        u = self.wf.vec_u
+        v = self.wf.vec_v
+        hpssb, hcssb = self.wf.get_hphc(tf)
+        tf_size = tf.shape[0]
+        h_size = hpssb.shape[0]
+        if tf_size > h_size:
+            hp = np.zeros_like(tf)
+            hc = np.zeros_like(tf)
+            hp[:h_size] = hpssb
+            hc[:h_size] = hcssb
+        elif tf_size < h_size:
+            hp = hpssb[-tf_size:]
+            hc = hcssb[-tf_size:]
+        else:
+            hp = hpssb
+            hc = hcssb
 
-    pars = {"type": "BHB",
-            "m1": 3.5e6,
-            "m2": 2.1e5,
-            "chi1": 0.2,
-            "chi2": 0.1,
-            "DL": 1e3,
-            "phic": 0.0,
-            "MfRef_in": 0,
-            "psi": 0.2,
-            "iota": 0.3,
-            "lambda": 0.4,
-            "beta": 1.2,
-            "tc": 0,
-            }
+        xi_p, xi_c = cal_zeta(u, v, nl)
+        return hp*xi_p+hc*xi_c
 
-    fd = FDResponse(pars)
+    def Evaluate_yslr(self, tf, TDIgen=1):
+        if TDIgen == 1:
+            TDIdelay = 4
 
-    NF = 10240
-    freq = 10**np.linspace(-4, 0, NF)
+        p0 = self.orbit.get_position_px(tf, pp="p0")
+        p1L, p2L, p3L = self.orbit.get_position_px(tf, pp="all")
+        # p2L = self.orbit.get_position_px(tf, pp="p2")
+        # p3L = self.orbit.get_position_px(tf, pp="p3")
 
-    BHBwf = BasicWaveform(**pars)
+        L = self.LT
+        n1 = (p2L-p3L)/L
+        n2 = (p3L-p1L)/L
+        n3 = (p1L-p2L)/L
+        p1 = p0+p1L
+        p2 = p0+p2L
+        p3 = p0+p3L
 
-    amp, phase, tf, tfp = BHBwf.amp_phase(freq)
+        k = self.wf.vec_k
 
-    st = time.time()
+        kp1 = dot_arr(k, p1)
+        kn1 = dot_arr(k, n1)
+        kp2 = dot_arr(k, p2)
+        kn2 = dot_arr(k, n2)
+        kp3 = dot_arr(k, p3)
+        kn3 = dot_arr(k, n3)
 
-    Gslr, zeta = fd.EvaluateGslr(tf[(2, 2)], freq)  # fd.Evaluate_yslr(freq)
-    yslr_ = fd.Evaluate_yslr(freq)  # fd.Evaluate_yslr(freq)
-    ed = time.time()
+        H3_p2 = {}
+        H3_p1 = {}
+        H1_p3 = {}
+        H1_p2 = {}
+        H2_p3 = {}
+        H2_p1 = {}
 
-    print(f"time cost for the fd response is {ed-st} s")
+        tt = [tf-kp1, tf-kp2, tf-kp3]
 
-    mode = [(2, 2)]
-    ln = [(1, 2), (2, 3), (3, 1), (1, 3), (3, 2), (2, 1)]
+        for i in range(TDIdelay+1):
+            tag = self.LT*i
+            H3_p2[i] = self.H(tf-kp2-tag, n3)
+            H3_p1[i] = self.H(tf-kp1-tag, n3)
+            H1_p3[i] = self.H(tf-kp3-tag, n1)
+            H1_p2[i] = self.H(tf-kp2-tag, n1)
+            H2_p3[i] = self.H(tf-kp3-tag, n2)
+            H2_p1[i] = self.H(tf-kp1-tag, n2)
 
-    for ll in ln:
-        plt.figure()
-        gg = Gslr[ll]
-        yy = yslr_[mode[0]][ll]
-        plt.plot(freq, gg, '-r')
-        plt.plot(freq, yy, '--b')
-        plt.title(ll)
+        yslr = {}
+        y12 = {}
+        y23 = {}
+        y31 = {}
+        y21 = {}
+        y32 = {}
+        y13 = {}
 
-        plt.xscale('log')
+        for i in range(TDIdelay):
+            y12["%sL" % i] = (H3_p1[i+1]-H3_p2[i])/2/(1+kn3)
+            y21["%sL" % i] = (H3_p2[i+1]-H3_p1[i])/2/(1-kn3)
 
-    X, Y, Z = XYZ_FD(yslr_[(2, 2)], freq, LT=fd.LT)
-    A, E, T = AET_FD(yslr_[(2, 2)], freq, fd.LT)
+            y23["%sL" % i] = (H1_p2[i+1]-H1_p3[i])/2/(1+kn1)
+            y32["%sL" % i] = (H1_p3[i+1]-H1_p2[i])/2/(1-kn1)
 
-    plt.figure()
-    plt.loglog(freq, np.abs(X), '-r', label='X')
-    plt.loglog(freq, np.abs(Y), '--g', label='Y')
-    plt.loglog(freq, np.abs(Z), ':b', label='Z')
+            y31["%sL" % i] = (H2_p3[i+1]-H2_p1[i])/2/(1+kn2)
+            y13["%sL" % i] = (H2_p1[i+1]-H2_p3[i])/2/(1-kn2)
 
-    plt.xlabel('f')
-    plt.ylabel('X,Y,Z')
-    plt.legend(loc='best')
+        yslr[(1, 2)] = y12
+        yslr[(2, 1)] = y21
+        yslr[(2, 3)] = y23
+        yslr[(3, 2)] = y32
+        yslr[(3, 1)] = y31
+        yslr[(1, 3)] = y13
 
-    plt.figure()
-    plt.loglog(freq, np.abs(A), '-r', label='A')
-    plt.loglog(freq, np.abs(E), '--g', label='E')
-    plt.loglog(freq, np.abs(T), ':b', label='T')
-
-    plt.xlabel('f')
-    plt.ylabel('A,E,T')
-    plt.legend(loc='best')
-
-    plt.show()
+        return yslr

@@ -8,7 +8,7 @@
 # ==================================
 
 import numpy as np
-from pyTDResponse import TDResponse
+from pyResponse import TDResponse
 
 
 # from pyFDResponse import FDResponse
@@ -134,7 +134,7 @@ if __name__ == "__main__":
     # GCBwf = BasicWaveform(GCBpars)
     # hpssb, hcssb = GCBwf(tf)
 
-    td = TDResponse(GCBpars)
+    td = TDResponse(GCBpars, )
 
     st = time.time()
     yslr_ = td.Evaluate_yslr(tf)

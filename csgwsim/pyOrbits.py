@@ -9,56 +9,16 @@
 """Space detectors' orbits, note that the orbits are in nature unit(in second)"""
 
 import numpy as np
-# from scipy.interpolate import InterpolatedUnivariateSpline as Spline
 from csgwsim.Constants import C_SI, PI, PI_3, EarthOrbitFreq_SI, EarthEccentricity, Perihelion_Ang, AU_T
 
 
 class Orbit(object):
-    __slots__ = ('_get_pos', 'kappa0', 'orbit_1', 'orbit_2', 'orbit_3',
+    __slots__ = ('_get_pos', 'kappa0', 'orbit_1', 'orbit_2', 'orbit_3', 'p_0',
                  'p_12', 'p_23', 'p_31', 'Uni_vec_12', 'Uni_vec_13', 'Uni_vec_23')
     armLength = None
     f_0 = None  # orbital frequency
     ecc = 0.
     beta0 = 0.  # angle measured from the \tilde{x} axis to the perigee of the spacecraft orbit
-    # perigee = 0.0
-    # kappa_0 = 0
-
-    def __init__(self):
-        """
-        Calculate the position and do the spline
-        -----------------------------------------
-        Initial the position and velocity of spacecrafts,
-        to get the spline class for position and velocity.
-        -----------------------------------------
-        Parameters:
-        - time: array
-        """
-        # FIXME!!!
-        self._get_pos = {}
-        # for pp in ["p0", "p1L", "p2L", "p3L", "v0", "v1L", "v2L", "v3L"]:
-        #     self._get_pos[pp] = {}
-        #     for i, x in enumerate(["x", "y", "z"]):
-        #         self._get_pos[pp][x] = Spline(time, getattr(self, pp)[i])
-
-    def get_position(self, tf, pp='p0'):
-        """
-        Return the position of different point:
-        -----------------------------------
-        pp: chose one in
-            ["p0", "p1L", "p2L", "p3L",
-            "p1", "p2", "p3",
-            "n1", "n2", "n3",
-            "v0", "v1L", "v2L", "v3L",
-            "v1", "v2", "v3"]
-        """
-        # TODO
-        if pp in ["p0", "p1L", "p2L", "p3L", "v0", "v1L", "v2L", "v3L"]:
-            x = self._get_pos[pp]["x"](tf)
-            y = self._get_pos[pp]["y"](tf)
-            z = self._get_pos[pp]["z"](tf)
-            return np.array([x, y, z])
-        else:
-            pass
 
     @property
     def L_T(self):
@@ -92,10 +52,10 @@ class TianQinOrbit(Orbit):
         alp_t3 = self.alpha_detector(time, n=3)
 
         # 3D coordinate of each spacecraft vector (SSB)
-        earth_orbit = self.earth_orbit_xyz(time)
-        self.orbit_1 = earth_orbit+self.detector_orbit_xyz(alp_t1)
-        self.orbit_2 = earth_orbit+self.detector_orbit_xyz(alp_t2)
-        self.orbit_3 = earth_orbit+self.detector_orbit_xyz(alp_t3)
+        self.p_0 = self.earth_orbit_xyz(time)
+        self.orbit_1 = self.p_0+self.detector_orbit_xyz(alp_t1)
+        self.orbit_2 = self.p_0+self.detector_orbit_xyz(alp_t2)
+        self.orbit_3 = self.p_0+self.detector_orbit_xyz(alp_t3)
 
         # For TDI response
         self.p_12 = self.orbit_1+self.orbit_2
@@ -131,11 +91,11 @@ class TianQinOrbit(Orbit):
         x = AU_T * (csa + 0.5*EarthEccentricity * (csa2-3) - 3/4*EarthEccentricity**2 * csa * (1-csa2))
         y = AU_T * (sia + 0.5*EarthEccentricity * sia2 + 1/4*EarthEccentricity**2 * sia * (3*csa2-1))
         z = np.zeros(len(csa))
-        return x, y, z
+        return np.array([x, y, z])
 
-    def p_0(self, time):
-        """TQ constellation center: (TQ1+TQ2+TQ3)/3 (Earth barycenter)"""
-        return self.earth_orbit_xyz(time)
+    # def p_0(self, time):
+    #     """TQ constellation center: (TQ1+TQ2+TQ3)/3 (Earth barycenter)"""
+    #     return self.earth_orbit_xyz(time)
 
     def detector_orbit_xyz(self, alp_t):
         sin_alp_t, cos_alp_t, cos_alp_2_t = np.sin(alp_t), np.cos(alp_t), np.cos(2*alp_t)
@@ -189,6 +149,7 @@ class LISAOrbit(Orbit):
         # ecc_lisa = 0.004824185218078991  # Eccentricity
         return self.L_T/(2 * 3**0.5 * AU_T)
 
+    @property
     def p_0(self):
         return (self.orbit_1+self.orbit_2+self.orbit_3) / 3
 

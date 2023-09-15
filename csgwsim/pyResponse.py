@@ -81,7 +81,7 @@ class FDResponse:
         sinc21 = np.sinc(prefact*(1.-kn3))
         sinc12 = np.sinc(prefact*(1.+kn3))
 
-        prefacts = 1j/2.*prefact
+        prefacts = -1j * prefact
         yy12 = prefacts*exp12  # * n3Hn3
         yy23 = prefacts*exp23  # * n1Hn1
         yy31 = prefacts*exp31  # * n2Hn2

@@ -70,9 +70,9 @@ class FDResponse:
 
         prefact = np.pi*freq*self.LT
 
-        exp12 = np.exp(1j*(prefact+kp1p2))
-        exp23 = np.exp(1j*(prefact+kp2p3))
-        exp31 = np.exp(1j*(prefact+kp3p1))
+        exp12 = np.exp(1j*np.pi*freq*(self.LT+kp1p2))
+        exp23 = np.exp(1j*np.pi*freq*(self.LT+kp2p3))
+        exp31 = np.exp(1j*np.pi*freq*(self.LT+kp3p1))
 
         sinc32 = np.sinc(prefact*(1.-kn1))
         sinc23 = np.sinc(prefact*(1.+kn1))

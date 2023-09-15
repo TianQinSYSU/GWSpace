@@ -78,3 +78,9 @@ J0806_theta = 1.65282680163863  # -4.7 = 90 + 4.7
 # Constants used to relate time scales
 EPOCH_J2000_0_TAI_UTC = 32  # Leap seconds (TAI-UTC) on the J2000.0 epoch (2000 JAN 1 12h UTC)
 EPOCH_J2000_0_GPS = 630763213  # GPS seconds of the J2000.0 epoch (2000 JAN 1 12h UTC)
+
+##=========================
+# cosmological constants
+H0 = 67.4 # in km/s/Mpc: Planck 2018 1807.06209
+H0_SI = H0 * 1.e3/MPC_SI # in /s
+Omeag_m = 0.315 # Planck 2018 1807.06209

@@ -19,10 +19,6 @@ except OSError:
     _rlib = cdll.LoadLibrary(so_file[0])
 
 
-MSUN_SI = 1.988546954961461467461011951140572744e30
-MPC_SI = 3.085677581491367278913937957796471611e22
-
-
 class _EccFDWaveform(Structure):
     """Note: The 'data' actually should be POINTER(c_complex), but ctypes do not have that,
     so we finally use buffer to restore the data, then any types of number in POINTER() is OK.
@@ -35,33 +31,33 @@ class _EccFDWaveform(Structure):
 
 
 def gen_ecc_fd_waveform(mass1, mass2, eccentricity, distance,
-        coa_phase=0., inclination=0., long_asc_nodes=0.,
-        delta_f=None, f_lower=None, f_final=0., obs_time=0.):
+                        coa_phase=0., inclination=0., long_asc_nodes=0.,
+                        delta_f=None, f_lower=None, f_final=0., obs_time=0.):
     """Note: Thanks to https://stackoverflow.com/questions/5658047"""
     f = _rlib.SimInspiralEccentricFD
     htilde = POINTER(_EccFDWaveform)()
     # **htilde, phiRef, deltaF, m1_SI, m2_SI, fStart, fEnd, i, r, inclination_azimuth, e_min
     f.argtypes = [POINTER(POINTER(_EccFDWaveform)),
-            c_double, c_double, c_double, c_double, c_double,
-            c_double, c_double, c_double, c_double, c_double, c_double]
+                  c_double, c_double, c_double, c_double, c_double,
+                  c_double, c_double, c_double, c_double, c_double, c_double]
     _ = f(
-            byref(htilde),
-            coa_phase, 
-            delta_f, 
-            mass1, 
-            mass2,
-            f_lower, 
-            f_final, 
-            inclination,
-            distance, 
-            long_asc_nodes,
-            eccentricity, 
-            obs_time
-            )
+        byref(htilde),
+        coa_phase,
+        delta_f,
+        mass1,
+        mass2,
+        f_lower,
+        f_final,
+        inclination,
+        distance,
+        long_asc_nodes,
+        eccentricity,
+        obs_time
+    )
 
     length = htilde.contents.length*2
     hp_, hc_ = (_arr_from_buffer(htilde.contents.data_p, length),
-            _arr_from_buffer(htilde.contents.data_c, length))
+                _arr_from_buffer(htilde.contents.data_c, length))
     _rlib.DestroyComplex16FDWaveform(htilde)
     return hp_.view(complex128), hc_.view(complex128)
 
@@ -86,19 +82,19 @@ def gen_ecc_fd_amp_phase(mass1, mass2, eccentricity, distance,
                   c_double, c_double, c_double, c_double, c_double,
                   c_double, c_double, c_double, c_double, c_double, c_double]
     _ = f(
-            byref(h_amp_phase),
-            coa_phase, 
-            delta_f,
-            mass1,
-            mass2,
-            f_lower, 
-            f_final,
-            inclination,
-            distance,
-            long_asc_nodes,
-            eccentricity,
-            obs_time
-            )
+        byref(h_amp_phase),
+        coa_phase,
+        delta_f,
+        mass1,
+        mass2,
+        f_lower,
+        f_final,
+        inclination,
+        distance,
+        long_asc_nodes,
+        eccentricity,
+        obs_time
+    )
 
     list_of_h = h_amp_phase[:10]
 
@@ -141,6 +137,3 @@ def _arr_from_buffer(p, length):
       The copy() is used for the np.ndarray to acquire ownership,
       then you can safely free pointers to avoid memory leaks."""
     return frombuffer(cast(p, POINTER(c_double*length)).contents, float64).copy()
-
-
-

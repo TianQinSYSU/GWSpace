@@ -1,19 +1,23 @@
 #!/usr/bin/env python
-#-*- coding: utf-8 -*-  
-#==================================
+# -*- coding: utf-8 -*-
+# ==================================
 # File Name: test_eccfd.py
 # Author: ekli
 # Mail: lekf123@163.com
 # Created Time: 2023-09-14 19:49:41
-#==================================
+# ==================================
 
-import os, sys
+import sys
+from csgwsim.eccentric_fd import gen_ecc_fd_waveform, gen_ecc_fd_amp_phase, gen_ecc_fd_and_phase
+
 sys.path.append("/home/ekli/Documents/csgwd_BackUP/EccentricFD/build/lib.linux-x86_64-3.9")
 
-from eccentric_fd.eccentric_fd import *
+MSUN_SI = 1.988546954961461467461011951140572744e30
+MPC_SI = 3.085677581491367278913937957796471611e22
 
 if __name__ == '__main__':
     from time import time, strftime
+
     para = {'delta_f': 0.0001,
             'f_final': 1,
             'f_lower': 0.01,

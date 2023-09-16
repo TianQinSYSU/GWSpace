@@ -1,8 +1,13 @@
 # Code for Space-borne Gravitational-Wave Detectors (CSGWD)
 
-To compile the waveforms, you can use `install_local.sh`
+This is a simple Code for the Science Data Simulator of Space-based gravitational wave detectors.
+
+To compile the code, using `python setup.py install --with-gsl=/your/gsl/path`
+
+
 
 ## Lib dependence
+
 
 In order to use the `PyIMRPhenomD` code, you should install `numpy`, `scipy`, `numba` and `interpolation` in your python environment. 
 TO use the `FastEMRIWaveforms`, you need install the `gsl` and `lapack`.
@@ -38,3 +43,4 @@ Install in your own path
 ```
 pip install numba
 ```
+

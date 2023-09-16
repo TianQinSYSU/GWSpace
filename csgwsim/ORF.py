@@ -8,17 +8,7 @@
 #==================================
 
 import numpy as np
-
-def get_uvk(lambd, beta):
-    snl = np.sin(lambd)
-    csl = np.cos(lambd)
-    snb = np.sin(beta)
-    csb = np.cos(beta)
-
-    u = np.array([snl, -csl, 0])
-    v = np.array([-snb * csl, - sinb*snl, csb])
-    k = np.array([-csb * csl, -snl*csb, -snb])
-    return (u,v,k)
+from utils import get_uvk
 
 
 def polarization_tensor(u, v):

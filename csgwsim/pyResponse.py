@@ -9,9 +9,9 @@
 
 import numpy as np
 from Constants import YRSID_SI
-from utils import dot_arr, cal_zeta, sYlm
+from utils import dot_arr, get_uvk, cal_zeta, sYlm, sinc
 from pyOrbits import detectors
-from pyWaveForm import BasicWaveform
+#from pyWaveForm import BasicWaveform
 
 
 class FDResponse:
@@ -21,7 +21,7 @@ class FDResponse:
     """
 
     def __init__(self, pars, det='TQ', initial_T=False):
-        self.wf = BasicWaveform(**pars)  # TODO
+        ##self.wf = BasicWaveform(**pars)  # TODO
         self.orbit = detectors[det]()
         if initial_T:
             if det == "TQ":
@@ -31,13 +31,17 @@ class FDResponse:
 
         self.LT = self.orbit.armLT
 
-        self.u = self.wf.vec_u
-        self.v = self.wf.vec_v
-        self.k = self.wf.vec_k
+    def EvaluateTslr(self, tf, freq, lambd=0, beta=0):
+        '''
+        Calculate transfer func
+        ---------------------------
+        Parameters:
+        - tf:
+        - freq:
+        - lambd, beta: source position
+        '''
 
-    def EvaluateGslr(self, tf, freq):
-
-        k = self.k
+        u,v,k = get_uvk(lambd, beta)
 
         p0 = self.orbit.get_position_px(tf, pp="p0")
         p1L, p2L, p3L = self.orbit.get_position_px(tf, pp="all")
@@ -60,51 +64,73 @@ class FDResponse:
         # n2Hn2 = dot_arr_H_arr(n2, H, n2)
         # n3Hn3 = dot_arr_H_arr(n3, H, n3)
         zeta = {}
-        zeta['p3'], zeta['c3'] = cal_zeta(self.u, self.v, n3)
-        zeta['p2'], zeta['c2'] = cal_zeta(self.u, self.v, n2)
-        zeta['p1'], zeta['c1'] = cal_zeta(self.u, self.v, n1)
+        zeta['p3'], zeta['c3'] = cal_zeta(u, v, n3)
+        zeta['p2'], zeta['c2'] = cal_zeta(u, v, n2)
+        zeta['p1'], zeta['c1'] = cal_zeta(u, v, n1)
 
         kp1p2 = dot_arr(k, (p1+p2))
         kp2p3 = dot_arr(k, (p2+p3))
         kp3p1 = dot_arr(k, (p3+p1))
 
-        prefact = np.pi*freq*self.LT
+        #prefact = np.pi*freq*self.LT
+        # This is due to that sinc(x) defined in numpy is sin(pi x)/(pi x)
+        prefact = freq * self.LT
 
         exp12 = np.exp(1j*np.pi*freq*(self.LT+kp1p2))
         exp23 = np.exp(1j*np.pi*freq*(self.LT+kp2p3))
         exp31 = np.exp(1j*np.pi*freq*(self.LT+kp3p1))
 
-        # In numpy, the sinc function is sin(pi x)/(pi x)
-        sinc32 = np.sinc(freq*self.LT*(1.-kn1))
-        sinc23 = np.sinc(freq*self.LT*(1.+kn1))
-        sinc13 = np.sinc(freq*self.LT*(1.-kn2))
-        sinc31 = np.sinc(freq*self.LT*(1.+kn2))
-        sinc21 = np.sinc(freq*self.LT*(1.-kn3))
-        sinc12 = np.sinc(freq*self.LT*(1.+kn3))
+        sinc32 = np.sinc(prefact*(1.-kn1))
+        sinc23 = np.sinc(prefact*(1.+kn1))
+        sinc13 = np.sinc(prefact*(1.-kn2))
+        sinc31 = np.sinc(prefact*(1.+kn2))
+        sinc21 = np.sinc(prefact*(1.-kn3))
+        sinc12 = np.sinc(prefact*(1.+kn3))
 
-        yy12 = -1j*prefact*exp12  # * n3Hn3
-        yy23 = -1j*prefact*exp23  # * n1Hn1
-        yy31 = -1j*prefact*exp31  # * n2Hn2
+        #prefacts = -1j * prefact
+        prefacts = -1j*np.pi * prefact
 
-        Gslr = {(3, 2): yy23*sinc32,
+        yy12 = prefacts*exp12  # * n3Hn3
+        yy23 = prefacts*exp23  # * n1Hn1
+        yy31 = prefacts*exp31  # * n2Hn2
+
+        Tslr = {(3, 2): yy23*sinc32,
                 (2, 3): yy23*sinc23,
                 (1, 3): yy31*sinc13,
                 (3, 1): yy31*sinc31,
                 (2, 1): yy12*sinc21,
                 (1, 2): yy12*sinc12}
 
-        return Gslr, zeta
+        return Tslr, zeta
 
-    def Evaluate_yslr(self, freq, mode=[(2, 2)]):
+    def Evaluate_yslr_hphc(self, tf, freq, hp, hc, lambd=0, beta=0):
+        '''
+        Calculate yslr for hp and hc
+        -----------------------------
+        '''
+        Tslr, zeta = self.EvaluateTslr(tf, freq, lambd, beta)
+        H1 = zeta['p1'] * hp + zeta['c1'] * hc
+        H2 = zeta['p2'] * hp + zeta['c2'] * hc
+        H3 = zeta['p3'] * hp + zeta['c3'] * hc
+        yslr = {(2,3): Tslr[(2,3)] * H1,
+                (3,2): Tslr[(3,2)] * H1,
+                (1,3): Tslr[(1,3)] * H2,
+                (3,1): Tslr[(3,1)] * H2,
+                (2,1): Tslr[(2,1)] * H3,
+                (1,2): Tslr[(1,2)] * H3}
+
+        return yslr        
+
+    def Evaluate_yslr(self, freq, wf, mode=[(2, 2)]):
         """
         Calculate yslr for all the modes
         --------------------------------
         - h: h(f) --> h_22 = h[(2,2)]
         """
-        exp_2psi = np.exp(-1j*2*self.wf.psi)
-        exp2psi = np.exp(1j*2*self.wf.psi)
+        exp_2psi = np.exp(-1j*2*wf.psi)
+        exp2psi = np.exp(1j*2*wf.psi)
 
-        amp, phase, tf, dtf = self.wf.amp_phase(freq, mode)
+        amp, phase, tf, dtf = wf.amp_phase(freq, mode)
         yslr = {}
 
         for lm in mode:
@@ -112,10 +138,10 @@ class FDResponse:
 
             hlm = np.exp(1j*phase[lm])  # without amp
             hl_m = np.exp(-1j*phase[lm])  # without amp
-            Gslr, zeta = self.EvaluateGslr(tf[lm], freq)
+            Gslr, zeta = self.EvaluateTslr(tf[lm], freq, wf.Lambda, wf.Beta)
 
-            ylm = sYlm(-2, l, m, self.wf.iota, self.wf.varphi)
-            yl_m = sYlm(-2, l, -m, self.wf.iota, self.wf.varphi)
+            ylm = sYlm(-2, l, m, wf.iota, wf.varphi)
+            yl_m = sYlm(-2, l, -m, wf.iota, wf.varphi)
 
             def niPlxni(i, y1, y2):
                 zp = zeta['p%s' % i]

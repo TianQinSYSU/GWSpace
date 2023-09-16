@@ -41,8 +41,6 @@
 //#define Tobs 31457280.000000// 125829120.00000//31457280.000000
 
 
-void instrument_noise(double f, double *SAE, double *SXYZ);
-
 void spacecraft_LISA(double t, double *x, double *y, double *z);
 void spacecraft_TianQin(double t, double *x, double *y, double *z);
 

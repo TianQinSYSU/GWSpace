@@ -5,30 +5,6 @@
 #include "spacecrafts.h"
 #include "Constants.h"
 
-void instrument_noise(double f, double *SAE, double *SXYZ)
-{
-    //Power spectral density of the detector noise and transfer frequency
-    double red, Sloc;
-    double trans;
-        
-    red  = 16.0*(pow((2.0e-5/f), 10.0)+ (1.0e-4/f)*(1.0e-4/f));
-    Sloc = 2.89e-24;
-    
-    // Calculate the power spectral density of the detector noise at the given frequency
-    trans = pow(sin(f/fstar), 2.0);
-    
-    *SAE = 16.0/3.0*trans*( (2.0+cos(f/fstar))*(Sps + Sloc) 
-    					    +2.0*( 3.0 + 2.0*cos(f/fstar) + cos(2.0*f/fstar) )
-    					        *( Sloc/2.0 + Sacc/pow(2.0*PI*f,4.0)*(1.0+red) ) )
-    					  / pow(2.0*Larm,2.0);
-    
-    *SXYZ = 4.0*trans*( 4.0*(Sps+Sloc) 
-                      + 8.0*( 1.0+pow(cos(f/fstar),2.0) )*( Sloc/2.0 + Sacc/pow(2.0*PI*f,4.0)*(1.0+red) ) )
-                       / pow(2.0*Larm,2.0);
-    
-    return;
-}
-
 void spacecraft_LISA(double t, double *x, double *y, double *z)
 {
 	double alpha;

@@ -74,17 +74,17 @@ class FDResponse:
         exp23 = np.exp(1j*np.pi*freq*(self.LT+kp2p3))
         exp31 = np.exp(1j*np.pi*freq*(self.LT+kp3p1))
 
-        sinc32 = np.sinc(prefact*(1.-kn1))
-        sinc23 = np.sinc(prefact*(1.+kn1))
-        sinc13 = np.sinc(prefact*(1.-kn2))
-        sinc31 = np.sinc(prefact*(1.+kn2))
-        sinc21 = np.sinc(prefact*(1.-kn3))
-        sinc12 = np.sinc(prefact*(1.+kn3))
+        # In numpy, the sinc function is sin(pi x)/(pi x)
+        sinc32 = np.sinc(freq*self.LT*(1.-kn1))
+        sinc23 = np.sinc(freq*self.LT*(1.+kn1))
+        sinc13 = np.sinc(freq*self.LT*(1.-kn2))
+        sinc31 = np.sinc(freq*self.LT*(1.+kn2))
+        sinc21 = np.sinc(freq*self.LT*(1.-kn3))
+        sinc12 = np.sinc(freq*self.LT*(1.+kn3))
 
-        prefacts = -1j * prefact
-        yy12 = prefacts*exp12  # * n3Hn3
-        yy23 = prefacts*exp23  # * n1Hn1
-        yy31 = prefacts*exp31  # * n2Hn2
+        yy12 = -1j*prefact*exp12  # * n3Hn3
+        yy23 = -1j*prefact*exp23  # * n1Hn1
+        yy31 = -1j*prefact*exp31  # * n2Hn2
 
         Gslr = {(3, 2): yy23*sinc32,
                 (2, 3): yy23*sinc23,

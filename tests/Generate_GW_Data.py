@@ -106,7 +106,7 @@ def Generate_FD_Data(pars, show_yslr=False):
 
     BHBwf = WaveForm(pars)
 
-    amp, phase, tf, tfp = BHBwf.amp_phase(freq)
+    amp, phase, tf, tfp = BHBwf.get_amp_phase(freq, )
 
     st = time.time()
 

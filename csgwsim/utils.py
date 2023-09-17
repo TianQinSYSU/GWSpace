@@ -145,7 +145,7 @@ def icrs_to_ecliptic(ra, dec, center='bary'):
         cot = co.transform_to(GeocentricTrueEcliptic)
     else:
         raise ValueError("'center' should be 'bary' or 'geo'")
-    return cot.lon.rad, cot.lat.rad
+    return cot.lon.rad, cot.lat.rad  # (Lambda, Beta)
 
 
 def deg2rad(deg):

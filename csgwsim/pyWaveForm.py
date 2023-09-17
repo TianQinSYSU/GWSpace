@@ -173,35 +173,19 @@ class BHBWaveform(BasicWaveform):
     - chi1, chi2: spin of the two black holes
     - DL: in MPC
     """
-    __slots__ = ('chi1', 'chi2', 'ra', 'dec', 'h22')
+    __slots__ = ('chi1', 'chi2', 'h22')
     # _true_para_key = ('DL', 'Mc', 'eta', 'chi1', 'chi2', 'phi_c', 'iota', 'tc', 'var_phi', 'psi', 'Lambda', 'Beta')
     # fisher_key = ('Mc', 'eta', 'chi1', 'chi2', 'DL', 'phi_c', 'iota', 'tc', 'Lambda', 'Beta', 'psi')
 
     def __init__(self, mass1, mass2, DL=1., Lambda=None, Beta=None,
-                 phi_c=0., T_obs=None, tc=0., iota=0., var_phi=0., psi=0., chi1=0., chi2=0.,
-                 ra=None, dec=None, **kwargs):
+                 phi_c=0., T_obs=None, tc=0., iota=0., var_phi=0., psi=0., chi1=0., chi2=0., **kwargs):
 
         BasicWaveform.__init__(self, mass1, mass2, DL, Lambda, Beta,
                                phi_c, T_obs, tc, iota, var_phi, psi, **kwargs)
         self.chi1 = chi1
         self.chi2 = chi2
-        self.ra = ra
-        self.dec = dec
         # self.MfRef_in = MfRef_in
         # self.fRef = fRef  # 0.
-
-        if (self.Lambda is not None) and (self.Beta is not None):
-            # print(f'[WaveParas]<Sky location is given by Ecliptic frame:'
-            #       f'\n(lon, lat) in rad:({self.Lambda:.3f}, {self.Beta:.3f})>')
-            pass
-        else:
-            try:
-                from utils import icrs_to_ecliptic
-                self.Lambda, self.Beta = icrs_to_ecliptic(ra, dec)
-                print(f'[WaveParas]<Sky location is given by ICRS frame:'
-                      f'\n(ra, dec) in rad:({ra:.3f}, {dec:.3f})>')
-            except AttributeError:
-                raise ValueError('ParameterClass without *valid* sky location parameters!') from None
 
         # if not det_frame_para:
         #     self.raw_source_masses = {'mass1': self.mass1, 'mass2': self.mass2,
@@ -259,7 +243,7 @@ class BHBWaveform(BasicWaveform):
 
         return self.h22
 
-    def amp_phase(self, freq, mode):
+    def get_amp_phase(self, freq, mode=None):
         """
         Generate the amp and phase in frequency domain
         ----------------------------------------------
@@ -285,19 +269,6 @@ class BHBWaveform(BasicWaveform):
 
         return amp, phase, tf, tfp
 
-    # def gen_ori_waveform(self, delta_f=None, f_min=None, f_max=1.):
-    #     """Generate f-domain TDI waveform(IMRPhenomD, h22 mode)"""
-    #     from pyIMRPhenomD import IMRPhenomDh22AmpPhase
-    #     if delta_f is None:
-    #         delta_f = 1/self.T_obs
-    #     freq_phd = np.arange(np.ceil(f_min/delta_f)*delta_f, f_max, delta_f)
-    #     # freq_phd = np.arange(f_min, f_max, delta_f)  # TODO
-    #     wf_phd_class = IMRPhenomDh22AmpPhase(freq_phd, *self.wave_para_phenomd())
-    #     freq, amp, phase = wf_phd_class.GetWaveform()  # freq, amp, phase
-    #     # these are actually cython pointers, we should also use .copy() to acquire ownership
-    #     wf = (freq.copy(), amp.copy(), phase.copy())
-    #
-    #     return wf
 
 
 class BHBWaveformEcc(BHBWaveform):

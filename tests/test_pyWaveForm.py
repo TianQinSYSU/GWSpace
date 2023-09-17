@@ -1,11 +1,17 @@
 #!/usr/bin/env python
-#-*- coding: utf-8 -*-  
-#==================================
+# -*- coding: utf-8 -*-
+# ==================================
 # File Name: test_pyWaveForm.py
 # Author: ekli
 # Mail: lekf123@163.com
 # Created Time: 2023-09-05 17:52:12
-#==================================
+# ==================================
+
+import numpy as np
+
+from csgwsim.pyWaveForm import BHBWaveform, GCBWaveform, BHBWaveformEcc
+from csgwsim.Constants import YRSID_SI
+
 
 def test_GCB():
     Tobs = 10000  # const.YRSID_SI / 4
@@ -29,7 +35,7 @@ def test_GCB():
 
     print("Mc" in GCBpars.keys())
 
-    GCBwf = WaveForm(GCBpars)
+    GCBwf = GCBWaveform(**GCBpars)
     hpssb, hcssb = GCBwf(tf)
 
     import matplotlib.pyplot as plt
@@ -65,12 +71,12 @@ def test_BHB():
                "tc": 0,
                }
 
-    BHBwf = WaveForm(BHBpars)
+    BHBwf = BHBWaveform(**BHBpars)
 
     NF = 1024
     freq = 10**np.linspace(-4, 0, NF)
 
-    amp, phase, time, timep = BHBwf.amp_phase(freq)
+    amp, phase, time, timep = BHBwf.get_amp_phase(freq, )
 
     plt.figure()
     plt.loglog(freq, amp[(2, 2)])
@@ -122,11 +128,11 @@ def test_EMRI():
             'iota': 0.2,
             }
 
-    wf = WaveForm(pars)
+    wf = EMRIWaveform(**pars)
 
     tf = np.arange(0, Tobs, dt)
 
-    hp, hc = wf(tf)
+    hp, hc = wf.get_hphc(tf,)
 
     import matplotlib.pyplot as plt
 
@@ -144,4 +150,21 @@ if __name__ == '__main__':
     print("This is waveform generation code")
     # test_GCB()
     # test_BHB()
-    test_EMRI()
+    # test_EMRI()
+
+    default = {'DL': 49.102,  # Luminosity distance (Mpc)
+               'mass1': 21.44,  # Primary mass (solar mass)
+               'mass2': 20.09,  # Secondary mass(solar mass)
+               'Lambda': 3.44,  # Longitude
+               'Beta': -0.074,  # Latitude
+               'phi_c': 0,  # Coalescence phase
+               'T_obs': YRSID_SI,  # Observation time (s)
+               'tc': YRSID_SI,  # Coalescence time (s)
+               'iota': 0.6459,  # Inclination angle
+               'var_phi': 0,  # Observer phase
+               'psi': 1.744,  # Polarization angle
+               'eccentricity': 0.1,
+               }
+
+    para = BHBWaveformEcc(**default)
+    wf = para.fd_tdi_response(delta_f=1e-6)

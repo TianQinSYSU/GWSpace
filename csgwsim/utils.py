@@ -88,6 +88,17 @@ def get_uvk(lambd, beta):
     k = np.array([-csb * csl, -snl*csb, -snb])
     return (u,v,k)
 
+def polarization_tensor(u, v):
+    e_p = np.zeros((3,3))
+    e_c = np.zeros((3,3))
+
+    for i in range(3):
+        for j in range(3):
+            e_p[i,j] = u[i] * u[j] - v[i] * v[j]
+            e_c[i,j] = u[i] * v[j] + v[i] * u[j]
+
+    return (e_p, e_c)
+
 
 def cal_zeta(u, v, nl):
     """

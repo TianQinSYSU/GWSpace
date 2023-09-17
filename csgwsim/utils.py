@@ -231,11 +231,6 @@ def readvalue_dict(pars, so):
     return fs
 
 
-## =======================================
-def sinc(x):
-    return np.sin(x)/x
-
-
 def VectorDirectProduct(u, v):
     """
     Vector direct product

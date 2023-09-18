@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # ==================================
-# File Name: test_pyWaveForm.py
+# File Name: test_Waveform.py
 # Author: ekli
 # Mail: lekf123@163.com
 # Created Time: 2023-09-05 17:52:12
@@ -10,7 +10,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from csgwsim.pyWaveForm import BHBWaveform, GCBWaveform, BHBWaveformEcc
+from csgwsim.Waveform import BHBWaveform, GCBWaveform, BHBWaveformEcc
 from csgwsim.Constants import YRSID_SI
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # ==================================
-# File Name: pyResponse.py
+# File Name: response.py
 # Author: ekli
 # Mail: lekf123@163.com
 # Created Time: 2023-08-01 14:55:20
@@ -9,9 +9,7 @@
 
 import numpy as np
 from numba import jit
-from .utils import dot_arr, get_uvk, cal_zeta, sYlm
-from .pyOrbits import detectors
-from .pyWaveForm import waveforms
+from .utils import dot_arr, cal_zeta
 
 
 @jit(nopython=True)
@@ -171,115 +169,102 @@ def get_fd_response(vec_k, p, det, f, channel='A'):
 #     return yslr
 
 
-class TDResponse(object):
+def H(wf, tf, nl):
     """
-    Response in the time domain
-    ---------------------------
-    parameter:
-    - pars: dict for gravitational wave parameters
+    Calculate n^i h_{ij} n^j
+    ------------------------
+    Parameters
+    ----------
+    - tf: time array
+    - nl: unit vector from sender to receiver
+
+    Return
+    ------
+    -
     """
+    u = wf.vec_u
+    v = wf.vec_v
+    hpssb, hcssb = wf.get_hphc(tf)
+    tf_size = tf.shape[0]
+    h_size = hpssb.shape[0]
+    if tf_size > h_size:
+        hp = np.zeros_like(tf)
+        hc = np.zeros_like(tf)
+        hp[:h_size] = hpssb
+        hc[:h_size] = hcssb
+    elif tf_size < h_size:
+        hp = hpssb[-tf_size:]
+        hc = hcssb[-tf_size:]
+    else:
+        hp = hpssb
+        hc = hcssb
 
-    def __init__(self, pars, time, wf='GCB', det='TQ'):
-        self.wf = waveforms[wf](**pars)
-        self.orbit = detectors[det](time)
-        self.LT = self.orbit.armLength
+    xi_p, xi_c = cal_zeta(u, v, nl)
+    return hp*xi_p+hc*xi_c
 
-    def H(self, tf, nl):
-        """
-        Calculate n^i h_{ij} n^j
-        ------------------------
-        Parameters
-        ----------
-        - tf: time array
-        - nl: unit vector from sender to receiver
 
-        Return
-        ------
-        -
-        """
-        u = self.wf.vec_u
-        v = self.wf.vec_v
-        hpssb, hcssb = self.wf.get_hphc(tf)
-        tf_size = tf.shape[0]
-        h_size = hpssb.shape[0]
-        if tf_size > h_size:
-            hp = np.zeros_like(tf)
-            hc = np.zeros_like(tf)
-            hp[:h_size] = hpssb
-            hc[:h_size] = hcssb
-        elif tf_size < h_size:
-            hp = hpssb[-tf_size:]
-            hc = hcssb[-tf_size:]
-        else:
-            hp = hpssb
-            hc = hcssb
+def get_td_response(wf, det, tf, TDIgen=1):
+    if TDIgen == 1:
+        TDIdelay = 4
+    else:
+        raise NotImplementedError
 
-        xi_p, xi_c = cal_zeta(u, v, nl)
-        return hp*xi_p+hc*xi_c
+    p1, p2, p3 = det.orbit_1, det.orbit_2, det.orbit_3
+    L = det.L_T
+    n1 = (p2-p3)/L
+    n2 = (p3-p1)/L
+    n3 = (p1-p2)/L
 
-    def Evaluate_yslr(self, tf, TDIgen=1):
-        if TDIgen == 1:
-            TDIdelay = 4
-        else:
-            raise NotImplementedError
+    k = wf.vec_k
 
-        p1, p2, p3 = self.orbit.orbit_1, self.orbit.orbit_2, self.orbit.orbit_3
+    kp1 = dot_arr(k, p1)
+    kn1 = dot_arr(k, n1)
+    kp2 = dot_arr(k, p2)
+    kn2 = dot_arr(k, n2)
+    kp3 = dot_arr(k, p3)
+    kn3 = dot_arr(k, n3)
 
-        L = self.LT
-        n1 = (p2-p3)/L
-        n2 = (p3-p1)/L
-        n3 = (p1-p2)/L
+    H3_p2 = {}
+    H3_p1 = {}
+    H1_p3 = {}
+    H1_p2 = {}
+    H2_p3 = {}
+    H2_p1 = {}
 
-        k = self.wf.vec_k
+    tt = [tf-kp1, tf-kp2, tf-kp3]
 
-        kp1 = dot_arr(k, p1)
-        kn1 = dot_arr(k, n1)
-        kp2 = dot_arr(k, p2)
-        kn2 = dot_arr(k, n2)
-        kp3 = dot_arr(k, p3)
-        kn3 = dot_arr(k, n3)
+    for i in range(TDIdelay+1):
+        tag = L*i
+        H3_p2[i] = H(wf, tf-kp2-tag, n3)
+        H3_p1[i] = H(wf, tf-kp1-tag, n3)
+        H1_p3[i] = H(wf, tf-kp3-tag, n1)
+        H1_p2[i] = H(wf, tf-kp2-tag, n1)
+        H2_p3[i] = H(wf, tf-kp3-tag, n2)
+        H2_p1[i] = H(wf, tf-kp1-tag, n2)
 
-        H3_p2 = {}
-        H3_p1 = {}
-        H1_p3 = {}
-        H1_p2 = {}
-        H2_p3 = {}
-        H2_p1 = {}
+    yslr = {}
+    y12 = {}
+    y23 = {}
+    y31 = {}
+    y21 = {}
+    y32 = {}
+    y13 = {}
 
-        tt = [tf-kp1, tf-kp2, tf-kp3]
+    for i in range(TDIdelay):
+        y12[f"{i}L"] = (H3_p1[i+1]-H3_p2[i])/2/(1+kn3)
+        y21[f"{i}L"] = (H3_p2[i+1]-H3_p1[i])/2/(1-kn3)
 
-        for i in range(TDIdelay+1):
-            tag = self.LT*i
-            H3_p2[i] = self.H(tf-kp2-tag, n3)
-            H3_p1[i] = self.H(tf-kp1-tag, n3)
-            H1_p3[i] = self.H(tf-kp3-tag, n1)
-            H1_p2[i] = self.H(tf-kp2-tag, n1)
-            H2_p3[i] = self.H(tf-kp3-tag, n2)
-            H2_p1[i] = self.H(tf-kp1-tag, n2)
+        y23[f"{i}L"] = (H1_p2[i+1]-H1_p3[i])/2/(1+kn1)
+        y32[f"{i}L"] = (H1_p3[i+1]-H1_p2[i])/2/(1-kn1)
 
-        yslr = {}
-        y12 = {}
-        y23 = {}
-        y31 = {}
-        y21 = {}
-        y32 = {}
-        y13 = {}
+        y31[f"{i}L"] = (H2_p3[i+1]-H2_p1[i])/2/(1+kn2)
+        y13[f"{i}L"] = (H2_p1[i+1]-H2_p3[i])/2/(1-kn2)
 
-        for i in range(TDIdelay):
-            y12[f"{i}L"] = (H3_p1[i+1]-H3_p2[i])/2/(1+kn3)
-            y21[f"{i}L"] = (H3_p2[i+1]-H3_p1[i])/2/(1-kn3)
+    yslr[(1, 2)] = y12
+    yslr[(2, 1)] = y21
+    yslr[(2, 3)] = y23
+    yslr[(3, 2)] = y32
+    yslr[(3, 1)] = y31
+    yslr[(1, 3)] = y13
 
-            y23[f"{i}L"] = (H1_p2[i+1]-H1_p3[i])/2/(1+kn1)
-            y32[f"{i}L"] = (H1_p3[i+1]-H1_p2[i])/2/(1-kn1)
-
-            y31[f"{i}L"] = (H2_p3[i+1]-H2_p1[i])/2/(1+kn2)
-            y13[f"{i}L"] = (H2_p1[i+1]-H2_p3[i])/2/(1-kn2)
-
-        yslr[(1, 2)] = y12
-        yslr[(2, 1)] = y21
-        yslr[(2, 3)] = y23
-        yslr[(3, 2)] = y32
-        yslr[(3, 1)] = y31
-        yslr[(1, 3)] = y13
-
-        return yslr
+    return yslr

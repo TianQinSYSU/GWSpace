@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # ==================================
-# File Name: pyNoise.py
+# File Name: Noise.py
 # Author: ekli
 # Mail: lekf123@163.com
 # Created Time: 2022-11-04 11:03:09

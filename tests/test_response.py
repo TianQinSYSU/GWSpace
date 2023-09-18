@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # ==================================
-# File Name: test_pyResponse.py
+# File Name: test_response.py
 # Author: ekli
 # Mail: lekf123@163.com
 # Created Time: 2023-09-05 17:56:53
 # ==================================
 
 import numpy as np
-from csgwsim.pyResponse import TDResponse, trans_fd_response
-from csgwsim.pyWaveForm import BHBWaveform
-from csgwsim.pyOrbits import TianQinOrbit
+from csgwsim.response import get_td_response, trans_fd_response
+from csgwsim.Waveform import BHBWaveform, GCBWaveform
+from csgwsim.Orbit import TianQinOrbit
 from csgwsim.TDI import XYZ_FD, AET_FD, XYZ_TD, TDI_XYZ2AET
 from csgwsim.Constants import DAY, YRSID_SI
 
@@ -102,10 +102,10 @@ if __name__ == "__main__":
                "beta": 1.2,
                }
 
-    td = TDResponse(GCBpars, )
-
+    GCBwf = GCBWaveform(**GCBpars)
+    det = TianQinOrbit(tf_)
     st = time.time()
-    yslr_ = td.Evaluate_yslr(tf_)
+    yslr_ = get_td_response(GCBwf, det, tf_)
     ed = time.time()
 
     print("Time cost is %f s for %d points" % (ed-st, tf_.shape[0]))

@@ -7,7 +7,7 @@
 # Created Time: 2023-09-12 16:17:43
 #==================================
 
-from csgwsim.pyNoise import white_noise as wn
+from csgwsim.Noise import white_noise as wn
 import csgwsim.Constants as const
 
 import numpy as np

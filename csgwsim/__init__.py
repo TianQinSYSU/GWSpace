@@ -9,7 +9,7 @@
 
 import csgwsim.Constants as Constants
 import csgwsim.utils as utils
-from .pyNoise import *
-from .pyOrbits import *
+from .Noise import *
+from .Orbit import *
 # from .pyWaveForm import *
 # from .FastGB import *

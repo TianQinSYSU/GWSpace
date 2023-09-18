@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # ==================================
-# File Name: pyWaveForm.py
+# File Name: Waveform.py
 # Author: ekli
 # Mail: lekf123@163.com
 # Created Time: 2023-08-01 12:32:36
@@ -311,8 +311,8 @@ class BHBWaveformEcc(BasicWaveform):
         """Generate F-Domain TDI response for eccentric waveform (EccentricFD).
          Although the eccentric waveform also have (l, m)=(2,2), it has eccentric harmonics,
          which should also calculate separately like what we should do for spherical harmonics."""
-        from .pyOrbits import detectors
-        from .pyResponse import get_fd_response
+        from .Orbit import detectors
+        from .response import get_fd_response
 
         if det not in detectors.keys():
             raise ValueError(f"[SpaceResponse] Unknown detector {det}. "

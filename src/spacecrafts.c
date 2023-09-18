@@ -5,6 +5,7 @@
 #include "spacecrafts.h"
 #include "Constants.h"
 
+
 void spacecraft_LISA(double t, double *x, double *y, double *z)
 {
 	double alpha;
@@ -45,7 +46,7 @@ void spacecraft_TianQin(double t, double *x, double *y, double *z)
 {
     // earth position
     // kappa_earth = LISA + 20 
-    double alpha = EarthOrbitOmega_SI * t + kappa + 0.3490658503988659;
+    double alpha = EarthOrbitOmega_SI * t + kappa; // + 0.3490658503988659; // this is ahead of LISA
     double beta = Perihelion_Ang;
     double sna = sin(alpha - beta);
     double csa = cos(alpha - beta);

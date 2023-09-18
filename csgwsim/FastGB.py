@@ -14,27 +14,13 @@ else:
     import _FastGB
 
 
-def ComputeXYZ_FD(params, N, Tobs, dt, XLS, YLS, ZLS, XSL, YSL, ZSL, detector="TianQin"):
-    return _FastGB.ComputeXYZ_FD(params, N, Tobs, dt, XLS, YLS, ZLS, XSL, YSL, ZSL, len(params), detector)
-
-
 YRSID_SI = 31558149.763545600
-
-
 # sidereal year [sec] (http://hpiers.obspm.fr/eop-pc/models/constants.html)
-
 
 class FastGB:
     # FastBinaryCache = {}
     def __init__(self, name=" ", dt=15.0, Tobs=6.2914560e7, orbit="analytic", detector="TianQin"):
-        self.outputlist = (('Frequency', 'Hertz', 'GW frequency'),
-                           ('FrequencyDerivative', 'Hertz/s', 'GW frequency derivative'),
-                           ('EclipticLatitude', 'Radian', 'standard ecliptic latitude'),
-                           ('EclipticLongitude', 'Radian', 'standard ecliptic longitude'),
-                           ('Amplitude', 'strain', 'dimensionless GW amplitude'),
-                           ('Inclination', 'Radian', 'standard source inclination'),
-                           ('Polarization', 'Radian', 'standard source polarization'),
-                           ('InitialPhase', 'Radian', 'GW phase at t = 0'))
+
         self.Tobs = Tobs
         self.dt = dt
         self.detector = detector
@@ -92,7 +78,8 @@ class FastGB:
             # vector must be ordered as required by Fast_GB
             # Fast_GB(double *params, long N, double *XLS, double *ALS, double *ELS, int NP)
 
-            ComputeXYZ_FD(params, N, self.Tobs, self.dt, XLS, YLS, ZLS, XSL, YSL, ZSL, self.detector)
+            #ComputeXYZ_FD(params, N, self.Tobs, self.dt, XLS, YLS, ZLS, XSL, YSL, ZSL, self.detector)
+            _FastGB.ComputeXYZ_FD(params, N, T, dt, XLS, YLS, ZLS, XSL, YSL, ZSL, len(params), detector=self.detector)
             # TODO Need to transform to SL if required
             Xf = XLS
             Yf = YLS
@@ -155,3 +142,33 @@ class FastGB:
         X, Y, Z = self.fourier(simulator, table, T=T, dt=dt, algorithm=algorithm, oversample=oversample)
 
         return X.ifft(dt), Y.ifft(dt), Z.ifft(dt)
+
+
+def GenerateFastGB(p, Tobs, dt, oversample, TD = False, detector="TianQin"):  
+    """
+    Parameters:
+    - TD: default is False
+    """
+    ### unfolding the parameters and producing the list of Params
+    Amp, f0, fdot, iota, psi, phi0, EclLat, EclLon = p
+
+    Ns = len(Amp)    # number of sources
+
+    prm = []
+    for i in range(Ns):
+        tmp = np.array([f0[i], fdot[i], EclLat[i], EclLon[i], Amp[i], iota[i], psi[i], phi0[i]])
+        prm.append(tmp)
+
+    FB = FastGB("Test", dt=dt, Tobs=Tobs, orbit="analytic", detector=detector)
+
+    if TD:
+        Xt, Yt, Zt = fastB.TDI(T=Tobs,dt=del_t,simulator='synthlisa',table=prm,
+        algorithm='Michele',oversample=oversample)
+        tm = np.arange(len(Xt))*del_t
+
+        return (tm, Xt, Yt, Zt)
+
+    else:
+        Xf, Yf, Zf = fastB.fourier(T=Tobs,dt=del_t,simulator='synthlisa',
+        table=prm,algorithm='Michele',oversample=oversample)
+        return(Xf.f,Xf[:],Yf[:],Zf[:])

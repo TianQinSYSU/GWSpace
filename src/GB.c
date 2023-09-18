@@ -11,9 +11,12 @@
 #include "spacecrafts.h"
 #include "GB.h"
 
+double fstar;
 
-void Fast_GB(double *params, long N, double Tobs, double dt, double *XLS, double *YLS, double *ZLS,
-							double* XSL, double* YSL, double* ZSL, int NP, char detector[])
+void Fast_GB(double *params, long N, double Tobs, double dt, 
+        double *XLS, double *YLS, double *ZLS,
+        double* XSL, double* YSL, double* ZSL, int NP, 
+        char detector[])
 {
 	long n;     // iterator
 	double t;	// time
@@ -37,8 +40,10 @@ void Fast_GB(double *params, long N, double Tobs, double dt, double *XLS, double
         // add by ekli
         if (strcmp(detector, "TianQin") == 0) {
             spacecraft_TianQin(t, wfm->x, wfm->y, wfm->z);
+            fstar = fstar_tq;
         } else if (strcmp(detector, "LISA") == 0) {
             spacecraft_LISA(t, wfm->x, wfm->y, wfm->z);
+            fstar = fstar_lisa;
         }
 
 		calc_xi_f(wfm ,t);		  // calc frequency and time variables
@@ -754,7 +759,7 @@ long get_N(double *params, double Tobs)
 	if(f0 > 0.03)  N = 512*mult;
 	if(f0 > 0.1)   N = 1024*mult;
 
-	fonfs = f0/fstar;
+	fonfs = f0/wfm->fstar;
 
 	instrument_noise(f0, &SnAE, &SnX);
 

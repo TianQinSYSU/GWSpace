@@ -24,7 +24,7 @@
 #define fm 3.168753575e-8
 
 /* transfer frequency (Hz) */
-#define fstar 0.01908538063694777
+#define fstar_lisa 0.01908538063694777
 
 
 // lambda for tianqin spacecrafts
@@ -33,13 +33,13 @@
 #define Omega_tq 1.9923849908611068e-05 // 2 pi f_sc
 #define Armlength_tq 1.7320508075688772
 #define Radius_tq 1.0e8 
+#define fstar_tq 0.27547374120820667 // c/(2pi L_tq)
 
 /* MLDC sampling rate */
 //#define dt 15.000000
 
 /* Observation period */
 //#define Tobs 31457280.000000// 125829120.00000//31457280.000000
-
 
 void spacecraft_LISA(double t, double *x, double *y, double *z);
 void spacecraft_TianQin(double t, double *x, double *y, double *z);

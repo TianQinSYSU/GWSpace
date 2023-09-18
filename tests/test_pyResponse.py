@@ -8,9 +8,11 @@
 # ==================================
 
 import numpy as np
-from csgwsim.pyResponse import FDResponse, TDResponse
-from csgwsim.pyWaveForm import BasicWaveform
-from csgwsim.TDI import XYZ_FD, AET_FD
+from csgwsim.pyResponse import TDResponse, trans_fd_response
+from csgwsim.pyWaveForm import BHBWaveform
+from csgwsim.pyOrbits import TianQinOrbit
+from csgwsim.TDI import XYZ_FD, AET_FD, XYZ_TD, TDI_XYZ2AET
+from csgwsim.Constants import DAY, YRSID_SI
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
@@ -19,59 +21,52 @@ if __name__ == "__main__":
     print("This is a test for frequency domain response")
 
     print("Testing of BHB waveform")
-
-    pars = {"m1": 3.5e6,
-            "m2": 2.1e5,
+    pars = {"mass1": 3.5e6,
+            "mass2": 2.1e5,
+            'T_obs': YRSID_SI,
             "chi1": 0.2,
             "chi2": 0.1,
             "DL": 1e3,
-            "phic": 0.0,
-            "MfRef_in": 0,
             "psi": 0.2,
             "iota": 0.3,
-            "lambda": 0.4,
-            "beta": 1.2,
-            "tc": 0,
+            "Lambda": 0.4,
+            "Beta": 1.2,
             }
-
-    fd = FDResponse(pars)
-
     NF = 10240
     freq = 10**np.linspace(-4, 0, NF)
 
-    BHBwf = BasicWaveform(**pars)
+    BHBwf = BHBWaveform(**pars)
+    amp, phase, tf, _ = BHBwf.get_amp_phase(freq)
+    # from pyIMRPhenomD import IMRPhenomDh22AmpPhase
+    # from scipy.interpolate import InterpolatedUnivariateSpline as Spline
+    # wf_phd_class = IMRPhenomDh22AmpPhase(freq, *BHBwf.wave_para_phenomd())
+    # freq, amp, phase = wf_phd_class.GetWaveform()  # freq, amp, phase
+    # tf_spline = Spline(freq, 1/(2*np.pi)*(phase - phase[0])).derivative()
+    # tf = tf_spline(freq)+BHBwf.tc
 
-    amp, phase, tf, tfp = BHBwf.amp_phase(freq)
+    det = TianQinOrbit(tf)
+    h22 = amp * np.exp(1j*phase) * np.exp(2j*np.pi*freq*BHBwf.tc)
 
     st = time.time()
-
-    Gslr, zeta = fd.EvaluateGslr(tf[(2, 2)], freq)  # fd.Evaluate_yslr(freq)
-    yslr_ = fd.Evaluate_yslr(freq)  # fd.Evaluate_yslr(freq)
+    yslr = trans_fd_response(BHBwf.vec_k, BHBwf.p22, det, freq)[0]
     ed = time.time()
-
     print(f"time cost for the fd response is {ed-st} s")
 
-    mode = [(2, 2)]
-    ln = [(1, 2), (2, 3), (3, 1), (1, 3), (3, 2), (2, 1)]
+    ln = [(1, 2), (2, 1), (1, 3), (3, 1), (2, 3), (3, 2)]
+    plt.figure()
+    plt.xscale('log')
+    for yy, ll in zip(yslr, ln):
+        plt.plot(freq, np.abs(yy*h22), label=ll)
+    plt.legend()
+    plt.tight_layout()
 
-    for ll in ln:
-        plt.figure()
-        gg = Gslr[ll]
-        yy = yslr_[mode[0]][ll]
-        plt.plot(freq, gg, '-r')
-        plt.plot(freq, yy, '--b')
-        plt.title(ll)
-
-        plt.xscale('log')
-
-    X, Y, Z = XYZ_FD(yslr_[(2, 2)], freq, LT=fd.LT)
-    A, E, T = AET_FD(yslr_[(2, 2)], freq, fd.LT)
+    X, Y, Z = XYZ_FD(yslr[(2, 2)], freq, det.L_T)
+    A, E, T = AET_FD(yslr[(2, 2)], freq, det.L_T)
 
     plt.figure()
     plt.loglog(freq, np.abs(X), '-r', label='X')
     plt.loglog(freq, np.abs(Y), '--g', label='Y')
     plt.loglog(freq, np.abs(Z), ':b', label='Z')
-
     plt.xlabel('f')
     plt.ylabel('X,Y,Z')
     plt.legend(loc='best')
@@ -80,22 +75,21 @@ if __name__ == "__main__":
     plt.loglog(freq, np.abs(A), '-r', label='A')
     plt.loglog(freq, np.abs(E), '--g', label='E')
     plt.loglog(freq, np.abs(T), ':b', label='T')
-
     plt.xlabel('f')
     plt.ylabel('A,E,T')
     plt.legend(loc='best')
 
     plt.show()
 
-    from csgwsim.Constants import DAY
     print("This is TD response generation code")
-
     Tobs = 4*DAY  # YRSID_SI / 4
     delta_f = 1/Tobs
     delta_T = 1
     f_max = 1/(2*delta_T)
 
-    tf_ = np.arange(0, Tobs, delta_T)
+    # tf = np.arange(0, Tobs, delta_T)
+    # be careful, the arange method will lose the largest value
+    tf_ = np.linspace(0, Tobs, int(Tobs/delta_T))
 
     print("Testing of GCB waveform")
     GCBpars = {"Mc": 0.5,
@@ -107,11 +101,6 @@ if __name__ == "__main__":
                "lambda": 0.4,
                "beta": 1.2,
                }
-
-    print("Mc" in GCBpars.keys())
-
-    # GCBwf = BasicWaveform(GCBpars)
-    # hpssb, hcssb = GCBwf(tf)
 
     td = TDResponse(GCBpars, )
 
@@ -126,9 +115,28 @@ if __name__ == "__main__":
     tags = [(1, 2), (2, 1), (2, 3), (3, 2), (3, 1), (1, 3)]
 
     for i, tag in enumerate(tags):
+        plt.figure()
         for j in range(4):
-            plt.figure(i*4+j)
-            plt.plot(tf_, yslr_[tag][f"{j}L"])
-            plt.title(f"y_{tag} [j]L")
+            plt.subplot(4, 1, j+1)
+            plt.plot(tf, yslr[tag][f"%sL" % j])
+            plt.title(f"y_{tag} [%s]L" % j)
+
+    st = time.time()
+    X, Y, Z = XYZ_TD(yslr)
+    A, E, T = TDI_XYZ2AET(X, Y, Z)
+    ed = time.time()
+
+    print("Time cost for cal XYZ and AET with yslr is ", ed-st)
+
+    plt.figure()
+    for i, dd in enumerate(["X", "Y", "Z", "A", "E", "T"]):
+        dat = eval(dd)
+        plt.subplot(2, 3, i+1)
+        plt.plot(tf[:-5], dat[:-5], label=dd)
+
+        plt.xlabel("Time")
+        plt.ylabel(dd)
+
+        plt.legend(loc="best")
 
     plt.show()

@@ -215,6 +215,15 @@ class BHBWaveform(BasicWaveform):
         return (1/2 * y22_o * np.exp(-2j*self.psi) * (p0_plus + 1j*p0_cross) +
                 1/2 * y2_2_conj * np.exp(2j*self.psi) * (p0_plus - 1j*p0_cross))
 
+    def wave_para_phenomd(self, f_ref=0.):
+        """Convert parameters to a list, specially for getting waveform from `pyIMRPhenomD`."""
+        phi_ref = self.phi_c
+        m1_si = self.mass1 * MSUN_SI
+        m2_si = self.mass2 * MSUN_SI
+        chi1, chi2 = self.chi1, self.chi2
+        dl_si = self.DL * MPC_SI
+        return phi_ref, f_ref, m1_si, m2_si, chi1, chi2, dl_si
+
     def h22_FD(self, freq, fRef=0., t0=0.):
         NF = freq.shape[0]
 
@@ -231,12 +240,7 @@ class BHBWaveform(BasicWaveform):
         self.h22 = pyIMRD.AmpPhaseFDWaveform(NF, freq, amp_imr, phase_imr, time_imr, timep_imr, fRef, t0)
 
         # Generate h22 FD amplitude and phase on a given set of frequencies
-        self.h22 = pyIMRD.IMRPhenomDGenerateh22FDAmpPhase(
-            self.h22, freq,
-            self.phi_c, self.MfRef_in,
-            self.mass1*MSUN_SI, self.mass2*MSUN_SI,
-            self.chi1, self.chi2,
-            self.DL*MPC_SI)
+        self.h22 = pyIMRD.IMRPhenomDGenerateh22FDAmpPhase(self.h22, freq, *self.wave_para_phenomd())
 
         return self.h22
 

@@ -14,9 +14,8 @@ from numpy import sin, cos, sqrt
 
 from .utils import to_m1m2
 from .Constants import MSUN_SI, MSUN_unit, MPC_SI, YRSID_SI, PI, C_SI, G_SI
-# from Waveforms.PyIMRPhenomD import IMRPhenomD as pyIMRD
-# from Waveforms.PyIMRPhenomD import IMRPhenomD_const as PyIMRC
-# from Waveforms.FastEMRIWaveforms.FastEMRI import GenerateEMRIWaveform, EMRIInspiral, GetYlms, RomanAmplitude, ModeSelector
+
+from .FastEMRI import *
 
 # try:
 #     import bbh

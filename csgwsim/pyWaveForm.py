@@ -66,10 +66,10 @@ class BasicWaveform(object):
         - DL: luminosity distance
         - etc
     """
-    __slots__ = ('DL', 'mass1', 'mass2', 'Lambda', 'Beta', 'phi_c',
-                 'T_obs', 'tc', 'iota', 'var_phi', 'psi', 'add_para')
+    __slots__ = ('mass1', 'mass2', 'T_obs', 'DL', 'Lambda', 'Beta',
+                 'phi_c', 'tc', 'iota', 'var_phi', 'psi', 'add_para')
 
-    def __init__(self, mass1, mass2, T_obs=None, DL=1., Lambda=None, Beta=None,
+    def __init__(self, mass1, mass2, T_obs, DL=1., Lambda=None, Beta=None,
                  phi_c=0., tc=0., iota=0., var_phi=0., psi=0, **kwargs):
         self.DL = DL
         self.mass1 = mass1
@@ -83,9 +83,6 @@ class BasicWaveform(object):
         self.var_phi = var_phi
         self.psi = psi
         self.add_para = kwargs
-
-        if (self.mass1 is None) or (self.mass2 is None) or (self.T_obs is None):
-            raise ValueError('mass1, mass2 and T_obs should NOT be None')
 
     # @property
     # def redshift(self):
@@ -135,7 +132,7 @@ class BasicWaveform(object):
         p0_cross = np.array([-sib*sil2, sib*csl2,  csb*sil,
                              sib*csl2,  sib*sil2, -csb*csl,
                              csb*sil,  -csb*csl,   0]).reshape(3, 3)
-        return p0_plus, p0_cross
+        return p0_plus, p0_cross  # uu-vv, uv+vu
 
     def polarization(self):
         """See "LDC-manual-002.pdf" (Eq. 19)"""
@@ -177,11 +174,11 @@ class BHBWaveform(BasicWaveform):
     # _true_para_key = ('DL', 'Mc', 'eta', 'chi1', 'chi2', 'phi_c', 'iota', 'tc', 'var_phi', 'psi', 'Lambda', 'Beta')
     # fisher_key = ('Mc', 'eta', 'chi1', 'chi2', 'DL', 'phi_c', 'iota', 'tc', 'Lambda', 'Beta', 'psi')
 
-    def __init__(self, mass1, mass2, DL=1., Lambda=None, Beta=None,
-                 phi_c=0., T_obs=None, tc=0., iota=0., var_phi=0., psi=0., chi1=0., chi2=0., **kwargs):
+    def __init__(self, mass1, mass2, T_obs, DL=1., Lambda=None, Beta=None,
+                 phi_c=0., tc=0., iota=0., var_phi=0., psi=0., chi1=0., chi2=0., **kwargs):
 
-        BasicWaveform.__init__(self, mass1, mass2, DL, Lambda, Beta,
-                               phi_c, T_obs, tc, iota, var_phi, psi, **kwargs)
+        BasicWaveform.__init__(self, mass1, mass2, T_obs, DL, Lambda, Beta,
+                               phi_c, tc, iota, var_phi, psi, **kwargs)
         self.chi1 = chi1
         self.chi2 = chi2
         # self.MfRef_in = MfRef_in
@@ -274,10 +271,10 @@ class BHBWaveformEcc(BasicWaveform):
     """Waveform Parameters including eccentricity, using EccentricFD Waveform."""
     __slots__ = 'eccentricity'
 
-    def __init__(self, mass1=None, mass2=None, DL=1., Lambda=None, Beta=None,
-                 phi_c=0., T_obs=None, tc=0., iota=0., var_phi=0., psi=0., eccentricity=0., **kwargs):
-        BasicWaveform.__init__(self, mass1, mass2, DL, Lambda, Beta,
-                               phi_c, T_obs, tc, iota, var_phi, psi, **kwargs)
+    def __init__(self, mass1, mass2, T_obs, DL=1., Lambda=None, Beta=None,
+                 phi_c=0., tc=0., iota=0., var_phi=0., psi=0., eccentricity=0., **kwargs):
+        BasicWaveform.__init__(self, mass1, mass2, T_obs, DL, Lambda, Beta,
+                               phi_c, tc, iota, var_phi, psi, **kwargs)
         self.eccentricity = eccentricity
 
     @property
@@ -285,9 +282,9 @@ class BHBWaveformEcc(BasicWaveform):
         return 5**(3/8)/(8*np.pi) * (MSUN_unit*self.Mc)**(-5/8) * self.T_obs**(-3/8)
 
     def wave_para(self):
-        args = {'mass1': self.mass1,
-                'mass2': self.mass2,
-                'distance': self.DL,
+        args = {'mass1': self.mass1*MSUN_SI,
+                'mass2': self.mass2*MSUN_SI,
+                'distance': self.DL*MPC_SI,
                 'coa_phase': self.phi_c,
                 'inclination': self.iota,
                 'long_asc_nodes': self.var_phi,
@@ -296,23 +293,20 @@ class BHBWaveformEcc(BasicWaveform):
 
     def gen_ori_waveform(self, delta_f=None, f_min=None, f_max=1.):
         """Generate f-domain TDI waveform(EccentricFD)"""
-        from .eccentric_fd import gen_ecc_fd_and_phase
+        from .eccentric_fd import gen_ecc_fd_and_tf
 
         if not f_min:
             f_min = self.f_min
         if delta_f is None:
             delta_f = 1/self.T_obs
 
-        wf = gen_ecc_fd_and_phase(**self.wave_para(), delta_f=delta_f,
-                                  f_lower=f_min, f_final=f_max, obs_time=self.T_obs)
-        freq = delta_f * np.array(range(len(wf[0][0])))
-        return wf, freq
+        return gen_ecc_fd_and_tf(self.tc, **self.wave_para(), delta_f=delta_f,
+                                 f_lower=f_min, f_final=f_max, obs_time=0)
 
     def fd_tdi_response(self, channel='A', det='TQ', delta_f=None, f_min=None, f_max=1.):
         """Generate F-Domain TDI response for eccentric waveform (EccentricFD).
          Although the eccentric waveform also have (l, m)=(2,2), it has eccentric harmonics,
          which should also calculate separately like what we should do for spherical harmonics."""
-        from scipy.interpolate import InterpolatedUnivariateSpline as Spline
         from .pyOrbits import detectors
         from .pyResponse import get_fd_response
 
@@ -323,22 +317,15 @@ class BHBWaveformEcc(BasicWaveform):
         wf, freq = self.gen_ori_waveform(delta_f, f_min, f_max)
 
         gw_tdi = np.zeros(shape=(len(freq), ), dtype=np.complex128)
-        # use the harmonic j=2 to calculate t_f, and rescale it for different harmonics
-        index = (wf[10] != 0).argmax()
-        phase = wf[10][index:]
-        tf_spline = Spline(freq[index:], -1/(2*PI)*(phase-phase[0])).derivative()
-
         t_delay = np.exp(2j*PI*freq*self.tc)
         p_p, p_c = self.polarization()
         for i in range(10):
-            h_p, h_c = wf[i]
+            h_p, h_c, tf_vec = wf[i]
             index = (h_p != 0).argmax()
-            h_p, h_c, freq_s = h_p[index:], h_c[index:], freq[index:]
-            tf_vec = tf_spline(freq_s)*((i+1)/2)**(8/3)+self.tc
 
-            det = det_class(tf_vec, kappa0=0.)
-            gw_tdi_p, gw_tdi_c = get_fd_response(self.vec_k, (p_p, p_c), det, freq_s, channel)
-            gw_tdi[index:] += gw_tdi_p*h_p+gw_tdi_c*h_c
+            det = det_class(tf_vec[index:], kappa0=0.)
+            gw_tdi_p, gw_tdi_c = get_fd_response(self.vec_k, (p_p, p_c), det, freq[index:], channel)
+            gw_tdi[index:] += gw_tdi_p*h_p[index:] + gw_tdi_c*h_c[index:]
 
         return gw_tdi*t_delay
 
@@ -365,10 +352,10 @@ class GCBWaveform(BasicWaveform):
     hpS, hcS = GCB(tf)
     """
 
-    def __init__(self, Mc, DL, phi0, f0, fdot=None, fddot=None, **kwargs):
+    def __init__(self, Mc, T_obs, DL, phi0, f0, fdot=None, fddot=None, **kwargs):
         eta = 0.25  # FIXME
         m1, m2 = to_m1m2(Mc, eta)
-        BasicWaveform.__init__(self, m1, m2, DL, **kwargs)
+        BasicWaveform.__init__(self, m1, m2, T_obs, DL, **kwargs)
         self.phi0 = phi0
         self.f0 = f0
         # self.fdot = fdot

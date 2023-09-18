@@ -8,6 +8,7 @@
 # ==================================
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 from csgwsim.pyWaveForm import BHBWaveform, GCBWaveform, BHBWaveformEcc
 from csgwsim.Constants import YRSID_SI
@@ -38,8 +39,6 @@ def test_GCB():
     GCBwf = GCBWaveform(**GCBpars)
     hpssb, hcssb = GCBwf(tf)
 
-    import matplotlib.pyplot as plt
-
     plt.plot(tf, hpssb, 'r-', label=r'$h_+^{\rm SSB}$')
     plt.plot(tf, hcssb, 'b--', label=r'$h_\times^{\rm SSB}$')
 
@@ -53,8 +52,6 @@ def test_GCB():
 
 
 def test_BHB():
-    import matplotlib.pyplot as plt
-
     print("Testing of BHB waveform")
     BHBpars = {"type": "BHB",
                "m1": 3.5e6,
@@ -134,8 +131,6 @@ def test_EMRI():
 
     hp, hc = wf.get_hphc(tf,)
 
-    import matplotlib.pyplot as plt
-
     plt.figure()
 
     plt.plot(tf[:2000], hp[:2000])
@@ -163,8 +158,18 @@ if __name__ == '__main__':
                'iota': 0.6459,  # Inclination angle
                'var_phi': 0,  # Observer phase
                'psi': 1.744,  # Polarization angle
-               'eccentricity': 0.1,
                }
 
-    para = BHBWaveformEcc(**default)
-    wf = para.fd_tdi_response(delta_f=1e-6)
+    delta_f = 1e-5
+    para = BHBWaveformEcc(**default, eccentricity=0.1)
+    wf = para.fd_tdi_response(delta_f=delta_f)
+    para_ = BHBWaveformEcc(**default, eccentricity=0.)
+    wf_ = para_.fd_tdi_response(delta_f=delta_f)
+
+    freq = delta_f * np.array(range(len(wf)))
+    plt.figure()
+    plt.loglog(freq, np.abs(wf), label='e=0.1')
+    plt.loglog(freq, np.abs(wf_), label='e=0')
+    plt.xlim(para.f_min, 1)
+    plt.legend()
+    plt.tight_layout()

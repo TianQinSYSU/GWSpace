@@ -7,6 +7,6 @@ gitpush.sh
 .idea
 
 .ipynb_checkpoints/
-
+**.npy
 tests/csgwsim
 Waveforms

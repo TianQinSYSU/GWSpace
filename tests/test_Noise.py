@@ -8,16 +8,15 @@
 #==================================
 
 import numpy as np
-from active_python_path import csgwsim as gws
-from csgwsim import TianQinNoise, LISANoise, noise_XYZ, noise_AET
 import matplotlib.pyplot as plt
 
-PI = gws.Constants.PI
-C_SI = gws.Constants.C_SI
-
+from csgwsim.Noise import TianQinNoise, LISANoise, noise_XYZ, noise_AET
+from csgwsim.Constants import PI, C_SI
+from csgwsim.utils import frequency_noise_from_psd
 
 if __name__ == "__main__":
-    freq_ = np.logspace(-5, 0, 1001)
+    #freq_ = np.logspace(-5, 0, 1001)
+    freq_ = np.linspace(1e-4, 1, 2**20)
     la = LISANoise()
     lisa_sa, lisa_sp = la.noises(freq_)
 
@@ -29,6 +28,11 @@ if __name__ == "__main__":
 
     LX, LXY = noise_XYZ(freq_, lisa_sa, lisa_sp, la.armL, includewd=1.2)
     TX, TXY = noise_XYZ(freq_, tq_sa, tq_sp, tq.armL)
+
+    noise_TX = frequency_noise_from_psd(TX, freq_[1]-freq_[0])
+    np.save("noise_TX.npy", noise_TX)
+
+    '''
     # =======================================
     plt.figure()
     plt.title("Sensitivity of TianQin and LISA---with displacement")
@@ -153,3 +157,4 @@ if __name__ == "__main__":
     plt.legend(loc="best")
 
     plt.show()
+    '''

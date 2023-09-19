@@ -12,7 +12,7 @@
 import numpy as np
 from numpy import sin, cos, sqrt
 
-from .utils import to_m1m2
+from .utils import to_m1m2, get_uvk
 from .Constants import MSUN_SI, MSUN_unit, MPC_SI, YRSID_SI, PI, C_SI, G_SI
 
 from .FastEMRI import *
@@ -355,10 +355,11 @@ class GCBWaveform(BasicWaveform):
     hpS, hcS = GCB(tf)
     """
 
-    def __init__(self, Mc, T_obs, DL, phi0, f0, fdot=None, fddot=None, **kwargs):
+    def __init__(self, mass1, mass2, T_obs, DL, phi0, f0, fdot=None, fddot=None, **kwargs):
         eta = 0.25  # FIXME
-        m1, m2 = to_m1m2(Mc, eta)
-        BasicWaveform.__init__(self, m1, m2, T_obs, DL, **kwargs)
+        BasicWaveform.__init__(self, mass1, mass2, T_obs, DL, **kwargs)
+        #m1, m2 = to_m1m2(Mc, eta)
+        Mc = self.Mc
         self.phi0 = phi0
         self.f0 = f0
         # self.fdot = fdot
@@ -441,14 +442,15 @@ class EMRIWaveform(object):
     """
 
     def __init__(self, M, mu, a, p0, e0, x0, dist, qS, phiS, qK, phiK,
-                 Phi_phi0=0, Phi_theta0=0, Phi_r0=0,
+                 Phi_phi0=0, Phi_theta0=0, Phi_r0=0,psi=0,
                  model="FastSchwarzschildEccentricFlux",
                  model_insp="SchwarzEccFlux",
                  inspiral_kwargs=inspiral_kwargs,
                  amplitude_kwargs=amplitude_kwargs,
                  Ylm_kwargs=Ylm_kwargs,
                  sum_kwargs=sum_kwargs,
-                 use_gpu=use_gpu):  # TODO: make it a subclass of BasicWaveform
+                 use_gpu=use_gpu,
+                **kwargs):  # TODO: make it a subclass of BasicWaveform
         self.M = M
         self.mu = mu
         self.a = a
@@ -474,7 +476,11 @@ class EMRIWaveform(object):
             use_gpu=use_gpu,
         )
         self.theta, self.phi = self.gen_wave._get_viewing_angles(qS, phiS, qK, phiK)  # get view angle
-
+        Lambda = self.phi
+        Beta = np.pi/2 - self.theta
+        self.vec_u, self.vec_v, self.vec_k = get_uvk(Lambda, Beta)
+        self.psi = psi
+        
         # first, lets get amplitudes for a trajectory
         self.traj = EMRIInspiral(func=model_insp)
         self.ylm_gen = GetYlms(assume_positive_m=True, use_gpu=use_gpu)
@@ -504,7 +510,7 @@ class EMRIWaveform(object):
         (teuk_modes_in, ylms_in, ls, ms, ns) = mode_selector(teuk_modes, ylms, modeinds, eps=eps)
         return teuk_modes_in, ylms_in, ls, ms, ns
 
-    def get_hphc(self, Tobs, dt, eps=1e-5, modes=None): # FIXME // change name
+    def get_hphc_source(self, Tobs, dt, eps=1e-5, modes=None): # FIXME // change name
         """
         Calculate the time domain waveforms
         -----------------------------------
@@ -547,22 +553,23 @@ class EMRIWaveform(object):
 
         return h.real, h.imag
 
-    def get_ssb_wf(self, tf, eps=1e-5, modes=None):
+    def get_hphc(self, tf, eps=1e-5, modes=None):
         # TODO: What do we really want from __call__? Original wf or SSB wf?
         #  Could we not use __call__ but add two normal methods in class?
         Tobs = tf[-1]/YRSID_SI
         dt = tf[1]-tf[0]
         # T = Tobs - int(Tobs * YRSID_SI/dt - tf.shape[0]) * dt/YRSID_SI
         # print("the total observ time is ", Tobs)
-        hpS, hcS = self(Tobs, dt, eps, modes)
+        hpS, hcS = self.get_hphc_source(Tobs, dt, eps, modes)
 
         cs2p = cos(2*self.psi)
         sn2p = sin(2*self.psi)
-        csi = cos(self.iota)
+        #csi = cos(self.iota)
 
-        hp_SSB = -(1+csi*csi)*hpS*cs2p+2*csi*hcS*sn2p
-        hc_SSB = -(1+csi*csi)*hpS*sn2p-2*csi*hcS*cs2p
-
+        #hp_SSB = -(1+csi*csi)*hpS*cs2p+2*csi*hcS*sn2p
+        #hc_SSB = -(1+csi*csi)*hpS*sn2p-2*csi*hcS*cs2p
+        hp_SSB = hpS*cs2p - hcS*sn2p
+        hc_SSB = hpS*sn2p + hcS*cs2p
         return hp_SSB, hc_SSB
 
 

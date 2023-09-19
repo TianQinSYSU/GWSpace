@@ -84,7 +84,7 @@ def get_uvk(lambd, beta):
     csb = np.cos(beta)
 
     u = np.array([snl, -csl, 0])
-    v = np.array([-snb * csl, - sinb*snl, csb])
+    v = np.array([-snb * csl, - snb*snl, csb])
     k = np.array([-csb * csl, -snl*csb, -snb])
     return (u,v,k)
 
@@ -914,6 +914,48 @@ class FrequencyArray(np.ndarray):
         @param rightpad is ...
         """
         return self.restrict((self.kmin - int(leftpad)*len(self),int(1+leftpad+rightpad)*len(self)))
+
+def frequency_noise_from_psd(psd, delta_f, seed=None):
+    '''
+    Create noise with a given psd.
+    ----
+    Return noise coloured with the given psd. The return noise
+    FrequencySeries has the same length and frequency step as the 
+    given psd. Note that if unique noise is desired a unique 
+    seed should be provied
+    ------
+    Parameters
+    ---------------
+    psd: FrequenceSeries
+        The noise weighting to color the noise.
+    seed: in range (0, int) or None
+        The seed to generate the noise. If None specified,
+        the seed will not be reset.
+    ---------------
+    Returns:
+    ---------------
+    noise: FrequencySeries
+        A FrequencySeries containing gaussian noise colored 
+        by the given psd.
+    '''
+    sigma = (0.5*psd / delta_f)**0.5
+    if seed is not None:
+        np.random.seed(seed)
+        
+    not_zero = (sigma != 0)
+    sigma_red = sigma[not_zero]
+    noise_re = np.random.normal(0, sigma_red)
+    noise_im = np.random.normal(0, sigma_red)    
+    
+    #rr = lambda sig: np.random.multivariate_normal([0,0], np.eye(2)*sig)
+    #noise_re, noise_im = np.array(list(map(rr, sigma_red))).T
+    
+    noise_red = noise_re + 1j * noise_im
+                            
+    noise = np.zeros(len(sigma), dtype=complex)
+    noise[not_zero] = noise_red
+    
+    return noise
 
 
 

@@ -11,35 +11,17 @@ import os
 import sys
 import time
 import matplotlib.pyplot as plt
+import numpy as np
+import matplotlib.pyplot as plt
 
-# import numpy as np
-# from Constants import *
-
-try:
-    import bbh
-except:
-    bbh_path = './Waveforms/bbh'
-    abs_bbh_path = os.path.abspath(bbh_path)
-
-    if abs_bbh_path not in sys.path:
-        sys.path.append(abs_bbh_path)
-
-try:
-    import few
-except:
-    few_path = './Waveforms/FastEMRIWaveforms'
-    abs_few_path = os.path.abspath(few_path)
-
-    if abs_few_path not in sys.path:
-        sys.path.append(abs_few_path)
+from csgwsim.Waveform import waveforms
+from csgwsim.response import get_td_response
+from csgwsim.Orbit import TianQinOrbit, detectors
+from csgwsim.Constants import DAY, YRSID_SI, MSUN_SI, MPC_SI
+from csgwsim.TDI import XYZ_TD, TDI_XYZ2AET
 
 
-from csgwsim.pyWaveForm import waveforms
-from pyFDResponse import FDResponse
-from TDI import *
-
-
-def Generate_TD_Data(pars, show_yslr=False):
+def Generate_TD_Data(pars, detector='TQ', show_yslr=False):
     print("This is TD response generation code")
     Tobs = 10*DAY  # YRSID_SI / 4
     delta_f = 1/Tobs
@@ -52,11 +34,15 @@ def Generate_TD_Data(pars, show_yslr=False):
 
     print(f"Testing of {pars['type']} waveform")
 
-    TQ = INITianQin()
-    td = TDResponse(pars, TQ)
+    #help(WF.GCBWaveform)
+    WFs = waveforms[pars['type']]
+    wf = WFs(**pars)
 
+    orbits = detectors[detector]
+    det = orbits(tf)
+    
     st = time.time()
-    yslr = td.Evaluate_yslr(tf)
+    yslr = get_td_response(wf, det, tf)
     ed = time.time()
 
     print("Time cost is %f s for %d points" % (ed-st, tf.shape[0]))
@@ -76,7 +62,11 @@ def Generate_TD_Data(pars, show_yslr=False):
     A, E, T = TDI_XYZ2AET(X, Y, Z)
     ed = time.time()
 
+    np.save(detector+pars["type"]+"_X_td.npy", np.array([tf, X]))
+
     print("Time cost for cal XYZ and AET with yslr is ", ed-st)
+
+    '''
 
     plt.figure()
     for i, dd in enumerate(["X", "Y", "Z", "A", "E", "T"]):
@@ -90,6 +80,7 @@ def Generate_TD_Data(pars, show_yslr=False):
         plt.legend(loc="best")
 
     plt.show()
+    '''
 
 
 def Generate_FD_Data(pars, show_yslr=False):
@@ -154,18 +145,29 @@ def Generate_FD_Data(pars, show_yslr=False):
 
 
 if __name__ == "__main__":
-    GCBpars = {"type": "GCB",
-               "Mc": 0.5,
+    f0 = [0.00622028]
+    fd = [7.48528554e-16]
+    beta = [-0.082205]  # ecliptic latitude [rad]
+    Lambda = [2.10225]  # ecliptic longitude [rad]
+    Amp = [6.37823e-23]
+    iota = [0.645772]
+    psi = [2.91617795]
+    phi0 = [3.1716561]
+    
+    GCBpars = {"type": "gcb",
+               "mass1": 0.5,
+               "mass2": 0.5,
                "DL": 0.3,
                "phi0": 0.0,
                "f0": 0.001,
                "psi": 0.2,
                "iota": 0.3,
-               "lambda": 0.4,
-               "beta": 1.2,
+               "Lambda": 0.4,
+               "Beta": 1.2,
+               "T_obs": YRSID_SI,
                }
 
-    EMRIpars = {"type": "EMRI",
+    EMRIpars = {"type": "emri",
                 'M': 1e6,
                 'a': 0.1,
                 'mu': 1e1,
@@ -198,7 +200,19 @@ if __name__ == "__main__":
                "beta": 1.2,
                "tc": 0,
                }
-
-    Generate_TD_Data(GCBpars, show_yslr=True)
-    #Generate_TD_Data(EMRIpars, show_yslr=True)
-    # Generate_FD_Data(BHBpars)
+    eccpara = {"type": 'bhb_EccFD',
+            'delta_f': 0.0001,
+            'f_final': 1,
+            'f_lower': 0.01,
+            'mass1': 10 * MSUN_SI,
+            'mass2': 10 * MSUN_SI,
+            'inclination': 0.23,
+            'eccentricity': 0.4,
+            'long_asc_nodes': 0.23,
+            'coa_phase': 0,
+            'distance': 100 * MPC_SI,
+            'obs_time': 365*24*3600}
+    
+    Generate_TD_Data(GCBpars)
+    #Generate_TD_Data(EMRIpars)#, show_yslr=True)
+    #Generate_FD_Data(eccpara)

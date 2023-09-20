@@ -32,36 +32,42 @@ include_gsl_dir = gsl_prefix+"/include"
 
 # extensions
 code_lib = 'csgwsim'
-fastgb_ext = Extension(
-        code_lib+"._FastGB",
-        sources = [
+def func_ext(name, src):
+    return Extension(
+            code_lib+"."+name,
+            sources = src,
+            include_dirs = ["include", 
+                include_gsl_dir, np.get_include()],
+            extra_compile_args = ["-std=c99", "-O3"],
+            libraries=['gsl', 'gslcblas', 'm'],
+            library_dirs=[lib_gsl_dir],
+            )
+
+fastgb_ext = func_ext("_FastGB",
+        src = [
             "src/_FastGB.pyx",
             "src/spacecrafts.c",
             "src/GB.c",
-            ],
-        include_dirs = ["include", include_gsl_dir, np.get_include()],
-        extra_compile_args = ["-std=c99", "-O3"],
-        libraries=['gsl', 'gslcblas', 'm'],
-        library_dirs=[lib_gsl_dir],
-        )
+            ])
 
-eccfd_ext = Extension(
-        code_lib+'.libEccFD', # name of the lib
-        sources=['src/InspiralEccentricFD.c',
+eccfd_ext = func_ext('libEccFD', # name of the lib
+        src = ['src/InspiralEccentricFD.c',
             'src/InspiralEccentricFDBasic.c', 
             'src/InspiralOptimizedCoefficientsEccentricityFD.c',
-            ],
-        include_dirs=['include', include_gsl_dir, np.get_include()],  # Add any necessary include directories
-        libraries=['gsl', 'gslcblas', 'm'],  # Add any necessary libraries
-        library_dirs=['lib', lib_gsl_dir],  # Add any necessary library directories
-        )
+            ])
 
-csgwpath = "csgwsim"
+imrphd_ext = func_ext('pyIMRPhenomD',
+        src= [
+            'src/pyIMRPhenomD.pyx',
+            'src/IMRPhenomD.c',
+            'src/IMRPhenomD_internals.c',
+            ])
 
 # add all extensions
 extensions = []
 extensions.append(fastgb_ext)
 extensions.append(eccfd_ext)
+extensions.append(imrphd_ext)
 
 setup(
         name = 'csgwsim',

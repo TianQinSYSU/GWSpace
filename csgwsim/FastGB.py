@@ -5,7 +5,7 @@
 # the SWIG interface file instead.
 
 import numpy as np
-from csgwsim.utils import FrequencyArray
+from csgwsim.wrap import FrequencyArray
 from csgwsim.utils import countdown
 
 if __package__ or "." in __name__:

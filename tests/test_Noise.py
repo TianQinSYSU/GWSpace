@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 from csgwsim.Noise import TianQinNoise, LISANoise, noise_XYZ, noise_AET
 from csgwsim.Constants import PI, C_SI
-from csgwsim.utils import frequency_noise_from_psd
+from csgwsim.wrap import frequency_noise_from_psd
 
 if __name__ == "__main__":
     #freq_ = np.logspace(-5, 0, 1001)

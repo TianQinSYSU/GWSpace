@@ -8,5 +8,5 @@ scipy
 requests
 h5py
 tqdm
-FastEMRIWaveforms
-
+few
+PyIMRPhenomD

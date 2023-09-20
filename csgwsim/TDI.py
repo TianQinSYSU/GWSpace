@@ -41,8 +41,6 @@ def XYZ_TD(yslr, TDIgen=1):
              - y32["0L"]-y23["1L"]-y12["2L"]-y21["3L"])
         Z = (y23["0L"]+y32["1L"]+y13["2L"]+y31["3L"]
              - y13["0L"]-y31["1L"]-y23["2L"]-y32["3L"])
-    elif TDIGen == 2:
-        X = 
     else:
         raise NotImplementedError
 

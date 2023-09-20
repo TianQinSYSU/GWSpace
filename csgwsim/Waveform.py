@@ -17,35 +17,6 @@ from .Constants import MSUN_SI, MSUN_unit, MPC_SI, YRSID_SI, PI, C_SI, G_SI
 
 from .FastEMRI import *
 
-# try:
-#     import bbh
-# except:
-#     bbh_path = './Waveforms/bbh'
-#     abs_bbh_path = os.path.abspath(bbh_path)
-#
-#     if abs_bbh_path not in sys.path:
-#         sys.path.append(abs_bbh_path)
-#
-# try:
-#     import few
-# except:
-#     few_path = './Waveforms/FastEMRIWaveforms'
-#     abs_few_path = os.path.abspath(few_path)
-#
-#     if abs_few_path not in sys.path:
-#         sys.path.append(abs_few_path)
-# try:
-#     from FastEMRI import *
-# except:
-#     few_path = './Waveforms/FastEMRIWaveforms'
-#     abs_few_path = os.path.abspath(few_path)
-#
-#     if abs_few_path not in sys.path:
-#         sys.path.append(abs_few_path)
-#
-#     from FastEMRI import *
-
-
 # Note1: one can use __slots__=('mass1', 'mass2', 'etc') to fix the attributes
 #        then the class will not have __dict__ anymore, and attributes in __slots__ are read-only.
 # Note2: One can use @DynamicAttrs to avoid warnings of 'no attribute'.

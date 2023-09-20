@@ -145,15 +145,6 @@ def Generate_FD_Data(pars, show_yslr=False):
 
 
 if __name__ == "__main__":
-    f0 = [0.00622028]
-    fd = [7.48528554e-16]
-    beta = [-0.082205]  # ecliptic latitude [rad]
-    Lambda = [2.10225]  # ecliptic longitude [rad]
-    Amp = [6.37823e-23]
-    iota = [0.645772]
-    psi = [2.91617795]
-    phi0 = [3.1716561]
-    
     GCBpars = {"type": "gcb",
                "mass1": 0.5,
                "mass2": 0.5,
@@ -213,6 +204,6 @@ if __name__ == "__main__":
             'distance': 100 * MPC_SI,
             'obs_time': 365*24*3600}
     
-    Generate_TD_Data(GCBpars)
-    #Generate_TD_Data(EMRIpars)#, show_yslr=True)
+    #Generate_TD_Data(GCBpars)
+    Generate_TD_Data(EMRIpars)#, show_yslr=True)
     #Generate_FD_Data(eccpara)

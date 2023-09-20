@@ -19,7 +19,7 @@ from few.utils.ylm import GetYlms
 from few.utils.modeselector import ModeSelector
 from few.summation.interpolatedmodesum import CubicSplineInterpolant
 from few.waveform import SchwarzschildEccentricWaveformBase
-from few.utils.constants import *
+#from few.utils.constants import *
 
 
 traj = EMRIInspiral(func="SchwarzEccFlux")

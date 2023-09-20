@@ -12,6 +12,7 @@
 #include "GB.h"
 
 double fstar;
+double Larm;
 
 void Fast_GB(double *params, long N, double Tobs, double dt, 
         double *XLS, double *YLS, double *ZLS,
@@ -41,9 +42,11 @@ void Fast_GB(double *params, long N, double Tobs, double dt,
         if (strcmp(detector, "TianQin") == 0) {
             spacecraft_TianQin(t, wfm->x, wfm->y, wfm->z);
             fstar = fstar_tq;
+            Larm = Armlength_tq;
         } else if (strcmp(detector, "LISA") == 0) {
             spacecraft_LISA(t, wfm->x, wfm->y, wfm->z);
             fstar = fstar_lisa;
+            Larm = Armlength_LISA;
         }
 
 		calc_xi_f(wfm ,t);		  // calc frequency and time variables
@@ -618,7 +621,7 @@ void get_transfer(struct Waveform *wfm, double t)
 void XYZ(double ***d, double f0, long q, long M, double dt, double Tobs, double *XLS, double *YLS, double *ZLS,
 					double* XSL, double* YSL, double* ZSL)
 {
-	int i;
+	int i, re, im;
 	double fonfs;
 	double c3, s3, c2, s2, c1, s1;
 	double f;
@@ -653,65 +656,53 @@ void XYZ(double ***d, double f0, long q, long M, double dt, double Tobs, double 
 		c3 = cos(3.*fonfs);  c2 = cos(2.*fonfs);  c1 = cos(1.*fonfs);
 		s3 = sin(3.*fonfs);  s2 = sin(2.*fonfs);  s1 = sin(1.*fonfs);
 
-		X[2*i]   = (d[0][1][2*i]-d[0][2][2*i])*c3 + (d[0][1][2*i+1]-d[0][2][2*i+1])*s3 +
-		           (d[1][0][2*i]-d[2][0][2*i])*c2 + (d[1][0][2*i+1]-d[2][0][2*i+1])*s2 +
-		           (d[0][2][2*i]-d[0][1][2*i])*c1 + (d[0][2][2*i+1]-d[0][1][2*i+1])*s1 +
-		           (d[2][0][2*i]-d[1][0][2*i]);
+        re = 2*i;
+        im = 2*i+1;
 
-		X[2*i+1] = (d[0][1][2*i+1]-d[0][2][2*i+1])*c3 - (d[0][1][2*i]-d[0][2][2*i])*s3 +
-		           (d[1][0][2*i+1]-d[2][0][2*i+1])*c2 - (d[1][0][2*i]-d[2][0][2*i])*s2 +
-		           (d[0][2][2*i+1]-d[0][1][2*i+1])*c1 - (d[0][2][2*i]-d[0][1][2*i])*s1 +
-		           (d[2][0][2*i+1]-d[1][0][2*i+1]);
+        X[re]   = (d[0][1][re]-d[0][2][re])*c3 + (d[0][1][im]-d[0][2][im])*s3 +
+		           (d[1][0][re]-d[2][0][re])*c2 + (d[1][0][im]-d[2][0][im])*s2 +
+		           (d[0][2][re]-d[0][1][re])*c1 + (d[0][2][im]-d[0][1][im])*s1 +
+		           (d[2][0][re]-d[1][0][re]);
 
-		Y[2*i]   = (d[1][2][2*i]-d[1][0][2*i])*c3 + (d[1][2][2*i+1]-d[1][0][2*i+1])*s3 +
-		           (d[2][1][2*i]-d[0][1][2*i])*c2 + (d[2][1][2*i+1]-d[0][1][2*i+1])*s2+
-		           (d[1][0][2*i]-d[1][2][2*i])*c1 + (d[1][0][2*i+1]-d[1][2][2*i+1])*s1+
-		           (d[0][1][2*i]-d[2][1][2*i]);
+		X[im] = (d[0][1][im]-d[0][2][im])*c3 - (d[0][1][re]-d[0][2][re])*s3 +
+		           (d[1][0][im]-d[2][0][im])*c2 - (d[1][0][re]-d[2][0][re])*s2 +
+		           (d[0][2][im]-d[0][1][im])*c1 - (d[0][2][re]-d[0][1][re])*s1 +
+		           (d[2][0][im]-d[1][0][im]);
 
-		Y[2*i+1] = (d[1][2][2*i+1]-d[1][0][2*i+1])*c3 - (d[1][2][2*i]-d[1][0][2*i])*s3+
-		           (d[2][1][2*i+1]-d[0][1][2*i+1])*c2 - (d[2][1][2*i]-d[0][1][2*i])*s2+
-		           (d[1][0][2*i+1]-d[1][2][2*i+1])*c1 - (d[1][0][2*i]-d[1][2][2*i])*s1+
-		           (d[0][1][2*i+1]-d[2][1][2*i+1]);
+		Y[re]   = (d[1][2][re]-d[1][0][re])*c3 + (d[1][2][im]-d[1][0][im])*s3 +
+		           (d[2][1][re]-d[0][1][re])*c2 + (d[2][1][im]-d[0][1][im])*s2+
+		           (d[1][0][re]-d[1][2][re])*c1 + (d[1][0][im]-d[1][2][im])*s1+
+		           (d[0][1][re]-d[2][1][re]);
 
-		Z[2*i]   = (d[2][0][2*i]-d[2][1][2*i])*c3 + (d[2][0][2*i+1]-d[2][1][2*i+1])*s3+
-		           (d[0][2][2*i]-d[1][2][2*i])*c2 + (d[0][2][2*i+1]-d[1][2][2*i+1])*s2+
-		           (d[2][1][2*i]-d[2][0][2*i])*c1 + (d[2][1][2*i+1]-d[2][0][2*i+1])*s1+
-		           (d[1][2][2*i]-d[0][2][2*i]);
+		Y[im] = (d[1][2][im]-d[1][0][im])*c3 - (d[1][2][re]-d[1][0][re])*s3+
+		           (d[2][1][im]-d[0][1][im])*c2 - (d[2][1][re]-d[0][1][re])*s2+
+		           (d[1][0][im]-d[1][2][im])*c1 - (d[1][0][re]-d[1][2][re])*s1+
+		           (d[0][1][im]-d[2][1][im]);
 
-		Z[2*i+1] = (d[2][0][2*i+1]-d[2][1][2*i+1])*c3 - (d[2][0][2*i]-d[2][1][2*i])*s3+
-		           (d[0][2][2*i+1]-d[1][2][2*i+1])*c2 - (d[0][2][2*i]-d[1][2][2*i])*s2+
-		           (d[2][1][2*i+1]-d[2][0][2*i+1])*c1 - (d[2][1][2*i]-d[2][0][2*i])*s1+
-		           (d[1][2][2*i+1]-d[0][2][2*i+1]);
+		Z[re]   = (d[2][0][re]-d[2][1][re])*c3 + (d[2][0][im]-d[2][1][im])*s3+
+		           (d[0][2][re]-d[1][2][re])*c2 + (d[0][2][im]-d[1][2][im])*s2+
+		           (d[2][1][re]-d[2][0][re])*c1 + (d[2][1][im]-d[2][0][im])*s1+
+		           (d[1][2][re]-d[0][2][re]);
 
-		// XLS[2*i]   =  (X[2*i]*cLS - X[2*i+1]*sLS);
-		// XLS[2*i+1] = -(X[2*i]*sLS + X[2*i+1]*cLS);
-		// YLS[2*i]   =  (Y[2*i]*cLS - Y[2*i+1]*sLS);
-		// YLS[2*i+1] = -(Y[2*i]*sLS + Y[2*i+1]*cLS);
-		// ZLS[2*i]   =  (Z[2*i]*cLS - Z[2*i+1]*sLS);
-		// ZLS[2*i+1] = -(Z[2*i]*sLS + Z[2*i+1]*cLS);
-    //
-		// XSL[2*i]   =  2.0*fonfs*(X[2*i]*cSL - X[2*i+1]*sSL);
-		// XSL[2*i+1] = -2.0*fonfs*(X[2*i]*sSL + X[2*i+1]*cSL);
-		// YSL[2*i]   =  2.0*fonfs*(Y[2*i]*cSL - Y[2*i+1]*sSL);
-		// YSL[2*i+1] = -2.0*fonfs*(Y[2*i]*sSL + Y[2*i+1]*cSL);
-		// ZSL[2*i]   =  2.0*fonfs*(Z[2*i]*cSL - Z[2*i+1]*sSL);
-		// ZSL[2*i+1] = -2.0*fonfs*(Z[2*i]*sSL + Z[2*i+1]*cSL);
+		Z[im] = (d[2][0][im]-d[2][1][im])*c3 - (d[2][0][re]-d[2][1][re])*s3+
+		           (d[0][2][im]-d[1][2][im])*c2 - (d[0][2][re]-d[1][2][re])*s2+
+		           (d[2][1][im]-d[2][0][im])*c1 - (d[2][1][re]-d[2][0][re])*s1+
+		           (d[1][2][im]-d[0][2][im]);
+        
+        // Alternative polarization definition
+		XLS[re] =  (X[re]*cLS - X[im]*sLS);
+		XLS[im] =  (X[re]*sLS + X[im]*cLS);
+		YLS[re] =  (Y[re]*cLS - Y[im]*sLS);
+		YLS[im] =  (Y[re]*sLS + Y[im]*cLS);
+		ZLS[re] =  (Z[re]*cLS - Z[im]*sLS);
+		ZLS[im] =  (Z[re]*sLS + Z[im]*cLS);
 
-		// Alternative polarization definition
-		XLS[2*i]   =  (X[2*i]*cLS - X[2*i+1]*sLS);
-		XLS[2*i+1] =  (X[2*i]*sLS + X[2*i+1]*cLS);
-		YLS[2*i]   =  (Y[2*i]*cLS - Y[2*i+1]*sLS);
-		YLS[2*i+1] =  (Y[2*i]*sLS + Y[2*i+1]*cLS);
-		ZLS[2*i]   =  (Z[2*i]*cLS - Z[2*i+1]*sLS);
-		ZLS[2*i+1] =  (Z[2*i]*sLS + Z[2*i+1]*cLS);
-
-		XSL[2*i]   =  2.0*fonfs*(X[2*i]*cSL - X[2*i+1]*sSL);
-		XSL[2*i+1] =  2.0*fonfs*(X[2*i]*sSL + X[2*i+1]*cSL);
-		YSL[2*i]   =  2.0*fonfs*(Y[2*i]*cSL - Y[2*i+1]*sSL);
-		YSL[2*i+1] =  2.0*fonfs*(Y[2*i]*sSL + Y[2*i+1]*cSL);
-		ZSL[2*i]   =  2.0*fonfs*(Z[2*i]*cSL - Z[2*i+1]*sSL);
-		ZSL[2*i+1] =  2.0*fonfs*(Z[2*i]*sSL + Z[2*i+1]*cSL);
-
+		XSL[re] =  2.0*fonfs*(X[re]*cSL - X[im]*sSL);
+		XSL[im] =  2.0*fonfs*(X[re]*sSL + X[im]*cSL);
+		YSL[re] =  2.0*fonfs*(Y[re]*cSL - Y[im]*sSL);
+		YSL[im] =  2.0*fonfs*(Y[re]*sSL + Y[im]*cSL);
+		ZSL[re] =  2.0*fonfs*(Z[re]*cSL - Z[im]*sSL);
+		ZSL[im] =  2.0*fonfs*(Z[re]*sSL + Z[im]*cSL);
 	}
 
 	// for(i=0; i<2*M; i++)
@@ -780,3 +771,4 @@ long get_N(double *params, double Tobs)
 }
 
 */
+

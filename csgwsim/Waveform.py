@@ -355,9 +355,9 @@ class GCBWaveform(BasicWaveform):
     hpS, hcS = GCB(tf)
     """
 
-    def __init__(self, mass1, mass2, T_obs, DL, phi0, f0, fdot=None, fddot=None, **kwargs):
-        eta = 0.25  # FIXME
-        BasicWaveform.__init__(self, mass1, mass2, T_obs, DL, **kwargs)
+    def __init__(self, mass1, mass2, T_obs, DL, phi0, f0, 
+            fdot=None, fddot=None, **kwargs):
+        super.__init__(self, mass1, mass2, T_obs, DL, **kwargs)
         #m1, m2 = to_m1m2(Mc, eta)
         Mc = self.Mc
         self.phi0 = phi0
@@ -400,9 +400,32 @@ class FastGB(GCBWaveform):
     Calculate the GCB waveform using fast/slow TODO
     """
 
-    def __init__(self, N, Mc, DL, phi0, f0, **kwargs):
-        super().__init__(Mc, DL, phi0, f0, **kwargs)
+    def __init__(self, mass1, mass2, T_obs, DL, phi0, f0, 
+            fdot=None, fddot=None,**kwargs):
+        super().__init__(mass1, mass2, T_obs, DL, phi0, f0,
+                fdot, fddot, **kwargs)
         self.N = N
+
+    def biffersoze(self, f, oversample=1):
+        mult = 8
+        rr = self.T_obs/YRSID_SI
+        if (rr <= 8.0): mult = 8
+        if (rr <= 4.0): mult = 4
+        if (rr <= 2.0): mult = 2
+        if (rr <= 1.0): mult = 1
+
+        N = 32 * mult
+
+        if f > 0.001: N = 64*mult
+        if f > 0.01: N = 256*mult
+        if f > 0.03: N = 512*mult
+        if f > 0.1: N = 1024*mult
+
+        return N*oversample
+
+    def onefourier(self, buffer=None, oversample=1):
+        N = self.buffer(self.f0, oversample)
+        
 
 
 class EMRIWaveform(object):

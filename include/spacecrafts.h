@@ -9,7 +9,7 @@
 #define Sacc 9.000000e-30
 
 /* Mean arm length of constellation (m) */
-#define Larm 2.5e9
+#define Armlength_LISA 2.5e9
 
  /* LISA orbital eccentricity */
 #define ec 0.0048241852
@@ -31,7 +31,7 @@
 #define lambda_tq 0.00
 #define fsc_tq 3.1709791983764586e-06 // 3.65 day
 #define Omega_tq 1.9923849908611068e-05 // 2 pi f_sc
-#define Armlength_tq 1.7320508075688772
+#define Armlength_tq 1.7320508075688772e8
 #define Radius_tq 1.0e8 
 #define fstar_tq 0.27547374120820667 // c/(2pi L_tq)
 

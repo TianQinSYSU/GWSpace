@@ -70,8 +70,6 @@ struct Waveform
 	double ***d;
 };
 
-
-
 void Fast_GB(double *params, long N, double Tobs, double dt,  double *XLS, double *YLS, double *ZLS, double* XSL, double* YSL, double* ZSL, int NP, char detector[]);
 
 void XYZ(double ***d, double f0, long q, long M, double dt, double Tobs, double *XLS, double *YLS, double *ZLS, double* XSL, double* YSL, double* ZSL);

@@ -12,6 +12,14 @@ from numpy import sin, cos, sqrt
 
 from .Constants import MSUN_SI, MSUN_unit, MPC_SI, YRSID_SI, PI, C_SI, G_SI
 from .FastEMRI import EMRIWaveform
+try:
+    from PyIMRPhenomD import IMRPhenomD as pyIMRD
+    from PyIMRPhenomD import IMRPhenomD_const as pyimrc
+    use_py_phd=True
+except ImportError:
+    from .pyIMRPhenomD import IMRPhenomDh22AmpPhase as pyIMRD
+    use_py_phd=False
+from scipy.interpolate import InterpolatedUnivariateSpline as Spline
 
 
 # Note1: one can use __slots__=('mass1', 'mass2', 'etc') to fix the attributes
@@ -191,27 +199,7 @@ class BHBWaveform(BasicWaveform):
         dl_si = self.DL * MPC_SI
         return phi_ref, f_ref, m1_si, m2_si, chi1, chi2, dl_si
 
-    def h22_FD(self, freq, fRef=0., t0=0.):
-        NF = freq.shape[0]
-
-        amp_imr = np.zeros(NF)
-        phase_imr = np.zeros(NF)
-        if PyIMRC.findT:
-            time_imr = np.zeros(NF)
-            timep_imr = np.zeros(NF)
-        else:
-            time_imr = np.zeros(0)
-            timep_imr = np.zeros(0)
-
-        # Create structure for Amp/phase/time FD waveform
-        self.h22 = pyIMRD.AmpPhaseFDWaveform(NF, freq, amp_imr, phase_imr, time_imr, timep_imr, fRef, t0)
-
-        # Generate h22 FD amplitude and phase on a given set of frequencies
-        self.h22 = pyIMRD.IMRPhenomDGenerateh22FDAmpPhase(self.h22, freq, *self.wave_para_phenomd())
-
-        return self.h22
-
-    def get_amp_phase(self, freq, mode=None):
+    def get_amp_phase(self, freq, fRef=0, t0=0., mode=None):
         """
         Generate the amp and phase in frequency domain
         ----------------------------------------------
@@ -228,14 +216,40 @@ class BHBWaveform(BasicWaveform):
         - tf: time of freq
         - tfp: dt/df
         """
-        h22 = self.h22_FD(freq, self.fRef, self.tc)
+        if use_py_phd:
+            NF = freq.shape[0]
 
-        amp = {(2, 2): h22.amp}
-        phase = {(2, 2): h22.phase}
-        tf = {(2, 2): h22.time}
-        tfp = {(2, 2): h22.timep}
+            amp_imr = np.zeros(NF)
+            phase_imr = np.zeros(NF)
+            if PyIMRC.findT:
+                time_imr = np.zeros(NF)
+                timep_imr = np.zeros(NF)
+            else:
+                time_imr = np.zeros(0)
+                timep_imr = np.zeros(0)
+            
+            # Create structure for Amp/phase/time FD waveform
+            h22 = pyIMRD.AmpPhaseFDWaveform(NF, freq, amp_imr, phase_imr, time_imr, timep_imr, fRef, t0)
+            
+            # Generate h22 FD amplitude and phase on a given set of frequencies
+            h22 = pyIMRD.IMRPhenomDGenerateh22FDAmpPhase(self.h22, freq, *self.wave_para_phenomd())
 
-        return amp, phase, tf, tfp
+            ##h22 = self.h22_FD(freq, self.fRef, self.tc)
+            
+            amp = {(2, 2): h22.amp}
+            phase = {(2, 2): h22.phase}
+            tf = {(2, 2): h22.time}
+            tfp = {(2, 2): h22.timep}
+        else:
+            wf_phd_class = pyIMRD(freq, *self.wave_para_phenomd())
+            freq, ampS, phaseS = wf_phd_class.GetWaveform()
+            tf_spline = Spline(freq, 1/(2*np.pi)*(phase - phase[0])).derivative()
+            tfS = tf_spline(freq) + self.tc
+            amp = {(2,2): ampS}
+            phase = {(2,2): phase}
+            tf = {(2,2): tf}
+
+        return amp, phase, tf
 
 
 class BHBWaveformEcc(BasicWaveform):

@@ -36,7 +36,7 @@ if __name__ == "__main__":
     freq = 10**np.linspace(-4, 0, NF)
 
     BHBwf = BHBWaveform(**pars)
-    amp, phase, tf, _ = BHBwf.get_amp_phase(freq)
+    amp, phase, tf = BHBwf.get_amp_phase(freq)
     # from pyIMRPhenomD import IMRPhenomDh22AmpPhase
     # from scipy.interpolate import InterpolatedUnivariateSpline as Spline
     # wf_phd_class = IMRPhenomDh22AmpPhase(freq, *BHBwf.wave_para_phenomd())

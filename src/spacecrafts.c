@@ -8,45 +8,48 @@
 
 void spacecraft_LISA(double t, double *x, double *y, double *z)
 {
-	double alpha;
-	double beta1, beta2, beta3;
-	double sa, sb, ca, cb;
+    // expend to second order of ecc, see arxiv:gr-qc/0311069
+    double a, b;
+    a = Omega_lisa*t + kappa_lisa - Perihelion_Ang;
+    for (int i=0; i<3; i++) {
+        b = i*2*PI/3. + lambda_lisa;
+        x[i] = cos(a) + 0.5*ecc_lisa*( (cos(2*a-b) - 3*cos(b)) 
+            +0.25*ecc_lisa*(3*cos(3*a-2*b) - 10*cos(a) - 5*cos(a-2*b)) );
+        y[i] = sin(a) + 0.5*ecc_lisa*( (sin(2*a-b) - 3*sin(b))
+            +0.25*ecc_lisa*(3*sin(3*a-2*b) - 10*cos(a) - 5*cos(a-2*b)) );
+        z[i] = -SQRT3*ecc_lisa*(cos(a-b) + 
+                ecc_lisa*(1 + sin(a-b)*sin(a-b)) );
+        x[i] = AU_SI*x[i];
+        y[i] = AU_SI*y[i];
+        z[i] = AU_SI*z[i];
+    }
+	return;
+}
 
-	alpha = 2.*PI*fm*t + kappa;
-
-	beta1 = 0. + lambda;
-	beta2 = 2.*PI/3. + lambda;
-	beta3 = 4.*PI/3. + lambda;
-
-	sa = sin(alpha);
-	ca = cos(alpha);
-
-	sb = sin(beta1);
-	cb = cos(beta1);
-	x[0] = AU_SI*ca + AU_SI*ec*(sa*ca*sb - (1. + sa*sa)*cb);
-	y[0] = AU_SI*sa + AU_SI*ec*(sa*ca*cb - (1. + ca*ca)*sb);
-	z[0] = -SQRT3*AU_SI*ec*(ca*cb + sa*sb);
-
-	sb = sin(beta2);
-	cb = cos(beta2);
-	x[1] = AU_SI*ca + AU_SI*ec*(sa*ca*sb - (1. + sa*sa)*cb);
-	y[1] = AU_SI*sa + AU_SI*ec*(sa*ca*cb - (1. + ca*ca)*sb);
-	z[1] = -SQRT3*AU_SI*ec*(ca*cb + sa*sb);
-
-	sb = sin(beta3);
-	cb = cos(beta3);
-	x[2] = AU_SI*ca + AU_SI*ec*(sa*ca*sb - (1. + sa*sa)*cb);
-	y[2] = AU_SI*sa + AU_SI*ec*(sa*ca*cb - (1. + ca*ca)*sb);
-	z[2] = -SQRT3*AU_SI*ec*(ca*cb + sa*sb);
-
+void spacecraft_TaiJi(double t, double *x, double *y, double *z)
+{
+    // expend to second order of ecc, see arxiv:gr-qc/0311069
+    double a, b;
+    a = Omega_tj*t + kappa_tj - Perihelion_Ang;
+    for (int i=0; i<3; i++) {
+        b = i*2*PI/3. + lambda_tj;
+        x[i] = cos(a) + 0.5*ecc_tj*( (cos(2*a-b) - 3*cos(b)) 
+            +0.25*ecc_tj*(3*cos(3*a-2*b) - 10*cos(a) - 5*cos(a-2*b)) );
+        y[i] = sin(a) + 0.5*ecc_tj*( (sin(2*a-b) - 3*sin(b))
+            +0.25*ecc_tj*(3*sin(3*a-2*b) - 10*cos(a) - 5*cos(a-2*b)) );
+        z[i] = -SQRT3*ecc_tj*(cos(a-b) + 
+                ecc_tj*(1 + sin(a-b)*sin(a-b)) );
+        x[i] = AU_SI*x[i];
+        y[i] = AU_SI*y[i];
+        z[i] = AU_SI*z[i];
+    }
 	return;
 }
 
 void spacecraft_TianQin(double t, double *x, double *y, double *z)
 {
     // earth position
-    // kappa_earth = LISA + 20 
-    double alpha = EarthOrbitOmega_SI * t + kappa; // + 0.3490658503988659; // this is ahead of LISA
+    double alpha = EarthOrbitOmega_SI * t + kappa_tq; // + 0.3490658503988659; // this is ahead of LISA
     double beta = Perihelion_Ang;
     double sna = sin(alpha - beta);
     double csa = cos(alpha - beta);

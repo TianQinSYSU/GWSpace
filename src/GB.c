@@ -42,11 +42,15 @@ void Fast_GB(double *params, long N, double Tobs, double dt,
         if (strcmp(detector, "TianQin") == 0) {
             spacecraft_TianQin(t, wfm->x, wfm->y, wfm->z);
             fstar = fstar_tq;
-            Larm = Armlength_tq;
+            Larm = armLength_tq;
         } else if (strcmp(detector, "LISA") == 0) {
             spacecraft_LISA(t, wfm->x, wfm->y, wfm->z);
             fstar = fstar_lisa;
-            Larm = Armlength_LISA;
+            Larm = armLength_lisa;
+        } else if (strcmp(detector, "TaiJi") == 0) {
+            spacecraft_TaiJi(t, wfm->x, wfm->y, wfm->z);
+            fstar = fstar_tj;
+            Larm = armLength_tj;
         }
 
 		calc_xi_f(wfm ,t);		  // calc frequency and time variables

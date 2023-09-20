@@ -20,6 +20,7 @@ cdef extern from "GB.h":
 
 cdef extern from "spacecrafts.h":
     void spacecraft_LISA(double t, double *x, double *y, double *z);
+    void spacecraft_TaiJi(double t, double *x, double *y, double *z);
     void spacecraft_TianQin(double t, double *x, double *y, double *z);
 
 
@@ -76,9 +77,11 @@ cpdef Compute_position(double t, double[:] x, double[:] y, double[:] z, str dete
     cdef double* c_y = &y[0]
     cdef double* c_z = &z[0]
 
-    if detector == "LISA":
+    if detector == "LISA" or "lisa":
         spacecraft_LISA(t, c_x, c_y, c_z)
-    elif detector == "TianQin":
+    elif detector == "TianQin" or "TQ":
         spacecraft_TianQin(t, c_x, c_y, c_z)
+    elif detector == "TaiJi" or "taiji":
+        spacecraft_TaiJi(t, c_x, c_y, c_z)
 
     return

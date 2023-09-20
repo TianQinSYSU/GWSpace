@@ -85,7 +85,7 @@ void calc_xi_f(struct Waveform *wfm, double t)
 
 	for(i=0; i<3; i++)
 	{
-		wfm->kdotx[i] = (wfm->x[i]*wfm->k[0] + wfm->y[i]*wfm->k[1] + wfm->z[i]*wfm->k[2])/C;
+		wfm->kdotx[i] = (wfm->x[i]*wfm->k[0] + wfm->y[i]*wfm->k[1] + wfm->z[i]*wfm->k[2])/C_SI;
 		//Wave arrival time at spacecraft i
 		wfm->xi[i]    = t - wfm->kdotx[i];
 		//FIXME
@@ -635,7 +635,7 @@ void XYZ(double ***d, double f0, long q, long M, double dt, double Tobs, double 
 	// YLS = malloc(2*M*sizeof(double));
 	// ZLS = malloc(2*M*sizeof(double));
 
-	phiLS = PI2*f0*(dt/2.0-Larm/C);
+	phiLS = PI2*f0*(dt/2.0-Larm/C_SI);
 
 	cLS = cos(phiLS);
 	sLS = sin(phiLS);
@@ -643,7 +643,7 @@ void XYZ(double ***d, double f0, long q, long M, double dt, double Tobs, double 
 	//double phiLS = 2.0*pi*f0*(dt/2.0-L/clight);
 	//double cLS = cos(phiLS); double sLS = sin(phiLS);
 
-	phiSL = M_PI/2.0-2.0*M_PI*f0*(Larm/C);
+	phiSL = M_PI/2.0-2.0*M_PI*f0*(Larm/C_SI);
 	cSL = cos(phiSL);
 	sSL = sin(phiSL);
 
@@ -739,10 +739,10 @@ long get_N(double *params, double Tobs)
 	amp = exp(params[3]);
 
 	mult = 8;
-	if((Tobs/YEAR) <= 8.0) mult = 8;
-	if((Tobs/YEAR) <= 4.0) mult = 4;
-	if((Tobs/YEAR) <= 2.0) mult = 2;
-	if((Tobs/YEAR) <= 1.0) mult = 1;
+	if((Tobs/YRSID_SI) <= 8.0) mult = 8;
+	if((Tobs/YRSID_SI) <= 4.0) mult = 4;
+	if((Tobs/YRSID_SI) <= 2.0) mult = 2;
+	if((Tobs/YRSID_SI) <= 1.0) mult = 1;
 
 	N = 32*mult;
 	if(f0 > 0.001) N = 64*mult;

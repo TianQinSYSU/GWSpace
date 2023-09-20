@@ -23,21 +23,21 @@ void spacecraft_LISA(double t, double *x, double *y, double *z)
 
 	sb = sin(beta1);
 	cb = cos(beta1);
-	x[0] = AU*ca + AU*ec*(sa*ca*sb - (1. + sa*sa)*cb);
-	y[0] = AU*sa + AU*ec*(sa*ca*cb - (1. + ca*ca)*sb);
-	z[0] = -SQ3*AU*ec*(ca*cb + sa*sb);
+	x[0] = AU_SI*ca + AU_SI*ec*(sa*ca*sb - (1. + sa*sa)*cb);
+	y[0] = AU_SI*sa + AU_SI*ec*(sa*ca*cb - (1. + ca*ca)*sb);
+	z[0] = -SQRT3*AU_SI*ec*(ca*cb + sa*sb);
 
 	sb = sin(beta2);
 	cb = cos(beta2);
-	x[1] = AU*ca + AU*ec*(sa*ca*sb - (1. + sa*sa)*cb);
-	y[1] = AU*sa + AU*ec*(sa*ca*cb - (1. + ca*ca)*sb);
-	z[1] = -SQ3*AU*ec*(ca*cb + sa*sb);
+	x[1] = AU_SI*ca + AU_SI*ec*(sa*ca*sb - (1. + sa*sa)*cb);
+	y[1] = AU_SI*sa + AU_SI*ec*(sa*ca*cb - (1. + ca*ca)*sb);
+	z[1] = -SQRT3*AU_SI*ec*(ca*cb + sa*sb);
 
 	sb = sin(beta3);
 	cb = cos(beta3);
-	x[2] = AU*ca + AU*ec*(sa*ca*sb - (1. + sa*sa)*cb);
-	y[2] = AU*sa + AU*ec*(sa*ca*cb - (1. + ca*ca)*sb);
-	z[2] = -SQ3*AU*ec*(ca*cb + sa*sb);
+	x[2] = AU_SI*ca + AU_SI*ec*(sa*ca*sb - (1. + sa*sa)*cb);
+	y[2] = AU_SI*sa + AU_SI*ec*(sa*ca*cb - (1. + ca*ca)*sb);
+	z[2] = -SQRT3*AU_SI*ec*(ca*cb + sa*sb);
 
 	return;
 }
@@ -53,8 +53,8 @@ void spacecraft_TianQin(double t, double *x, double *y, double *z)
     double ecc = EarthEccentricity;
     double ecc2 = ecc*ecc;
 
-    double x_earth = AU *( csa + ecc * (1+sna*sna) - 1.5*ecc2 * csa*sna*sna);
-    double y_earth = AU * (sna + ecc *sna*csa + 0.5*ecc2 * sna*(1-3*sna*sna));
+    double x_earth = AU_SI *( csa + ecc * (1+sna*sna) - 1.5*ecc2 * csa*sna*sna);
+    double y_earth = AU_SI * (sna + ecc *sna*csa + 0.5*ecc2 * sna*(1-3*sna*sna));
     double z_earth = 0.0;
     
     //TianQin orbit function

@@ -50,6 +50,7 @@
 /* Observation period */
 //#define Tobs 31457280.000000// 125829120.00000//31457280.000000
 
+void spacecraft(char detector[], int N, double *t, double *x, double *y, double *z, double *Larm);
 void spacecraft_LISA(double t, double *x, double *y, double *z);
 void spacecraft_TaiJi(double t, double *x, double *y, double *z);
 void spacecraft_TianQin(double t, double *x, double *y, double *z);

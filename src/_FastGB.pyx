@@ -19,6 +19,7 @@ cdef extern from "GB.h":
                  int NP, char detector[])
 
 cdef extern from "spacecrafts.h":
+    void spacecraft(char detector[], int N, double *t, double *x, double *y, double *z, double *Larm);
     void spacecraft_LISA(double t, double *x, double *y, double *z);
     void spacecraft_TaiJi(double t, double *x, double *y, double *z);
     void spacecraft_TianQin(double t, double *x, double *y, double *z);
@@ -77,11 +78,21 @@ cpdef Compute_position(double t, double[:] x, double[:] y, double[:] z, str dete
     cdef double* c_y = &y[0]
     cdef double* c_z = &z[0]
 
-    if detector == "LISA" or "lisa":
+    if detector == "LISA":
         spacecraft_LISA(t, c_x, c_y, c_z)
-    elif detector == "TianQin" or "TQ":
+    elif detector == "TianQin":
         spacecraft_TianQin(t, c_x, c_y, c_z)
-    elif detector == "TaiJi" or "taiji":
+    elif detector == "TaiJi":
         spacecraft_TaiJi(t, c_x, c_y, c_z)
 
+    return
+
+cpdef Orbits(str detector, int N, double[:] t, double[:] x, double[:] y, double[:] z, double[:] Larm):
+    cdef double* c_t = &t[0];
+    cdef double* c_x = &x[0];
+    cdef double* c_y = &y[0];
+    cdef double* c_z = &z[0];
+    cdef double* c_L = &Larm[0];
+
+    spacecraft(detector.encode('utf-8'), N, c_t, c_x, c_y, c_z, c_L)
     return

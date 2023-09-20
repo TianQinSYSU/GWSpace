@@ -11,6 +11,10 @@
 import numpy as np
 from csgwsim.Constants import C_SI, PI, PI_3, EarthOrbitFreq_SI, EarthEccentricity, Perihelion_Ang, AU_T
 
+if __package__ or "." in __name__:
+    from csgwsim import _FastGB
+else:
+    import _FastGB
 
 class Orbit(object):
     __slots__ = ('_get_pos', 'kappa0', 'orbit_1', 'orbit_2', 'orbit_3', 'p_0',
@@ -84,7 +88,7 @@ class TianQinOrbit(Orbit):
         csa, sia = np.cos(alpha_earth), np.sin(alpha_earth)
         csa2, sia2 = np.cos(alpha_earth*2), np.sin(alpha_earth*2)
 
-        x = AU_T * (csa + 0.5*EarthEccentricity * (csa2-3) - 3/4*EarthEccentricity**2 * csa * (1-csa2))
+        x = AU_T * (csa + 0.5*EarthEccentricity * (csa2-3) - 3/2*EarthEccentricity**2 * csa * (1-csa2))
         y = AU_T * (sia + 0.5*EarthEccentricity * sia2 + 1/4*EarthEccentricity**2 * sia * (3*csa2-1))
         z = np.zeros(len(csa))
         return np.array([x, y, z])
@@ -164,6 +168,36 @@ class LISAOrbit(Orbit):
         z = -AU_T * np.sqrt(3) * ecc * np.cos(alpha_lisa - beta)
         return np.array([x, y, z])
 
+def get_pos(tf, detector="TianQin", toT=True):
+    """
+    Calculate the orbit position with C code
+    ----------------------------------------
+    Parameters:
+    - tf: array of time
+    - detector: string of detector's name
+    - toT: bool parameter to determine return
+        in length unit or time unit
+    ----------------------------------------
+    Return:
+    - (x,y,z,LT)
+    ---> x,y,z: [0],[1],[2] for three spacecrafts' position
+    ---> LT = armLength/C_SI
+    """
+    N = tf.shape[0]
+    x = np.zeros(3*N, 'd')
+    y = np.zeros(3*N, 'd')
+    z = np.zeros(3*N, 'd')
+    L = np.zeros(1,  'd')
+    
+    _FastGB.Orbits(detector, N, tf, x, y, z, L)
+
+    xr = x.reshape((N,3)).T
+    yr = y.reshape((N,3)).T
+    zr = z.reshape((N,3)).T
+
+    if toT:
+        return (xr/C_SI, yr/C_SI, zr/C_SI, L[0]/C_SI)
+    return (xr, yr, zr, L[0])
 
 detectors = {'TQ': TianQinOrbit,
              'LISA': LISAOrbit}

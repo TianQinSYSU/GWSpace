@@ -1,10 +1,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 #include "spacecrafts.h"
 #include "Constants.h"
 
+void spacecraft(char detector[], int N, double *t, double *x, double *y, double *z, double *Larm)
+{
+    for (int i=0; i<N; i++) {
+        if (strcmp(detector, "TianQin") == 0) {
+            spacecraft_TianQin(t[i], &x[3*i], &y[3*i], &z[3*i]);
+            Larm[0] = armLength_tq;
+        } else if (strcmp(detector, "LISA") == 0) {
+            spacecraft_LISA(t[i], &x[3*i], &y[3*i], &z[3*i]);
+            Larm[0] = armLength_lisa;
+        } else if (strcmp(detector, "TaiJi") == 0) {
+            spacecraft_TaiJi(t[i], &x[3*i], &y[3*i], &z[3*i]);
+            Larm[0] = armLength_tj;
+        }       
+    }
+    return;
+}
 
 void spacecraft_LISA(double t, double *x, double *y, double *z)
 {
@@ -56,7 +73,7 @@ void spacecraft_TianQin(double t, double *x, double *y, double *z)
     double ecc = EarthEccentricity;
     double ecc2 = ecc*ecc;
 
-    double x_earth = AU_SI *( csa + ecc * (1+sna*sna) - 1.5*ecc2 * csa*sna*sna);
+    double x_earth = AU_SI *( csa - ecc * (1+sna*sna) - 1.5*ecc2 * csa*sna*sna);
     double y_earth = AU_SI * (sna + ecc *sna*csa + 0.5*ecc2 * sna*(1-3*sna*sna));
     double z_earth = 0.0;
     

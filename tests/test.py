@@ -7,25 +7,12 @@
 # Created Time: 2023-08-25 10:54:38
 # ==================================
 
-import os
-import sys
 import numpy as np
 
-try:
-    from FastEMRI import *
-except:
-    few_path = './Waveforms/FastEMRIWaveforms'
-    abs_few_path = os.path.abspath(few_path)
-
-    if abs_few_path not in sys.path:
-        sys.path.append(abs_few_path)
-
-    from FastEMRI import *
-
-from EMRI import EMRIWaveform
+from csgwsim.Waveform import EMRIWaveform
+from csgwsim.Constants import YRSID_SI
 
 if __name__ == "__main__":
-    from Constants import YRSID_SI
     print("This is a test of loading EMRI waveform")
     # parameters
     T = 0.01  # years

@@ -32,7 +32,6 @@ if __name__ == "__main__":
     noise_TX = frequency_noise_from_psd(TX, freq_[1]-freq_[0])
     np.save("noise_TX.npy", noise_TX)
 
-    '''
     # =======================================
     plt.figure()
     plt.title("Sensitivity of TianQin and LISA---with displacement")
@@ -157,4 +156,3 @@ if __name__ == "__main__":
     plt.legend(loc="best")
 
     plt.show()
-    '''

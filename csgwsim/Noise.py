@@ -34,7 +34,7 @@ class TianQinNoise(object):
 
         # In displacement
         Sa_d = Sa_a/omega**4
-        Soms_d = self.Np*np.ones_like(freq)
+        Soms_d = self.Np/(2*self.armL)**2*np.ones_like(freq)
 
         if unit == "displacement":
             return Sa_d, Soms_d
@@ -84,7 +84,7 @@ class LISANoise(object):
 
         # In displacement
         Sa_d = Sa_a/(2*PI*freq)**4
-        Soms_d = self.Np*(1+(2e-3/freq)**4)
+        Soms_d = self.Np/(2*self.armL)**2*(1+(2e-3/freq)**4)
 
         if unit == "displacement":
             return Sa_d, Soms_d

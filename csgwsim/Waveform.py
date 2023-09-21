@@ -243,6 +243,8 @@ class BHBWaveform(BasicWaveform):
         else:
             wf_phd_class = pyIMRD(freq, *self.wave_para_phenomd())
             freq, amp_22, phase_22 = wf_phd_class.GetWaveform()
+            # Note: these are actually cython pointers, we should also use .copy() to acquire ownership
+            freq, amp_22, phase_22 = freq.copy(), amp_22.copy(), phase_22.copy()
             tf_spline = Spline(freq, 1/(2*np.pi)*(phase_22 - phase_22[0])).derivative()
             tf_22 = tf_spline(freq) + self.tc
             amp = {(2, 2): amp_22}
@@ -337,16 +339,15 @@ class GCBWaveform(BasicWaveform):
     hpS, hcS = GCB(tf)
     """
 
-    def __init__(self, mass1, mass2, T_obs, DL, phi0, f0, fdot=None, fddot=None, **kwargs):
-        BasicWaveform.__init__(self, mass1, mass2, T_obs, DL, **kwargs)
-        # m1, m2 = to_m1m2(Mc, eta)
-        Mc = self.Mc
+    def __init__(self, mass1, mass2, T_obs, phi0, f0, fdot=None, fddot=None, DL=1., Lambda=None, Beta=None,
+                 phi_c=0., tc=0., iota=0., var_phi=0., psi=0, **kwargs):
+        BasicWaveform.__init__(self, mass1, mass2, T_obs, DL, Lambda, Beta,
+                               phi_c, tc, iota, var_phi, psi, **kwargs)
         self.phi0 = phi0
         self.f0 = f0
-        # self.fdot = fdot
         if fdot is None:
             self.fdot = (96/5*PI**(8/3) *
-                         (G_SI*Mc*MSUN_SI/C_SI**3)**(5/3)
+                         (G_SI*self.Mc*MSUN_SI/C_SI**3)**(5/3)
                          * f0**(11/3))
         else:
             self.fdot = fdot
@@ -354,7 +355,7 @@ class GCBWaveform(BasicWaveform):
             self.fddot = 11/3*self.fdot**2/f0
         else:
             self.fddot = fddot
-        self.amp = 2*(G_SI*Mc*MSUN_SI)**(5/3)
+        self.amp = 2*(G_SI*self.Mc*MSUN_SI)**(5/3)
         self.amp = self.amp/C_SI**4/(DL*MPC_SI)
         self.amp = self.amp*(PI*f0)**(2/3)
 

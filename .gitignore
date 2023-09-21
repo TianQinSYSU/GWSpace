@@ -3,10 +3,15 @@
 gitpush.sh
 
 *.so
+*.npy
 
 .idea
-
 .ipynb_checkpoints/
-**.npy
 tests/csgwsim
 Waveforms
+
+src/_FastGB.c
+src/pyIMRPhenomD.c
+dist/
+*.egg-info/
+*.egg

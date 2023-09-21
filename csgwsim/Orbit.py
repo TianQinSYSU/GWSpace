@@ -89,7 +89,7 @@ class TianQinOrbit(Orbit):
         csa, sia = np.cos(alpha_earth), np.sin(alpha_earth)
         csa2, sia2 = np.cos(alpha_earth*2), np.sin(alpha_earth*2)
 
-        x = AU_T * (csa + 0.5*EarthEccentricity * (csa2-3) - 3/2*EarthEccentricity**2 * csa * (1-csa2))
+        x = AU_T * (csa + 0.5*EarthEccentricity * (csa2-3) - 3/4*EarthEccentricity**2 * csa * (1-csa2))
         y = AU_T * (sia + 0.5*EarthEccentricity * sia2 + 1/4*EarthEccentricity**2 * sia * (3*csa2-1))
         z = np.zeros(len(csa))
         return np.array([x, y, z])

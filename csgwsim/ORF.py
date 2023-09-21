@@ -30,13 +30,23 @@ def transfer_Dslr(tf, freq, lambd, beta, detector="TianQin", nopol=True):
     if nopol:
         xi12 = _xip(-n21) + _xic(-n12)
         xi21 = _xip(n21) + _xic(n21)
-        xi13 = _xip(n13) + _xi
+        xi13 = _xip(n13) + _xic(n13)
+        xi31 = _xip(-n13) + _xic(-n13)
+        xi32 = _xip(n32) + _xic(n32)
+        xi23 = _xip(-n32) + _xic(-n32)
     else:
         NotImplementedError
 
     # in numpy sinc(x) = sin(pi x)/pi x
-    fact_sinc = np.sinc(freq * LT *(1-kn))
-    fact_exp = np.exp(-1j * PI*freq*(LT+krs+krr))
+    def fact(kni, krs, krr):
+        tmp = np.sinc(freq * LT *(1-kni)) 
+        tmp *= np.exp(-1j * PI*freq*(LT+krs+krr))
+        return tmp
+
+    fac = 2*np.pi*freq*
+    y12 = -1j*
+
+
     return 0.5 * fact_sinc * fact_exp
 
 

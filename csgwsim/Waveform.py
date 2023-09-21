@@ -15,10 +15,10 @@ from .FastEMRI import EMRIWaveform
 try:
     from PyIMRPhenomD import IMRPhenomD as pyIMRD
     from PyIMRPhenomD import IMRPhenomD_const as pyimrc
-    use_py_phd=True
+    use_py_phd = True
 except ImportError:
-    from .pyIMRPhenomD import IMRPhenomDh22AmpPhase as pyIMRD
-    use_py_phd=False
+    from pyIMRPhenomD import IMRPhenomDh22AmpPhase as pyIMRD
+    use_py_phd = False
 from scipy.interpolate import InterpolatedUnivariateSpline as Spline
 
 
@@ -221,7 +221,7 @@ class BHBWaveform(BasicWaveform):
 
             amp_imr = np.zeros(NF)
             phase_imr = np.zeros(NF)
-            if PyIMRC.findT:
+            if pyimrc.findT:
                 time_imr = np.zeros(NF)
                 timep_imr = np.zeros(NF)
             else:
@@ -234,7 +234,7 @@ class BHBWaveform(BasicWaveform):
             # Generate h22 FD amplitude and phase on a given set of frequencies
             h22 = pyIMRD.IMRPhenomDGenerateh22FDAmpPhase(self.h22, freq, *self.wave_para_phenomd())
 
-            ##h22 = self.h22_FD(freq, self.fRef, self.tc)
+            # h22 = self.h22_FD(freq, self.fRef, self.tc)
             
             amp = {(2, 2): h22.amp}
             phase = {(2, 2): h22.phase}
@@ -242,12 +242,12 @@ class BHBWaveform(BasicWaveform):
             tfp = {(2, 2): h22.timep}
         else:
             wf_phd_class = pyIMRD(freq, *self.wave_para_phenomd())
-            freq, ampS, phaseS = wf_phd_class.GetWaveform()
-            tf_spline = Spline(freq, 1/(2*np.pi)*(phase - phase[0])).derivative()
-            tfS = tf_spline(freq) + self.tc
-            amp = {(2,2): ampS}
-            phase = {(2,2): phase}
-            tf = {(2,2): tf}
+            freq, amp_22, phase_22 = wf_phd_class.GetWaveform()
+            tf_spline = Spline(freq, 1/(2*np.pi)*(phase_22 - phase_22[0])).derivative()
+            tf_22 = tf_spline(freq) + self.tc
+            amp = {(2, 2): amp_22}
+            phase = {(2, 2): phase_22}
+            tf = {(2, 2): tf_22}
 
         return amp, phase, tf
 

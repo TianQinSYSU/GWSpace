@@ -46,7 +46,7 @@ def func_ext(name, src):
     )
 
 
-fastgb_ext = func_ext("_FastGB",
+fastgb_ext = func_ext("libFastGB",
                       src=[
                           "src/_FastGB.pyx",
                           "src/spacecrafts.c",

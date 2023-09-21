@@ -12,9 +12,10 @@ import numpy as np
 from csgwsim.Constants import C_SI, PI, PI_3, EarthOrbitFreq_SI, EarthEccentricity, Perihelion_Ang, AU_T
 
 if __package__ or "." in __name__:
-    from csgwsim import _FastGB
+    from csgwsim import libFastGB
 else:
-    import _FastGB
+    import libFastGB
+
 
 class Orbit(object):
     __slots__ = ('_get_pos', 'kappa0', 'orbit_1', 'orbit_2', 'orbit_3', 'p_0',
@@ -168,6 +169,7 @@ class LISAOrbit(Orbit):
         z = -AU_T * np.sqrt(3) * ecc * np.cos(alpha_lisa - beta)
         return np.array([x, y, z])
 
+
 def get_pos(tf, detector="TianQin", toT=True):
     """
     Calculate the orbit position with C code
@@ -189,15 +191,16 @@ def get_pos(tf, detector="TianQin", toT=True):
     z = np.zeros(3*N, 'd')
     L = np.zeros(1,  'd')
     
-    _FastGB.Orbits(detector, N, tf, x, y, z, L)
+    libFastGB.Orbits(detector, N, tf, x, y, z, L)
 
-    xr = x.reshape((N,3)).T
-    yr = y.reshape((N,3)).T
-    zr = z.reshape((N,3)).T
+    xr = x.reshape((N, 3)).T
+    yr = y.reshape((N, 3)).T
+    zr = z.reshape((N, 3)).T
 
     if toT:
-        return (xr/C_SI, yr/C_SI, zr/C_SI, L[0]/C_SI)
-    return (xr, yr, zr, L[0])
+        return xr/C_SI, yr/C_SI, zr/C_SI, L[0]/C_SI
+    return xr, yr, zr, L[0]
+
 
 detectors = {'TQ': TianQinOrbit,
              'LISA': LISAOrbit}

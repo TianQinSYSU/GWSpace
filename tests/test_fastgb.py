@@ -10,7 +10,7 @@
 import numpy as np
 from csgwsim import FastGB as FB
 import matplotlib.pyplot as plt
-from csgwsim import _FastGB as _FB
+from csgwsim import libFastGB as _FB
 
 
 def GenerateFastGB(p, Tobs, Cadence, oversample, TD=False):  # 默认TD = False，即生成频域信号。如果要生成时域信号那么需要标明TD = True

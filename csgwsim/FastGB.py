@@ -9,13 +9,13 @@ from csgwsim.wrap import FrequencyArray
 from csgwsim.utils import countdown
 
 if __package__ or "." in __name__:
-    from csgwsim import _FastGB
+    from csgwsim import libFastGB
 else:
-    import _FastGB
-
+    import libFastGB
 
 YRSID_SI = 31558149.763545600
 # sidereal year [sec] (http://hpiers.obspm.fr/eop-pc/models/constants.html)
+
 
 class FastGB:
     # FastBinaryCache = {}
@@ -78,8 +78,8 @@ class FastGB:
             # vector must be ordered as required by Fast_GB
             # Fast_GB(double *params, long N, double *XLS, double *ALS, double *ELS, int NP)
 
-            #ComputeXYZ_FD(params, N, self.Tobs, self.dt, XLS, YLS, ZLS, XSL, YSL, ZSL, self.detector)
-            _FastGB.ComputeXYZ_FD(params, N, T, dt, XLS, YLS, ZLS, XSL, YSL, ZSL, len(params), detector=self.detector)
+            # ComputeXYZ_FD(params, N, self.Tobs, self.dt, XLS, YLS, ZLS, XSL, YSL, ZSL, self.detector)
+            libFastGB.ComputeXYZ_FD(params, N, T, dt, XLS, YLS, ZLS, XSL, YSL, ZSL, len(params), detector=self.detector)
             # TODO Need to transform to SL if required
             Xf = XLS
             Yf = YLS
@@ -144,15 +144,15 @@ class FastGB:
         return X.ifft(dt), Y.ifft(dt), Z.ifft(dt)
 
 
-def GenerateFastGB(p, Tobs, dt, oversample, TD = False, detector="TianQin"):  
+def GenerateFastGB(p, Tobs, dt, oversample, TD=False, detector="TianQin"):
     """
     Parameters:
     - TD: default is False
     """
-    ### unfolding the parameters and producing the list of Params
+    # unfolding the parameters and producing the list of Params
     Amp, f0, fdot, iota, psi, phi0, EclLat, EclLon = p
 
-    Ns = len(Amp)    # number of sources
+    Ns = len(Amp)  # number of sources
 
     prm = []
     for i in range(Ns):
@@ -162,13 +162,13 @@ def GenerateFastGB(p, Tobs, dt, oversample, TD = False, detector="TianQin"):
     FB = FastGB("Test", dt=dt, Tobs=Tobs, orbit="analytic", detector=detector)
 
     if TD:
-        Xt, Yt, Zt = fastB.TDI(T=Tobs,dt=del_t,simulator='synthlisa',table=prm,
-        algorithm='Michele',oversample=oversample)
-        tm = np.arange(len(Xt))*del_t
+        Xt, Yt, Zt = FB.TDI(T=Tobs, dt=dt, simulator='synthlisa', table=prm,
+                            algorithm='Michele', oversample=oversample)
+        tm = np.arange(len(Xt))*dt
 
-        return (tm, Xt, Yt, Zt)
+        return tm, Xt, Yt, Zt
 
     else:
-        Xf, Yf, Zf = fastB.fourier(T=Tobs,dt=del_t,simulator='synthlisa',
-        table=prm,algorithm='Michele',oversample=oversample)
-        return(Xf.f,Xf[:],Yf[:],Zf[:])
+        Xf, Yf, Zf = FB.fourier(T=Tobs, dt=dt, simulator='synthlisa',
+                                table=prm, algorithm='Michele', oversample=oversample)
+        return Xf.f, Xf[:], Yf[:], Zf[:]

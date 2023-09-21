@@ -130,9 +130,8 @@ class EMRIWaveform(object):
 
         teuk_modes = amp(p, e)
 
-        theta, phi = self.gen_wave._get_viewing_angles(self.qS, self.phiS, self.qK, self.phiK)  # get view angle
         # get ylms
-        ylms = self.ylm_gen(amp.unique_l, amp.unique_m, theta, phi).copy()[amp.inverse_lm]
+        ylms = self.ylm_gen(amp.unique_l, amp.unique_m, self.theta, self.phi).copy()[amp.inverse_lm]
 
         mode_selector = ModeSelector(amp.m0mask, use_gpu=False)
 

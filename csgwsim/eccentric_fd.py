@@ -16,7 +16,7 @@ if _dirname == '':
 try:
     _rlib = cdll.LoadLibrary(_dirname+"/libEccFD.so")
 except OSError:
-    so_file = glob.glob(_dirname + "/*.so")
+    so_file = glob.glob(_dirname + "/libEccFD*.so")
     _rlib = cdll.LoadLibrary(so_file[0])
 
 

@@ -21,7 +21,13 @@ def _matrix_res_pro(n, p, m):
 
 
 def trans_fd_response(vec_k, p, det, f):
-    """See Marsat et al. (Eq. 21, 28) https://journals.aps.org/prd/abstract/10.1103/PhysRevD.103.083011"""
+    """
+    See Marsat et al. (Eq. 21, 28) https://journals.aps.org/prd/abstract/10.1103/PhysRevD.103.083011
+    Parameters:
+    - vec_k: the prop direction of GWs (x,y,z), which is determined by (lambd, beta)
+    - p: tensor of polar for GW, h = h_+ e^+ + h_x e^x in time domain, but h_ij (f) = p_ij h(f)
+    """
+
     u12 = det.Uni_vec_12
     u23 = det.Uni_vec_23
     u13 = det.Uni_vec_13

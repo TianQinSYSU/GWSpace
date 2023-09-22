@@ -17,10 +17,11 @@ try:
     from PyIMRPhenomD import IMRPhenomD_const as pyimrc
     use_py_phd = True
 except ImportError:
-    from pyIMRPhenomD import IMRPhenomDh22AmpPhase as pyIMRD
+    from .pyIMRPhenomD import IMRPhenomDh22AmpPhase as pyIMRD
     use_py_phd = False
 
 from scipy.interpolate import InterpolatedUnivariateSpline as Spline
+from .ORF import transfer_Dslr
 
 
 # Note1: one can use __slots__=('mass1', 'mass2', 'etc') to fix the attributes
@@ -406,38 +407,6 @@ class FastGB(GCBWaveform):
 
     def onefourier(self, buffer=None, oversample=1):
         N = self.buffer(self.f0, oversample)
-
-
-class SGWB(object):
-    """
-    To generate the SGWB signals all sky
-    ------------------------------------
-    """
-
-    def __init__(self, freq, delta_f, Sh, seed=1234):
-        """
-        Parameters
-        ----------
-        - Nf: generate Nf frequency data
-        - deltaf: delta freq
-        - Sh: array of the PSD of SGWB
-        - seed: random seed
-        """
-        np.random.seed(seed)
-        # Nf = freq.shape[0]
-        Npix = 192
-
-        not_zero = (Sh != 0)
-
-        sigma = np.sqrt(0.5*Sh[not_zero]/delta_f/Npix)
-        Nf = sigma.shape[0]
-
-        hf = np.array([np.random.normal(0, sig, Npix) for sig in sigma])
-
-    def generate_plane_wave(self, freq):
-        Nf = freq.shape[0]
-        hf = np.zeros((Nf, self.N))
-        hf = np.array([])
 
 
 waveforms = {'burst': BurstWaveform,

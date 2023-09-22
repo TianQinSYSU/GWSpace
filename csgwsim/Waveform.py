@@ -9,8 +9,14 @@
 
 import numpy as np
 from numpy import sin, cos, sqrt
+from scipy.interpolate import InterpolatedUnivariateSpline as Spline
 
+from .Orbit import detectors
+from .response import get_fd_response
+from .utils import sYlm
 from .Constants import MSUN_SI, MSUN_unit, MPC_SI, YRSID_SI, PI, C_SI, G_SI
+
+from .eccentric_fd import gen_ecc_fd_and_tf
 from .FastEMRI import EMRIWaveform
 try:
     from PyIMRPhenomD import IMRPhenomD as pyIMRD
@@ -19,8 +25,6 @@ try:
 except ImportError:
     from .pyIMRPhenomD import IMRPhenomDh22AmpPhase as pyIMRD
     use_py_phd = False
-
-from scipy.interpolate import InterpolatedUnivariateSpline as Spline
 
 
 # Note1: one can use __slots__=('mass1', 'mass2', 'etc') to fix the attributes
@@ -173,22 +177,22 @@ class BHBWaveform(BasicWaveform):
     def f_min(self):
         return 5**(3/8)/(8*np.pi) * (MSUN_unit*self.Mc)**(-5/8) * self.T_obs**(-3/8)
 
-    def _y22(self):
-        """See "LDC-manual-002.pdf" (Eq. 31)"""
-        y22_o = sqrt(5/4/PI) * cos(self.iota/2)**4 * np.exp(2j*self.var_phi)
-        y2_2_conj = sqrt(5/4/PI) * sin(self.iota/2)**4 * np.exp(2j*self.var_phi)
-        return y22_o, y2_2_conj
+    def p_lm(self, l=2, m=2):  # FIXME: Is that necessary to calculate both h_(l,m) and h_(l,-m)=h_(l,m)_conj?
+        """See Marsat et al. (Eq. 16) https://journals.aps.org/prd/abstract/10.1103/PhysRevD.103.083011"""
+        p0_plus, p0_cross = self._p0()
+        y_lm = sYlm(-2, l, m, self.iota, self.var_phi)
+        y_l_m_conj = sYlm(-2, l, -m, self.iota, self.var_phi).conjugate()
+        return (1/2 * y_lm * np.exp(-2j*self.psi) * (p0_plus + 1j*p0_cross) +
+                1/2 * (-1)**l * y_l_m_conj * np.exp(2j*self.psi) * (p0_plus - 1j*p0_cross))
 
-    # p_lm(self, l=2, m=2):
-    #     y_lm_o = spin_weighted_spherical_harmonic(-2, l, m, self.iota, self.var_phi)
-    #     y_l_m_conj = spin_weighted_spherical_harmonic(-2, l, -m, self.iota, self.var_phi).conjugate()
     @property
     def p22(self):
-        """See Marsat et al. (Eq. 16) https://journals.aps.org/prd/abstract/10.1103/PhysRevD.103.083011"""
-        y22_o, y2_2_conj = self._y22()
+        """See "LDC-manual-002.pdf" (Eq. 31)"""
         p0_plus, p0_cross = self._p0()
-        
-        return (1/2 * y22_o * np.exp(-2j*self.psi) * (p0_plus + 1j*p0_cross) +
+        y22 = sqrt(5/4/PI) * cos(self.iota/2)**4 * np.exp(2j*self.var_phi)
+        y2_2_conj = sqrt(5/4/PI) * sin(self.iota/2)**4 * np.exp(2j*self.var_phi)
+
+        return (1/2 * y22 * np.exp(-2j*self.psi) * (p0_plus + 1j*p0_cross) +
                 1/2 * y2_2_conj * np.exp(2j*self.psi) * (p0_plus - 1j*p0_cross))
 
     def wave_para_phenomd(self, f_ref=0.):
@@ -281,8 +285,6 @@ class BHBWaveformEcc(BasicWaveform):
 
     def gen_ori_waveform(self, delta_f=None, f_min=None, f_max=1.):
         """Generate f-domain TDI waveform(EccentricFD)"""
-        from .eccentric_fd import gen_ecc_fd_and_tf
-
         if not f_min:
             f_min = self.f_min
         if delta_f is None:
@@ -295,9 +297,6 @@ class BHBWaveformEcc(BasicWaveform):
         """Generate F-Domain TDI response for eccentric waveform (EccentricFD).
          Although the eccentric waveform also have (l, m)=(2,2), it has eccentric harmonics,
          which should also calculate separately like what we should do for spherical harmonics."""
-        from .Orbit import detectors
-        from .response import get_fd_response
-
         if det not in detectors.keys():
             raise ValueError(f"[SpaceResponse] Unknown detector {det}. "
                              f"Supported detectors: {'|'.join(detectors.keys())}")
@@ -360,20 +359,19 @@ class GCBWaveform(BasicWaveform):
         self.amp = self.amp/C_SI**4/(DL*MPC_SI)
         self.amp = self.amp*(PI*f0)**(2/3)
 
-    def get_hphc(self, t):  # FIXME // name of the fucntion
+    def get_hphc(self, t):
+        # FIXME: use self.T_obs
         phase = 2*PI*(self.f0+0.5*self.fdot*t +
                       1/6*self.fddot*t*t)*t+self.phi0
-        hp = self.amp*cos(phase)
-        hc = self.amp*sin(phase)
-
-        # TODO: What do we really want from __call__? Original wf or SSB wf?
-        #  Could we not use __call__ but add two normal methods in class?
         cs2p = cos(2*self.psi)
         sn2p = sin(2*self.psi)
         csi = cos(self.iota)
 
-        hp_SSB = -(1+csi*csi)*hp*cs2p+2*csi*hc*sn2p
-        hc_SSB = -(1+csi*csi)*hp*sn2p-2*csi*hc*cs2p
+        hp = self.amp*cos(phase) * (1+csi*csi)
+        hc = self.amp*sin(phase) * 2*csi
+
+        hp_SSB = hp*cs2p-hc*sn2p
+        hc_SSB = hp*sn2p+hc*cs2p
 
         return hp_SSB, hc_SSB
 

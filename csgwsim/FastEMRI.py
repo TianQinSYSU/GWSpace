@@ -184,8 +184,6 @@ class EMRIWaveform(object):
         return h.real, h.imag
 
     def get_hphc(self, tf, eps=1e-5, modes=None):
-        # TODO: What do we really want from __call__? Original wf or SSB wf?
-        #  Could we not use __call__ but add two normal methods in class?
         Tobs = tf[-1]/YRSID_SI
         dt = tf[1]-tf[0]
         # T = Tobs - int(Tobs * YRSID_SI/dt - tf.shape[0]) * dt/YRSID_SI

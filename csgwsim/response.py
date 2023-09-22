@@ -70,14 +70,13 @@ def trans_fd_response(vec_k, p, det, f):
         n23pn23 = _matrix_res_pro(u23, p_, u23)
         n31pn31 = _matrix_res_pro(u13, p_, u13)
 
-        y12 = y12_pre * n12pn12
-        y21 = y21_pre * n12pn12
-        y13 = y13_pre * n31pn31
-        y31 = y31_pre * n31pn31
-        y23 = y23_pre * n23pn23
-        y32 = y32_pre * n23pn23
-
-        return y12, y21, y13, y31, y23, y32
+        y_slr = {(1, 2): y12_pre * n12pn12,
+                 (2, 1): y21_pre * n12pn12,
+                 (1, 3): y13_pre * n31pn31,
+                 (3, 1): y31_pre * n31pn31,
+                 (2, 3): y23_pre * n23pn23,
+                 (3, 2): y32_pre * n23pn23}
+        return y_slr
 
     if type(p) != tuple:
         p = (p, )
@@ -85,7 +84,7 @@ def trans_fd_response(vec_k, p, det, f):
 
 
 def get_fd_response(vec_k, p, det, f, channel='A'):
-    """
+    """TODO: deprecated
 
     :param vec_k:
     :param p: p is a tuple, i.e. a series of P_lm (or P_x, P_+) in it
@@ -94,15 +93,16 @@ def get_fd_response(vec_k, p, det, f, channel='A'):
     :param channel:
     :return:
     """
-    # if channel not in 'XYZAET':  # <if not all([c in 'XYZAET' for c in channel])> for multi-channel mode
+    # if channel not in 'XYZAET':  # <if not all([c in 'XYZAET' for c in channel])> for multichannel mode
     #     raise ValueError(f"[SpaceResponse] Unknown channel {channel}. "
     #                      f"Supported channels: {'|'.join(['X', 'Y', 'Z', 'A', 'E', 'T'])}")
-    yslr = trans_fd_response(vec_k, p, det, f)
+    y_slr = trans_fd_response(vec_k, p, det, f)
     x = np.pi * f * det.L_T
     z = np.exp(2j * x)  # Time delay factor
     res_list = []
 
-    for (y12, y21, y13, y31, y23, y32) in yslr:  # TODO: to be polished
+    for y_p in y_slr:
+        y12, y21, y13, y31, y23, y32 = list(y_p.values())
         if channel == 'A':
             # See (Eq. 29) in arXiv:2003.00357v1, the factor of rescaling a,e,t to the original A,E,T
             factor_ae = 1j*np.sqrt(2)*np.sin(2.*x)*np.exp(2j*x)
@@ -119,60 +119,6 @@ def get_fd_response(vec_k, p, det, f, channel='A'):
         res_list.append(res)
 
     return res_list
-
-
-# def Evaluate_yslr(self, freq, mode=None):
-#     """
-#     Calculate yslr for all the modes
-#     --------------------------------
-#     - h: h(f) --> h_22 = h[(2,2)]
-#     """
-#     if mode is None:
-#         mode = [(2, 2)]
-#     exp_2psi = np.exp(-1j*2*self.wf.psi)
-#     exp2psi = np.exp(1j*2*self.wf.psi)
-#
-#     amp, phase, tf = self.wf.get_amp_phase(freq, mode)
-#     yslr = {}
-#
-#     for lm in mode:
-#         l, m = lm
-#
-#         hlm = np.exp(1j*phase[lm])  # without amp
-#         hl_m = np.exp(-1j*phase[lm])  # without amp
-#         Gslr, zeta = self.EvaluateTslr(tf[lm], freq, self.wf.Lambda, self.wf.Beta)
-#
-#         ylm = sYlm(-2, l, m, self.wf.iota, self.wf.varphi)
-#         yl_m = sYlm(-2, l, -m, self.wf.iota, self.wf.varphi)
-#
-#         def niPlxni(i, y1, y2):
-#             zp = zeta['p%s' % i]
-#             zc = zeta['c%s' % i]
-#             return 0.5*(y1*exp_2psi*(zp+1j*zc)
-#                         + (-1)**l*y2*exp2psi*(zp-1j*zc))
-#
-#         # n1Plmn1 = 0.5 * (ylm * exp_2psi * (zeta['p1'] + 1j * zeta['c1'])
-#         #        + (-1)**l * yl_m * exp2psi * (zeta['p1'] -1j * zeta['c1']))
-#         # n1pl_mn1 = 0.5 * (yl_m * exp_2psi * (zeta['p1'] + 1j * zeta['c1'])
-#         #        + (-1)**l * ylm * exp2psi * (zeta['p1'] -1j * zeta['c1']))
-#
-#         n1Plmn1 = niPlxni(1, ylm, yl_m)
-#         n1Pl_mn1 = niPlxni(1, yl_m, ylm)
-#         n2Plmn2 = niPlxni(2, ylm, yl_m)
-#         n2Pl_mn2 = niPlxni(2, yl_m, ylm)
-#         n3Plmn3 = niPlxni(3, ylm, yl_m)
-#         n3Pl_mn3 = niPlxni(3, yl_m, ylm)
-#
-#         yslr[lm] = {}
-#         yslr[lm][(1, 2)] = Gslr[(1, 2)]*(n3Plmn3*hlm+n3Pl_mn3*hl_m)*amp[lm]
-#         yslr[lm][(2, 1)] = Gslr[(2, 1)]*(n3Plmn3*hlm+n3Pl_mn3*hl_m)*amp[lm]
-#
-#         yslr[lm][(2, 3)] = Gslr[(2, 3)]*(n1Plmn1*hlm+n1Pl_mn1*hl_m)*amp[lm]
-#         yslr[lm][(3, 2)] = Gslr[(3, 2)]*(n1Plmn1*hlm+n1Pl_mn1*hl_m)*amp[lm]
-#
-#         yslr[lm][(3, 1)] = Gslr[(3, 1)]*(n2Plmn2*hlm+n2Pl_mn2*hl_m)*amp[lm]
-#         yslr[lm][(1, 3)] = Gslr[(1, 3)]*(n2Plmn2*hlm+n2Pl_mn2*hl_m)*amp[lm]
-#     return yslr
 
 
 def H(wf, tf, nl):
@@ -211,15 +157,15 @@ def H(wf, tf, nl):
 
 def get_td_response(wf, det, tf, TDIgen=1):
     if TDIgen == 1:
-        TDIdelay = 4
+        TDI_delay = 4
     else:
         raise NotImplementedError
 
     p1, p2, p3 = det.orbit_1, det.orbit_2, det.orbit_3
     L = det.L_T
-    n1 = (p2-p3)/L
-    n2 = (p3-p1)/L
-    n3 = (p1-p2)/L
+    n1 = -det.Uni_vec_23
+    n2 = det.Uni_vec_13
+    n3 = -det.Uni_vec_12
 
     k = wf.vec_k
 
@@ -237,16 +183,16 @@ def get_td_response(wf, det, tf, TDIgen=1):
     H2_p3 = {}
     H2_p1 = {}
 
-    tt = [tf-kp1, tf-kp2, tf-kp3]
+    tf_kp1, tf_kp2, tf_kp3 = tf-kp1, tf-kp2, tf-kp3
 
-    for i in range(TDIdelay+1):
+    for i in range(TDI_delay+1):
         tag = L*i
-        H3_p2[i] = H(wf, tf-kp2-tag, n3)
-        H3_p1[i] = H(wf, tf-kp1-tag, n3)
-        H1_p3[i] = H(wf, tf-kp3-tag, n1)
-        H1_p2[i] = H(wf, tf-kp2-tag, n1)
-        H2_p3[i] = H(wf, tf-kp3-tag, n2)
-        H2_p1[i] = H(wf, tf-kp1-tag, n2)
+        H3_p2[i] = H(wf, tf_kp2-tag, n3)
+        H3_p1[i] = H(wf, tf_kp1-tag, n3)
+        H1_p3[i] = H(wf, tf_kp3-tag, n1)
+        H1_p2[i] = H(wf, tf_kp2-tag, n1)
+        H2_p3[i] = H(wf, tf_kp3-tag, n2)
+        H2_p1[i] = H(wf, tf_kp1-tag, n2)
 
     yslr = {}
     y12 = {}
@@ -256,7 +202,7 @@ def get_td_response(wf, det, tf, TDIgen=1):
     y32 = {}
     y13 = {}
 
-    for i in range(TDIdelay):
+    for i in range(TDI_delay):
         y12[f"{i}L"] = (H3_p1[i+1]-H3_p2[i])/2/(1+kn3)
         y21[f"{i}L"] = (H3_p2[i+1]-H3_p1[i])/2/(1-kn3)
 

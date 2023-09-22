@@ -13,7 +13,7 @@ import yaml
 import numpy as np
 from numpy import pi, sqrt, cos, sin, exp
 
-from csgwsim.Constants import C_SI
+from csgwsim.Constants import C_SI, H0_SI, Omega_m_Planck2018
 
 
 def sinc(x):
@@ -126,7 +126,19 @@ def to_m1m2(m_chirp, eta):
     return m1, m2
 
 
-## ==========================
+# ==========================
+def luminosity_distance_approx(z, omega_m=Omega_m_Planck2018):
+    """
+    An analytical approximation of the luminosity distance
+    in flat cosmologies
+    -------------------------
+    arxiv:1111.6396
+    """
+    x_z = (1-omega_m)/omega_m/(1+z)**3
+    Phix = lambda x: ((1+320*x+0.4415*x*x+0.02656*x**3) / (1+392*x+0.5121*x*x+0.03944*x**2))
+    return 2*C_SI/H0_SI*(1+z)/np.sqrt(omega_m)*(
+            Phix(0)-Phix(x_z)/np.sqrt(1+z))
+
 
 def icrs_to_ecliptic(ra, dec, center='bary'):
     """Convert ICRS(Equatorial) to Ecliptic frame.
@@ -298,7 +310,7 @@ def FourierTransformData(x, dt, wis=None):
 """
 
 
-## =======================================
+# =======================================
 def Rotation_3D(axis, theta):
     """
     Rotation around the axis of theta.
@@ -326,7 +338,7 @@ def Rotation_3D(axis, theta):
     return R
 
 
-## =======================================
+# =======================================
 def dfridr(func, x, h, err=1e-14, *args):
     """
     Parameters:
@@ -373,7 +385,7 @@ def dfridr(func, x, h, err=1e-14, *args):
     return df
 
 
-## =======================================
+# =======================================
 def QuadLagrange3(x, y):
     """
     Quadratic Lagrange interpolation polynomial of degree 2
@@ -473,7 +485,7 @@ def spin_weighted_spherical_harmonic(s, l, m, theta, phi):
         return fac*exp(1j*m*phi)
 
 
-## factorial
+# factorial
 def Factorial(n):
     """
     ------------------------------------------------------
@@ -487,7 +499,7 @@ def Factorial(n):
     return n*Factorial(n-1)
 
 
-## binominal coefficient
+# binominal coefficient
 def BinomialCoefficient(n, k):
     """
     Binomial Coefficient
@@ -510,7 +522,7 @@ def BinomialCoefficient(n, k):
     return 0
 
 
-## spin-weighted spherical harmonics
+# spin-weighted spherical harmonics
 def sYlm(s, l, m, theta, phi):
     """
     Spin Weighted Spherical Harmonics
@@ -552,7 +564,7 @@ def sYlm(s, l, m, theta, phi):
     return tp*d1*tps
 
 
-##+====================================
+# ====================================
 def epsilon(i, j, k):
     """
     epsilon tensor or the permutation symbol or the Levi-Civita symbol

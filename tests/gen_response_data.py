@@ -12,13 +12,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from csgwsim.Waveform import waveforms
-from csgwsim.response import get_td_response, get_fd_response
+from csgwsim.response import get_td_response, trans_fd_response
 from csgwsim.Orbit import detectors
-from csgwsim.Constants import DAY, YRSID_SI, MSUN_SI, MPC_SI
-from csgwsim.TDI import XYZ_TD, TDI_XYZ2AET
+from csgwsim.Constants import DAY, YRSID_SI
+from csgwsim.TDI import XYZ_TD, XYZ_FD, AET_FD, TDI_XYZ2AET
 
 
-def Generate_TD_Data(pars, detector='TQ', show_yslr=False):
+def generate_td_data(pars, s_type='gcb', det='TQ', show_y_slr=False):
     print("This is TD response generation code")
     Tobs = 10*DAY  # YRSID_SI / 4
     delta_T = 1
@@ -27,117 +27,88 @@ def Generate_TD_Data(pars, detector='TQ', show_yslr=False):
     # be careful, the arange method will lose the largest value
     tf = np.linspace(0, Tobs, int(Tobs/delta_T))
 
-    print(f"Testing of {pars['type']} waveform")
-
-    WFs = waveforms[pars['type']]
-    wf = WFs(**pars)
-
-    orbits = detectors[detector]
-    det = orbits(tf)
-    
+    print(f"Testing of {s_type} waveform")
+    wf = waveforms[s_type](**pars)
+    det = detectors[det](tf)
     st = time.time()
-    yslr = get_td_response(wf, det, tf)
+    y_slr = get_td_response(wf, det, tf)
     ed = time.time()
+    print(f"Time cost is {ed-st} s for {tf.shape[0]} points")
 
-    print("Time cost is %f s for %d points" % (ed-st, tf.shape[0]))
-
-    if show_yslr:
+    if show_y_slr:
         tags = [(1, 2), (2, 1), (2, 3), (3, 2), (3, 1), (1, 3)]
-
         for i, tag in enumerate(tags):
             plt.figure()
             for j in range(4):
                 plt.subplot(4, 1, j+1)
-                plt.plot(tf, yslr[tag][f"%sL" % j])
-                plt.title(f"y_{tag} [%s]L" % j)
+                plt.plot(tf, y_slr[tag][f"{j}L"])
+                plt.title(f"y_{tag} [{j}]L")
 
     st = time.time()
-    X, Y, Z = XYZ_TD(yslr)
+    X, Y, Z = XYZ_TD(y_slr)
     A, E, T = TDI_XYZ2AET(X, Y, Z)
     ed = time.time()
+    print("Time cost for cal XYZ and AET with y_slr is ", ed-st)
+    # np.save(det+s_type+"_X_td.npy", np.array([tf, X]))
 
-    np.save(detector+pars["type"]+"_X_td.npy", np.array([tf, X]))
-
-    print("Time cost for cal XYZ and AET with yslr is ", ed-st)
-
-    '''
-
-    plt.figure()
+    plt.subplots(2, 3, sharex='all', sharey='all', figsize=(12, 8))
     for i, dd in enumerate(["X", "Y", "Z", "A", "E", "T"]):
         dat = eval(dd)
         plt.subplot(2, 3, i+1)
-        plt.plot(tf[:-5], dat[:-5], label=dd)
-
+        plt.plot(tf[:-5], dat[:-5])
         plt.xlabel("Time")
-        plt.ylabel(dd)
-
-        plt.legend(loc="best")
-
-    plt.show()
-    '''
+        plt.ylabel("h")
+        plt.title(dd)
+    plt.tight_layout()
 
 
-def Generate_FD_Data(pars, show_yslr=False):
+def generate_fd_data(pars, s_type='bhb_PhenomD', det='TQ', show_y_slr=False):
     print("This is a test for frequency domain response")
-
-    print("Testing of BHB waveform")
-
-    fd = FDResponse(pars, TQ)
 
     NF = 10240
     freq = 10**np.linspace(-4, 0, NF)
 
-    BHBwf = WaveForm(pars)
+    print(f"Testing of {s_type} waveform")
+    BHBwf = waveforms[s_type](**pars)
+    amp, phase, tf = BHBwf.get_amp_phase(freq)
+    amp, phase, tf = amp[(2, 2)], phase[(2, 2)], tf[(2, 2)]
 
-    amp, phase, tf, tfp = BHBwf.get_amp_phase(freq, )
+    det = detectors[det](tf)
+    h22 = amp * np.exp(1j*phase) * np.exp(2j*np.pi*freq*BHBwf.tc)
 
     st = time.time()
-
-    Gslr, zeta = fd.EvaluateGslr(tf[(2, 2)], freq)  # fd.Evaluate_yslr(freq)
-    yslr = fd.Evaluate_yslr(freq)  # fd.Evaluate_yslr(freq)
+    y_slr = trans_fd_response(BHBwf.vec_k, BHBwf.p22, det, freq)[0]
+    y_slr = {k: v*h22 for k, v in y_slr.items()}
     ed = time.time()
-
     print(f"time cost for the fd response is {ed-st} s")
 
-    if show_yslr:
-        mode = [(2, 2)]
+    if show_y_slr:
         ln = [(1, 2), (2, 3), (3, 1), (1, 3), (3, 2), (2, 1)]
-
+        plt.figure()
+        plt.xscale('log')
         for ll in ln:
-            plt.figure()
-            gg = Gslr[ll]
-            yy = yslr[mode[0]][ll]
-            plt.plot(freq, gg, '-r')
-            plt.plot(freq, yy, '--b')
-            plt.title(ll)
+            plt.plot(freq, np.abs(y_slr[ll]), label=ll)
+        plt.legend()
+        plt.tight_layout()
 
-            plt.xscale('log')
-
-    X, Y, Z = XYZ_FD(yslr[(2, 2)], freq, LT=fd.LT)
-    A, E, T = AET_FD(yslr[(2, 2)], freq, fd.LT)
+    X, Y, Z = XYZ_FD(y_slr, freq, det.L_T)
+    A, E, T = AET_FD(y_slr, freq, det.L_T)
 
     plt.figure()
-    plt.loglog(freq, np.abs(X), '-r', label='X')
-    plt.loglog(freq, np.abs(Y), '--g', label='Y')
-    plt.loglog(freq, np.abs(Z), ':b', label='Z')
+    plt.loglog(freq, np.abs(X), '-', label='X')
+    plt.loglog(freq, np.abs(Y), '-', label='Y')
+    plt.loglog(freq, np.abs(Z), '-', label='Z')
+    plt.loglog(freq, np.abs(A), '--', label='A')
+    plt.loglog(freq, np.abs(E), '--', label='E')
+    plt.loglog(freq, np.abs(T), '--', label='T')
     plt.xlabel('f')
-    plt.ylabel('X,Y,Z')
-    plt.legend(loc='best')
-
-    plt.figure()
-    plt.loglog(freq, np.abs(A), '-r', label='A')
-    plt.loglog(freq, np.abs(E), '--g', label='E')
-    plt.loglog(freq, np.abs(T), ':b', label='T')
-    plt.xlabel('f')
-    plt.ylabel('A,E,T')
-    plt.legend(loc='best')
-
-    plt.show()
+    plt.ylabel('h')
+    plt.legend()
+    plt.tight_layout()
 
 
 if __name__ == "__main__":
-    GCBpars = {"type": "gcb",
-               "mass1": 0.5,
+    GCBpars = {"mass1": 0.5,
                "mass2": 0.5,
                "DL": 0.3,
                "phi0": 0.0,
@@ -148,9 +119,7 @@ if __name__ == "__main__":
                "Beta": 1.2,
                "T_obs": YRSID_SI,
                }
-
-    EMRIpars = {"type": "emri",
-                'M': 1e6,
+    EMRIpars = {'M': 1e6,
                 'a': 0.1,
                 'mu': 1e1,
                 'p0': 12.0,
@@ -167,19 +136,16 @@ if __name__ == "__main__":
                 'psi': 0.4,
                 'iota': 0.2,
                 }
-
-    BHBpars = {"type": "BHB",
-               "m1": 3.5e6,
-               "m2": 2.1e5,
+    BHBpars = {"mass1": 3.5e6,
+               "mass2": 2.1e5,
+               'T_obs': YRSID_SI,
                "chi1": 0.2,
                "chi2": 0.1,
                "DL": 1e3,
-               "phic": 0.0,
-               "MfRef_in": 0,
                "psi": 0.2,
                "iota": 0.3,
-               "lambda": 0.4,
-               "beta": 1.2,
+               "Lambda": 0.4,
+               "Beta": 1.2,
                "tc": 0,
                }
     ecc_par = {'DL': 49.102,  # Luminosity distance (Mpc)
@@ -194,7 +160,7 @@ if __name__ == "__main__":
                'var_phi': 0,  # Observer phase
                'psi': 1.744,  # Polarization angle
                }
-    
-    # Generate_TD_Data(GCBpars)
-    Generate_TD_Data(EMRIpars)  # show_yslr=True
-    # Generate_FD_Data(ecc_par)
+
+    generate_td_data(GCBpars)
+    # generate_td_data(EMRIpars, s_type='emri')
+    # generate_fd_data(BHBpars, show_y_slr=True)

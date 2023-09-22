@@ -19,6 +19,7 @@ try:
 except ImportError:
     from pyIMRPhenomD import IMRPhenomDh22AmpPhase as pyIMRD
     use_py_phd = False
+
 from scipy.interpolate import InterpolatedUnivariateSpline as Spline
 
 
@@ -427,7 +428,7 @@ class SGWB(object):
 
         not_zero = (Sh != 0)
 
-        sigma = np.sqrt(0.5*Sh[not_zero]/delta_f)
+        sigma = np.sqrt(0.5*Sh[not_zero]/delta_f/Npix)
         Nf = sigma.shape[0]
 
         hf = np.array([np.random.normal(0, sig, Npix) for sig in sigma])

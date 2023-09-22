@@ -193,6 +193,8 @@ def get_pos(tf, detector="TianQin", toT=True):
     
     libFastGB.Orbits(detector, N, tf, x, y, z, L)
 
+    x = x.copy(); y = y.copy(); z = z.copy(); L = L.copy()
+
     xr = x.reshape((N, 3)).T
     yr = y.reshape((N, 3)).T
     zr = z.reshape((N, 3)).T

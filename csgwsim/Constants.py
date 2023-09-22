@@ -82,4 +82,4 @@ EPOCH_J2000_0_GPS = 630763213  # GPS seconds of the J2000.0 epoch (2000 JAN 1 12
 # cosmological constants
 H0 = 67.4  # in km/s/Mpc: Planck 2018 1807.06209
 H0_SI = H0*1.e3/MPC_SI  # in /s
-Omega_m = 0.315  # Planck 2018 1807.06209
+Omega_m_Planck2018 = 0.315  # Planck 2018 1807.06209

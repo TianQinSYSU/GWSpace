@@ -41,7 +41,7 @@ for i in range(3):
 plt.tight_layout()
 
 st = time.time()
-x,y,z,L = get_pos(tf, detector="TianQin")
+x, y, z, L = get_pos(tf, detector="TianQin")
 ed = time.time()
 
 print(f"time cost of Cython is {ed-st} s")
@@ -65,8 +65,8 @@ plt.plot(tf/DAY, z[2], label="z1")
 
 plt.xlabel('Time [Day]')
 plt.ylabel('pos (x) [s]')
-#plt.xlim(90, 115)
-#plt.ylim(480, 495)
+# plt.xlim(90, 115)
+# plt.ylim(480, 495)
 plt.legend()
 plt.tight_layout()
 

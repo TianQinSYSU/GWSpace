@@ -21,7 +21,6 @@ except ImportError:
     use_py_phd = False
 
 from scipy.interpolate import InterpolatedUnivariateSpline as Spline
-from .ORF import transfer_Dslr
 
 
 # Note1: one can use __slots__=('mass1', 'mass2', 'etc') to fix the attributes

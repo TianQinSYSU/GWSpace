@@ -190,10 +190,10 @@ def get_pos(tf, detector="TianQin", toT=True):
     y = np.zeros(3*N, 'd')
     z = np.zeros(3*N, 'd')
     L = np.zeros(1,  'd')
-    
+
     libFastGB.Orbits(detector, N, tf, x, y, z, L)
 
-    x = x.copy(); y = y.copy(); z = z.copy(); L = L.copy()
+    x, y, z, L = x.copy(), y.copy(), z.copy(), L.copy()
 
     xr = x.reshape((N, 3)).T
     yr = y.reshape((N, 3)).T

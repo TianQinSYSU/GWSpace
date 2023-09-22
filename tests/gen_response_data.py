@@ -12,10 +12,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from csgwsim.Waveform import waveforms
-from csgwsim.response import get_td_response, trans_fd_response
+from csgwsim.response import get_y_slr_td, trans_y_slr_fd, get_XYZ_td, get_XYZ_fd, get_AET_fd, tdi_XYZ2AET
 from csgwsim.Orbit import detectors
 from csgwsim.Constants import DAY, YRSID_SI
-from csgwsim.TDI import XYZ_TD, XYZ_FD, AET_FD, TDI_XYZ2AET
 
 
 def generate_td_data(pars, s_type='gcb', det='TQ', show_y_slr=False):
@@ -30,7 +29,7 @@ def generate_td_data(pars, s_type='gcb', det='TQ', show_y_slr=False):
     print(f"Testing of {s_type} waveform")
     wf = waveforms[s_type](**pars)
     st = time.time()
-    y_slr = get_td_response(wf, tf, det)
+    y_slr = get_y_slr_td(wf, tf, det)
     ed = time.time()
     print(f"Time cost is {ed-st} s for {tf.shape[0]} points")
 
@@ -44,8 +43,8 @@ def generate_td_data(pars, s_type='gcb', det='TQ', show_y_slr=False):
                 plt.title(f"y_{tag} [{j}]L")
 
     st = time.time()
-    X, Y, Z = XYZ_TD(y_slr)
-    A, E, T = TDI_XYZ2AET(X, Y, Z)
+    X, Y, Z = get_XYZ_td(y_slr)
+    A, E, T = tdi_XYZ2AET(X, Y, Z)
     ed = time.time()
     print("Time cost for cal XYZ and AET with y_slr is ", ed-st)
     # np.save(det+s_type+"_X_td.npy", np.array([tf, X]))
@@ -76,7 +75,7 @@ def generate_fd_data(pars, s_type='bhb_PhenomD', det='TQ', show_y_slr=False):
     h22 = amp * np.exp(1j*phase) * np.exp(2j*np.pi*freq*BHBwf.tc)
 
     st = time.time()
-    y_slr = trans_fd_response(BHBwf.vec_k, BHBwf.p22, det, freq)[0]
+    y_slr = trans_y_slr_fd(BHBwf.vec_k, BHBwf.p22, det, freq)[0]
     y_slr = {k: v*h22 for k, v in y_slr.items()}
     ed = time.time()
     print(f"time cost for the fd response is {ed-st} s")
@@ -90,8 +89,8 @@ def generate_fd_data(pars, s_type='bhb_PhenomD', det='TQ', show_y_slr=False):
         plt.legend()
         plt.tight_layout()
 
-    X, Y, Z = XYZ_FD(y_slr, freq, det.L_T)
-    A, E, T = AET_FD(y_slr, freq, det.L_T)
+    X, Y, Z = get_XYZ_fd(y_slr, freq, det.L_T)
+    A, E, T = get_AET_fd(y_slr, freq, det.L_T)
 
     plt.figure()
     plt.loglog(freq, np.abs(X), '-', label='X')

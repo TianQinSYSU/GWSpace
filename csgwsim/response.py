@@ -20,12 +20,14 @@ def _matrix_res_pro(n, p):
             + n[2] * p[2, 0] * n[0] + n[2] * p[2, 1] * n[1] + n[2] * p[2, 2] * n[2])
 
 
-def trans_fd_response(vec_k, p, det, f):
-    """
-    See Marsat et al. (Eq. 21, 28) https://journals.aps.org/prd/abstract/10.1103/PhysRevD.103.083011
-    Parameters:
-    - vec_k: the prop direction of GWs (x,y,z), which is determined by (lambd, beta)
-    - p: tensor of polar for GW, h = h_+ e^+ + h_x e^x in time domain, but h_ij (f) = p_ij h(f)
+def trans_y_slr_fd(vec_k, p, det, f):
+    """ See Marsat et al. (Eq. 21, 28) https://journals.aps.org/prd/abstract/10.1103/PhysRevD.103.083011
+
+    :param vec_k: the prop direction of GWs (x,y,z), which is determined by (lambda, beta)
+    :param p: p is a tuple, i.e. a series of P_lm (or P_x, P_+, i.e. e^+, e^x in $h = h_+ e^+ + h_x e^x$)
+    :param det:
+    :param f:
+    :return:
     """
 
     u12 = det.Uni_vec_12
@@ -83,45 +85,7 @@ def trans_fd_response(vec_k, p, det, f):
     return tuple(trans_response(p_0) for p_0 in p)
 
 
-def get_fd_response(vec_k, p, det, f, channel='A'):
-    """TODO: deprecated
-
-    :param vec_k:
-    :param p: p is a tuple, i.e. a series of P_lm (or P_x, P_+) in it
-    :param det:
-    :param f:
-    :param channel:
-    :return:
-    """
-    # if channel not in 'XYZAET':  # <if not all([c in 'XYZAET' for c in channel])> for multichannel mode
-    #     raise ValueError(f"[SpaceResponse] Unknown channel {channel}. "
-    #                      f"Supported channels: {'|'.join(['X', 'Y', 'Z', 'A', 'E', 'T'])}")
-    y_slr = trans_fd_response(vec_k, p, det, f)
-    x = np.pi * f * det.L_T
-    z = np.exp(2j * x)  # Time delay factor
-    res_list = []
-
-    for y_p in y_slr:
-        y12, y21, y13, y31, y23, y32 = list(y_p.values())
-        if channel == 'A':
-            # See (Eq. 29) in arXiv:2003.00357v1, the factor of rescaling a,e,t to the original A,E,T
-            factor_ae = 1j*np.sqrt(2)*np.sin(2.*x)*np.exp(2j*x)
-            res = factor_ae * ((1.+z) * (y31 + y13) - y23 - z*y32 - y21 - z*y12)
-        elif channel == 'E':
-            factor_ae = 1j*np.sqrt(2)*np.sin(2.*x)*np.exp(2j*x)
-            res = factor_ae * 1./np.sqrt(3) * ((1.-z)*(y13 - y31) + (2.+z)*(y12 - y32) + (1.+2*z)*(y21 - y23))
-        elif channel == 'T':
-            factor_t = 2.*np.sqrt(2)*np.sin(2.*x)*np.sin(x)*np.exp(3j*x)
-            res = factor_t * np.sqrt(2/3) * (y21 - y12 + y32 - y23 + y13 - y31)
-        else:
-            raise ValueError(f"[SpaceResponse] Unknown channel {channel}. "
-                             f"Supported channels: {'|'.join(['A', 'E', 'T'])}")
-        res_list.append(res)
-
-    return res_list
-
-
-def get_td_response(wf, tf, det='TQ', TDIgen=1):
+def get_y_slr_td(wf, tf, det='TQ', TDIgen=1):
     """TODO: here we calculate orbits of the detectors only once at tf, but considering TDI_delay here,
          their positions need to be **recalculated**, e.g. at tf-L, tf-2*L, ..."""
     if TDIgen == 1:
@@ -174,3 +138,95 @@ def get_td_response(wf, tf, det='TQ', TDIgen=1):
              (2, 3): get_y(h1_p2, h1_p3, 2*(1+kn1)),
              (3, 2): get_y(h1_p3, h1_p2, 2*(1-kn1))}
     return y_slr
+
+
+def tdi_XYZ2AET(X, Y, Z):
+    """
+    Calculate AET channel from XYZ
+    """
+    A = 1/np.sqrt(2)*(Z-X)
+    E = 1/np.sqrt(6)*(X-2*Y+Z)
+    T = 1/np.sqrt(3)*(X+Y+Z)
+    return A, E, T
+
+
+def get_XYZ_td(y_slr, TDIgen=1):
+    """
+    Generate TDI XYZ in the TDIgen generation
+    -----------------------------------------
+    Parameters
+    ----------
+    """
+    y31 = y_slr[(3, 1)]
+    y13 = y_slr[(1, 3)]
+    y12 = y_slr[(1, 2)]
+    y21 = y_slr[(2, 1)]
+    y23 = y_slr[(2, 3)]
+    y32 = y_slr[(3, 2)]
+
+    if TDIgen == 1:
+        X = (y31[0]+y13[1]+y21[2]+y12[3]
+             - y21[0]-y12[1]-y31[2]-y13[3])
+        Y = (y12[0]+y21[1]+y32[2]+y23[3]
+             - y32[0]-y23[1]-y12[2]-y21[3])
+        Z = (y23[0]+y32[1]+y13[2]+y31[3]
+             - y13[0]-y31[1]-y23[2]-y32[3])
+    else:
+        raise NotImplementedError
+
+    return X, Y, Z
+
+
+def get_AET_td(y_slr, TDIgen=1):
+    X, Y, Z = get_XYZ_td(y_slr, TDIgen)
+    A, E, T = tdi_XYZ2AET(X, Y, Z)
+    return A, E, T
+
+
+def get_XYZ_fd(y_slr, freq, LT):
+    """
+    Calculate XYZ from y_slr in frequency domain
+    -------------------------------------------
+    Parameters:
+    - y_slr: single link response of GW
+    - freq: frequency
+    - LT: arm length
+    """
+
+    Dt = np.exp(2j*np.pi*freq*LT)
+    Dt2 = Dt*Dt
+
+    X = y_slr[(3, 1)]+Dt*y_slr[(1, 3)]-y_slr[(2, 1)]-Dt*y_slr[(1, 2)]
+    Y = y_slr[(1, 2)]+Dt*y_slr[(2, 1)]-y_slr[(3, 2)]-Dt*y_slr[(2, 3)]
+    Z = y_slr[(2, 3)]+Dt*y_slr[(3, 2)]-y_slr[(1, 3)]-Dt*y_slr[(3, 1)]
+
+    return np.array([X, Y, Z])*(1.-Dt2)
+
+
+def get_AET_fd(y_slr, freq, LT):
+    """
+    Calculate AET from y_slr in frequency domain
+    -------------------------------------------
+    Parameters:
+    - y_slr: single link response of GW
+    - freq: frequency
+    - LT: arm length
+    """
+    Dt = np.exp(2j*np.pi*freq*LT)  # Time delay factor
+    Dt2 = Dt*Dt
+
+    A = ((1+Dt)*(y_slr[(3, 1)]+y_slr[(1, 3)])
+         - y_slr[(2, 3)]-Dt*y_slr[(3, 2)]
+         - y_slr[(2, 1)]-Dt*y_slr[(1, 2)])
+    E = ((1-Dt)*(y_slr[(1, 3)]-y_slr[(3, 1)])
+         + (1+2*Dt)*(y_slr[(2, 1)]-y_slr[(2, 3)])
+         + (2+Dt)*(y_slr[(1, 2)]-y_slr[(3, 2)]))
+    T = (1-Dt)*(y_slr[(1, 3)]-y_slr[(3, 1)]
+                + y_slr[(2, 1)]-y_slr[(1, 2)]
+                + y_slr[(3, 2)]-y_slr[(2, 3)])
+
+    A = 1/np.sqrt(2)*(Dt2-1)*A
+    E = 1/np.sqrt(6)*(Dt2-1)*E
+    T = 1/np.sqrt(3)*(Dt2-1)*T
+
+    return np.array([A, E, T])

@@ -12,12 +12,10 @@ from numpy import sin, cos, sqrt
 from scipy.interpolate import InterpolatedUnivariateSpline as Spline
 
 from .Orbit import detectors
-from .response import get_fd_response
 from .utils import sYlm
 from .Constants import MSUN_SI, MSUN_unit, MPC_SI, YRSID_SI, PI, C_SI, G_SI
 
-from .eccentric_fd import gen_ecc_fd_and_tf
-from .FastEMRI import EMRIWaveform
+from .eccentric_fd import gen_ecc_fd_and_tf, gen_ecc_fd_waveform
 try:
     from PyIMRPhenomD import IMRPhenomD as pyIMRD
     from PyIMRPhenomD import IMRPhenomD_const as pyimrc
@@ -204,7 +202,7 @@ class BHBWaveform(BasicWaveform):
         dl_si = self.DL * MPC_SI
         return phi_ref, f_ref, m1_si, m2_si, chi1, chi2, dl_si
 
-    def get_amp_phase(self, freq, fRef=0, t0=0., mode=None):
+    def get_amp_phase(self, freq, f_ref=0., t0=0.):
         """
         Generate the amp and phase in frequency domain
         ----------------------------------------------
@@ -212,7 +210,6 @@ class BHBWaveform(BasicWaveform):
         -----------
         - freq: frequency list
         - mode: mode of GW
-        # FIXME: Default argument value is mutable if mode=[(2, 2)], use tuple instead, btw it is unused
 
         Return:
         -------
@@ -234,19 +231,18 @@ class BHBWaveform(BasicWaveform):
                 timep_imr = np.zeros(0)
             
             # Create structure for Amp/phase/time FD waveform
-            h22 = pyIMRD.AmpPhaseFDWaveform(NF, freq, amp_imr, phase_imr, time_imr, timep_imr, fRef, t0)
-            
+            h22 = pyIMRD.AmpPhaseFDWaveform(NF, freq, amp_imr, phase_imr, time_imr, timep_imr, f_ref, t0)
             # Generate h22 FD amplitude and phase on a given set of frequencies
-            h22 = pyIMRD.IMRPhenomDGenerateh22FDAmpPhase(self.h22, freq, *self.wave_para_phenomd())
+            h22 = pyIMRD.IMRPhenomDGenerateh22FDAmpPhase(self.h22, freq, *self.wave_para_phenomd(f_ref))
 
-            # h22 = self.h22_FD(freq, self.fRef, self.tc)
+            # h22 = self.h22_FD(freq, f_ref, self.tc)
             
             amp = {(2, 2): h22.amp}
             phase = {(2, 2): h22.phase}
             tf = {(2, 2): h22.time}
-            tfp = {(2, 2): h22.timep}
+            # tfp = {(2, 2): h22.timep}
         else:
-            wf_phd_class = pyIMRD(freq, *self.wave_para_phenomd())
+            wf_phd_class = pyIMRD(freq, *self.wave_para_phenomd(f_ref))
             freq, amp_22, phase_22 = wf_phd_class.GetWaveform()
             # Note: these are actually cython pointers, we should also use .copy() to acquire ownership
             freq, amp_22, phase_22 = freq.copy(), amp_22.copy(), phase_22.copy()
@@ -283,13 +279,16 @@ class BHBWaveformEcc(BasicWaveform):
                 'eccentricity': self.eccentricity}
         return args
 
-    def gen_ori_waveform(self, delta_f=None, f_min=None, f_max=1.):
+    def gen_ori_waveform(self, delta_f=None, f_min=None, f_max=1., hphc=False):
         """Generate f-domain TDI waveform(EccentricFD)"""
         if not f_min:
             f_min = self.f_min
         if delta_f is None:
             delta_f = 1/self.T_obs
 
+        if hphc:
+            return gen_ecc_fd_waveform(**self.wave_para(), delta_f=delta_f,
+                                       f_lower=f_min, f_final=f_max, obs_time=0)
         return gen_ecc_fd_and_tf(self.tc, **self.wave_para(), delta_f=delta_f,
                                  f_lower=f_min, f_final=f_max, obs_time=0)
 
@@ -300,6 +299,10 @@ class BHBWaveformEcc(BasicWaveform):
         if det not in detectors.keys():
             raise ValueError(f"[SpaceResponse] Unknown detector {det}. "
                              f"Supported detectors: {'|'.join(detectors.keys())}")
+        # if channel not in 'XYZAET':  # <if not all([c in 'XYZAET' for c in channel])> for multichannel mode
+        #     raise ValueError(f"[SpaceResponse] Unknown channel {channel}. "
+        #                      f"Supported channels: {'|'.join(['X', 'Y', 'Z', 'A', 'E', 'T'])}")
+        # TODO: connect it to new response funcs
         det_class = detectors[det]
         wf, freq = self.gen_ori_waveform(delta_f, f_min, f_max)
 
@@ -398,6 +401,185 @@ class FastGB(GCBWaveform):
 
     def onefourier(self, buffer=None, oversample=1):
         N = self.buffer(self.f0, oversample)
+
+
+class EMRIWaveform(BasicWaveform):
+    """
+    This is waveform for EMRI
+    --------------------------
+    Parameters:
+    - M (double): Mass of larger black hole in solar masses.
+    - mu (double): Mass of compact object in solar masses.
+    - a (double): Dimensionless spin of massive black hole.
+    - p0 (double): Initial semilatus rectum (Must be greater than
+        the separatrix at the given e0 and x0).
+        See documentation for more information on :math:`p_0<10`.
+    - e0 (double): Initial eccentricity.
+    - x0 (double): Initial cosine of the inclination angle.
+        (:math:`x_I=\cos{I}`). This differs from :math:`Y=\cos{\iota}\equiv L_z/\sqrt{L_z^2 + Q}`
+        used in the semi-relativistic formulation. When running kludge waveforms,
+        :math:`x_{I,0}` will be converted to :math:`Y_0`.
+    - dist (double): Luminosity distance in Gpc.
+    - qS (double): Sky location polar angle in ecliptic
+        coordinates.
+    - phiS (double): Sky location azimuthal angle in
+        ecliptic coordinates.
+    - qK (double): Initial BH spin polar angle in ecliptic
+        coordinates.
+    - phiK (double): Initial BH spin azimuthal angle in
+        ecliptic coordinates.
+    - Phi_phi0 (double, optional): Initial phase for :math:`\Phi_\phi`.
+        Default is 0.0.
+    - Phi_theta0 (double, optional): Initial phase for :math:`\Phi_\Theta`.
+        Default is 0.0.
+    - Phi_r0 (double, optional): Initial phase for :math:`\Phi_r`.
+        Default is 0.0.
+    - *args (tuple, optional): Tuple of any extra parameters that go into the model.
+    - **kwargs (dict, optional): Dictionary with kwargs for online waveform
+        generation.
+    """
+
+    def __init__(self, M, mu, a, p0, e0, x0, dist, qS, phiS, qK, phiK, T_obs,
+                 Phi_phi0=0, Phi_theta0=0, Phi_r0=0, psi=0,
+                 model="FastSchwarzschildEccentricFlux",
+                 model_insp="SchwarzEccFlux", use_gpu=False, **kwargs):
+        from few.trajectory.inspiral import EMRIInspiral
+        from few.waveform import GenerateEMRIWaveform
+        from few.utils.ylm import GetYlms
+
+        # keyword arguments for inspiral generator (RunSchwarzEccFluxInspiral)
+        inspiral_kwargs = {"DENSE_STEPPING": 0,  # we want a sparsely sampled trajectory
+                           "max_init_len": int(1e3)}  # all the trajectories will be well under len = 1000
+        # keyword arguments for inspiral generator (RomanAmplitude)
+        amplitude_kwargs = {"use_gpu": use_gpu,
+                            "max_init_len": int(1e3)}  # all the trajectories will be well under len = 1000
+        # keyword arguments for Ylm generator (GetYlms)
+        Ylm_kwargs = {"assume_positive_m": False}  # if we assume positive m, it will generate negative m for all m>0
+        # keyword arguments for summation generator (InterpolatedModeSum)
+        sum_kwargs = {"use_gpu": use_gpu, "pad_output": False}
+        # TODO: polish this, it is really messy...
+
+        self.M = M
+        self.mu = mu
+        self.a = a
+        self.p0 = p0
+        self.e0 = e0
+        self.x0 = x0
+        self.dist = dist
+
+        self.qS = qS
+        self.phiS = phiS
+        self.qK = qK
+        self.phiK = phiK
+        self.Phi_phi0 = Phi_phi0
+        self.Phi_theta0 = Phi_theta0
+        self.Phi_r0 = Phi_r0
+
+        self.gen_wave = GenerateEMRIWaveform(model, use_gpu=use_gpu,
+                                             inspiral_kwargs=inspiral_kwargs,
+                                             amplitude_kwargs=amplitude_kwargs,
+                                             Ylm_kwargs=Ylm_kwargs,
+                                             sum_kwargs=sum_kwargs)
+        self.theta, self.phi = self.gen_wave._get_viewing_angles(qS, phiS, qK, phiK)  # get view angle
+        Lambda = self.phi
+        Beta = np.pi/2-self.theta
+        BasicWaveform.__init__(self, M, mu, T_obs, dist*1000., Lambda, Beta, psi, **kwargs)
+
+        # first, lets get amplitudes for a trajectory
+        self.traj = EMRIInspiral(func=model_insp)
+        self.ylm_gen = GetYlms(assume_positive_m=True, use_gpu=use_gpu)
+
+    def get_harmonic_mode(self, eps=1e-5):
+        """
+        To calculate how many harmonic mode
+        -----------------------------------
+        Parameters:
+        - eps: tolerance on mode contribution to total power
+        """
+        from few.amplitude.romannet import RomanAmplitude
+        from few.utils.modeselector import ModeSelector
+
+        t, p, e, x, Phi_phi, Phi_theta, Phi_r = self.traj(self.M, self.mu, self.a, self.p0, self.e0, 1.0)
+
+        # get amplitudes along trajectory
+        amp = RomanAmplitude()
+
+        teuk_modes = amp(p, e)
+
+        # get ylms
+        ylms = self.ylm_gen(amp.unique_l, amp.unique_m, self.theta, self.phi).copy()[amp.inverse_lm]
+
+        mode_selector = ModeSelector(amp.m0mask, use_gpu=False)
+
+        modeinds = [amp.l_arr, amp.m_arr, amp.n_arr]
+
+        (teuk_modes_in, ylms_in, ls, ms, ns) = mode_selector(teuk_modes, ylms, modeinds, eps=eps)
+        return teuk_modes_in, ylms_in, ls, ms, ns
+
+    def get_hphc_source(self, Tobs, dt, eps=1e-5, modes=None):
+        """
+        Calculate the time domain waveforms
+        -----------------------------------
+        Return:
+        - hp, hc
+
+        Parameters:
+        - Tobs: the observation time in [year]
+        - dt: sampling time in [s]
+        - modes: (str or list or None)
+            - If None, perform our base mode filtering with eps as the fractional accuracy on the total power.
+            - If ‘all’, it will run all modes without filtering.
+            - If a list of tuples (or lists) of mode indices (e.g. [(l1,m1,n1), (l2,m2,n2)]) is provided,
+                it will return those modes combined into a single waveform.
+        - eps: Controls the fractional accuracy during mode filtering.
+            Raising this parameter will remove modes.
+            Lowering this parameter will add modes.
+            Default that gives a good overlap is 1e-5.
+        """
+        h = self.gen_wave(
+            self.M,
+            self.mu,
+            self.a,
+            self.p0,
+            self.e0,
+            self.x0,
+            self.dist,
+            self.qS,
+            self.phiS,
+            self.qK,
+            self.phiK,
+            self.Phi_phi0,
+            self.Phi_theta0,
+            self.Phi_r0,
+            T=Tobs,
+            dt=dt,
+            eps=eps,
+            mode_selection=modes,
+        )
+
+        return h.real, h.imag
+
+    def get_hphc(self, tf, eps=1e-5, modes=None):
+        Tobs = tf[-1]/YRSID_SI
+        dt = tf[1]-tf[0]
+        # T = Tobs - int(Tobs * YRSID_SI/dt - tf.shape[0]) * dt/YRSID_SI
+        # print("the total observ time is ", Tobs)
+        hpS, hcS = self.get_hphc_source(Tobs, dt, eps, modes)
+
+        tf_size = tf.shape[0]
+        h_size = hpS.shape[0]
+        if tf_size > h_size:
+            hp = np.zeros_like(tf)
+            hc = np.zeros_like(tf)
+            hp[:h_size] = hpS
+            hc[:h_size] = hcS
+        elif tf_size < h_size:
+            hp = hpS[-tf_size:]
+            hc = hcS[-tf_size:]
+        else:
+            hp = hpS
+            hc = hcS
+        return hp, hc
 
 
 waveforms = {'burst': BurstWaveform,

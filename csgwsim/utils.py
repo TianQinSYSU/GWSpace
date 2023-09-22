@@ -415,7 +415,7 @@ def QuadLagrangeInterpolat(x, res):
 
 # =============================================
 # Currently only supports s=-2, l=2,3,4,5 modes
-def SpinWeightedSphericalHarmonic(s, l, m, theta, phi):
+def spin_weighted_spherical_harmonic(s, l, m, theta, phi):
     func = "SpinWeightedSphericalHarmonic"
     # Sanity checks
     if l < abs(s):

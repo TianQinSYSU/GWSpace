@@ -1,22 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # ==================================
-# File Name: Generate_GW_Data.py
+# File Name: gen_response_data.py
 # Author: ekli
 # Mail: lekf123@163.com
 # Created Time: 2023-08-31 09:40:34
 # ==================================
 
-import os
-import sys
 import time
-import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.pyplot as plt
 
 from csgwsim.Waveform import waveforms
-from csgwsim.response import get_td_response
-from csgwsim.Orbit import TianQinOrbit, detectors
+from csgwsim.response import get_td_response, get_fd_response
+from csgwsim.Orbit import detectors
 from csgwsim.Constants import DAY, YRSID_SI, MSUN_SI, MPC_SI
 from csgwsim.TDI import XYZ_TD, TDI_XYZ2AET
 
@@ -24,9 +21,7 @@ from csgwsim.TDI import XYZ_TD, TDI_XYZ2AET
 def Generate_TD_Data(pars, detector='TQ', show_yslr=False):
     print("This is TD response generation code")
     Tobs = 10*DAY  # YRSID_SI / 4
-    delta_f = 1/Tobs
     delta_T = 1
-    f_max = 1/(2*delta_T)
 
     # tf = np.arange(0,Tobs, delta_T)
     # be careful, the arange method will lose the largest value
@@ -34,7 +29,6 @@ def Generate_TD_Data(pars, detector='TQ', show_yslr=False):
 
     print(f"Testing of {pars['type']} waveform")
 
-    #help(WF.GCBWaveform)
     WFs = waveforms[pars['type']]
     wf = WFs(**pars)
 
@@ -88,7 +82,6 @@ def Generate_FD_Data(pars, show_yslr=False):
 
     print("Testing of BHB waveform")
 
-    TQ = INITianQin()
     fd = FDResponse(pars, TQ)
 
     NF = 10240
@@ -127,7 +120,6 @@ def Generate_FD_Data(pars, show_yslr=False):
     plt.loglog(freq, np.abs(X), '-r', label='X')
     plt.loglog(freq, np.abs(Y), '--g', label='Y')
     plt.loglog(freq, np.abs(Z), ':b', label='Z')
-
     plt.xlabel('f')
     plt.ylabel('X,Y,Z')
     plt.legend(loc='best')
@@ -136,7 +128,6 @@ def Generate_FD_Data(pars, show_yslr=False):
     plt.loglog(freq, np.abs(A), '-r', label='A')
     plt.loglog(freq, np.abs(E), '--g', label='E')
     plt.loglog(freq, np.abs(T), ':b', label='T')
-
     plt.xlabel('f')
     plt.ylabel('A,E,T')
     plt.legend(loc='best')
@@ -191,19 +182,19 @@ if __name__ == "__main__":
                "beta": 1.2,
                "tc": 0,
                }
-    eccpara = {"type": 'bhb_EccFD',
-            'delta_f': 0.0001,
-            'f_final': 1,
-            'f_lower': 0.01,
-            'mass1': 10 * MSUN_SI,
-            'mass2': 10 * MSUN_SI,
-            'inclination': 0.23,
-            'eccentricity': 0.4,
-            'long_asc_nodes': 0.23,
-            'coa_phase': 0,
-            'distance': 100 * MPC_SI,
-            'obs_time': 365*24*3600}
+    ecc_par = {'DL': 49.102,  # Luminosity distance (Mpc)
+               'mass1': 21.44,  # Primary mass (solar mass)
+               'mass2': 20.09,  # Secondary mass(solar mass)
+               'Lambda': 3.44,  # Longitude
+               'Beta': -0.074,  # Latitude
+               'phi_c': 0,  # Coalescence phase
+               'T_obs': YRSID_SI,  # Observation time (s)
+               'tc': YRSID_SI,  # Coalescence time (s)
+               'iota': 0.6459,  # Inclination angle
+               'var_phi': 0,  # Observer phase
+               'psi': 1.744,  # Polarization angle
+               }
     
-    #Generate_TD_Data(GCBpars)
-    Generate_TD_Data(EMRIpars)#, show_yslr=True)
-    #Generate_FD_Data(eccpara)
+    # Generate_TD_Data(GCBpars)
+    Generate_TD_Data(EMRIpars)  # show_yslr=True
+    # Generate_FD_Data(ecc_par)

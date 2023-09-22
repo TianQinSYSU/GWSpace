@@ -8,7 +8,7 @@
 # ==================================
 
 import time
-from csgwsim.utils import SpinWeightedSphericalHarmonic, sYlm
+from csgwsim.utils import spin_weighted_spherical_harmonic, sYlm
 
 
 def test_sYlm():
@@ -23,7 +23,7 @@ def test_sYlm():
     for l in range(2, 6):
         for m in range(-l, l+1):
             st1 = time.time()
-            y1 = SpinWeightedSphericalHarmonic(s, l, m, theta, phi)
+            y1 = spin_weighted_spherical_harmonic(s, l, m, theta, phi)
             ed1 = time.time()
 
             st2 = time.time()

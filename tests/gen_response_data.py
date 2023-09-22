@@ -29,9 +29,8 @@ def generate_td_data(pars, s_type='gcb', det='TQ', show_y_slr=False):
 
     print(f"Testing of {s_type} waveform")
     wf = waveforms[s_type](**pars)
-    det = detectors[det](tf)
     st = time.time()
-    y_slr = get_td_response(wf, det, tf)
+    y_slr = get_td_response(wf, tf, det)
     ed = time.time()
     print(f"Time cost is {ed-st} s for {tf.shape[0]} points")
 
@@ -135,6 +134,7 @@ if __name__ == "__main__":
                 'Phi_r0': 3.0,
                 'psi': 0.4,
                 'iota': 0.2,
+                'T_obs': YRSID_SI,
                 }
     BHBpars = {"mass1": 3.5e6,
                "mass2": 2.1e5,

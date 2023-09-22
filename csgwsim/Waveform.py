@@ -363,17 +363,11 @@ class GCBWaveform(BasicWaveform):
         # FIXME: use self.T_obs
         phase = 2*PI*(self.f0+0.5*self.fdot*t +
                       1/6*self.fddot*t*t)*t+self.phi0
-        cs2p = cos(2*self.psi)
-        sn2p = sin(2*self.psi)
         csi = cos(self.iota)
 
         hp = self.amp*cos(phase) * (1+csi*csi)
         hc = self.amp*sin(phase) * 2*csi
-
-        hp_SSB = hp*cs2p-hc*sn2p
-        hc_SSB = hp*sn2p+hc*cs2p
-
-        return hp_SSB, hc_SSB
+        return hp, hc
 
 
 class FastGB(GCBWaveform):

@@ -54,7 +54,7 @@ ParsValue2Second = {
 }
 
 
-## ==========================
+# ==========================
 def dot_arr(u, v):
     return u[0]*v[0]+u[1]*v[1]+u[2]*v[2]
 
@@ -76,48 +76,6 @@ def dot_arr_H_arr(u, H, v):
         for j in range(3):
             ss += u[i]*H[i, j]*v[j]
     return ss
-
-
-def get_uvk(lambd, beta):
-    snl = np.sin(lambd)
-    csl = np.cos(lambd)
-    snb = np.sin(beta)
-    csb = np.cos(beta)
-
-    u = np.array([snl, -csl, 0])
-    v = np.array([-snb*csl, - snb*snl, csb])
-    k = np.array([-csb*csl, -snl*csb, -snb])
-    return u, v, k
-
-
-def polarization_tensor(u, v):
-    e_p = np.zeros((3, 3))
-    e_c = np.zeros((3, 3))
-
-    for i in range(3):
-        for j in range(3):
-            e_p[i, j] = u[i]*u[j]-v[i]*v[j]
-            e_c[i, j] = u[i]*v[j]+v[i]*u[j]
-
-    return e_p, e_c
-
-
-def cal_zeta(u, v, nl):
-    """
-    Calculate xi^+ and xi^x
-    ------------------------------
-    Parameters
-    ----------
-    - u, v: polarization coordinates
-    - nl: unit vector from sender to receiver
-
-    Return
-    ------
-    - n otimes (\epsilon_+ \epsilon_x) otimes n
-    """
-    xi_p = (dot_arr(u, nl))**2-(dot_arr(v, nl))**2
-    xi_c = 2*dot_arr(u, nl)*dot_arr(v, nl)
-    return xi_p, xi_c
 
 
 def to_m1m2(m_chirp, eta):

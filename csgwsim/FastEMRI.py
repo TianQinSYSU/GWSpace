@@ -15,8 +15,8 @@ from few.waveform import GenerateEMRIWaveform
 from few.utils.ylm import GetYlms
 from few.utils.modeselector import ModeSelector
 
-from .utils import get_uvk
 from .Constants import YRSID_SI
+from .Waveform import BasicWaveform
 
 use_gpu = False
 
@@ -44,7 +44,7 @@ sum_kwargs = {
 }
 
 
-class EMRIWaveform(object):
+class EMRIWaveform(BasicWaveform):
     """
     This is waveform for EMRI
     --------------------------
@@ -80,10 +80,10 @@ class EMRIWaveform(object):
         generation.
     """
 
-    def __init__(self, M, mu, a, p0, e0, x0, dist, qS, phiS, qK, phiK,
+    def __init__(self, M, mu, a, p0, e0, x0, dist, qS, phiS, qK, phiK, T_obs,
                  Phi_phi0=0, Phi_theta0=0, Phi_r0=0, psi=0,
                  model="FastSchwarzschildEccentricFlux",
-                 model_insp="SchwarzEccFlux", **kwargs):  # TODO: make it a subclass of BasicWaveform
+                 model_insp="SchwarzEccFlux", **kwargs):
         self.M = M
         self.mu = mu
         self.a = a
@@ -109,8 +109,8 @@ class EMRIWaveform(object):
         self.theta, self.phi = self.gen_wave._get_viewing_angles(qS, phiS, qK, phiK)  # get view angle
         Lambda = self.phi
         Beta = np.pi/2-self.theta
-        self.vec_u, self.vec_v, self.vec_k = get_uvk(Lambda, Beta)
-        self.psi = psi
+        BasicWaveform.__init__(self, M, mu, T_obs, dist*1000., Lambda, Beta, psi, **kwargs)
+        # TODO: move this class to Waveform.py and polish this, it is really messy...
 
         # first, lets get amplitudes for a trajectory
         self.traj = EMRIInspiral(func=model_insp)
@@ -190,12 +190,17 @@ class EMRIWaveform(object):
         # print("the total observ time is ", Tobs)
         hpS, hcS = self.get_hphc_source(Tobs, dt, eps, modes)
 
-        cs2p = np.cos(2*self.psi)
-        sn2p = np.sin(2*self.psi)
-        # csi = cos(self.iota)
-
-        # hp_SSB = -(1+csi*csi)*hpS*cs2p+2*csi*hcS*sn2p
-        # hc_SSB = -(1+csi*csi)*hpS*sn2p-2*csi*hcS*cs2p
-        hp_SSB = hpS*cs2p-hcS*sn2p
-        hc_SSB = hpS*sn2p+hcS*cs2p
-        return hp_SSB, hc_SSB
+        tf_size = tf.shape[0]
+        h_size = hpS.shape[0]
+        if tf_size > h_size:
+            hp = np.zeros_like(tf)
+            hc = np.zeros_like(tf)
+            hp[:h_size] = hpS
+            hc[:h_size] = hcS
+        elif tf_size < h_size:
+            hp = hpS[-tf_size:]
+            hc = hcS[-tf_size:]
+        else:
+            hp = hpS
+            hc = hcS
+        return hp, hc

@@ -9,15 +9,15 @@
 
 import numpy as np
 from numba import jit
-from .utils import dot_arr, cal_zeta
+from .Orbit import detectors
 
 
 @jit(nopython=True)
-def _matrix_res_pro(n, p, m):
-    """TensorProduct(n, m) : P,  where A:B = A_ij B_ij"""
-    return (n[0] * p[0, 0] * m[0] + n[0] * p[0, 1] * m[1] + n[0] * p[0, 2] * m[2]
-            + n[1] * p[1, 0] * m[0] + n[1] * p[1, 1] * m[1] + n[1] * p[1, 2] * m[2]
-            + n[2] * p[2, 0] * m[0] + n[2] * p[2, 1] * m[1] + n[2] * p[2, 2] * m[2])
+def _matrix_res_pro(n, p):
+    """TensorProduct(n, n) : P,  where A:B = A_ij B_ij"""
+    return (n[0] * p[0, 0] * n[0] + n[0] * p[0, 1] * n[1] + n[0] * p[0, 2] * n[2]
+            + n[1] * p[1, 0] * n[0] + n[1] * p[1, 1] * n[1] + n[1] * p[1, 2] * n[2]
+            + n[2] * p[2, 0] * n[0] + n[2] * p[2, 1] * n[1] + n[2] * p[2, 2] * n[2])
 
 
 def trans_fd_response(vec_k, p, det, f):
@@ -66,9 +66,9 @@ def trans_fd_response(vec_k, p, det, f):
     y32_pre = com_f * sin32 * exp23
 
     def trans_response(p_):
-        n12pn12 = _matrix_res_pro(u12, p_, u12)
-        n23pn23 = _matrix_res_pro(u23, p_, u23)
-        n31pn31 = _matrix_res_pro(u13, p_, u13)
+        n12pn12 = _matrix_res_pro(u12, p_)
+        n23pn23 = _matrix_res_pro(u23, p_)
+        n31pn31 = _matrix_res_pro(u13, p_)
 
         y_slr = {(1, 2): y12_pre * n12pn12,
                  (2, 1): y21_pre * n12pn12,
@@ -121,46 +121,15 @@ def get_fd_response(vec_k, p, det, f, channel='A'):
     return res_list
 
 
-def H(wf, tf, nl):
-    """
-    Calculate n^i h_{ij} n^j
-    ------------------------
-    Parameters
-    ----------
-    - tf: time array
-    - nl: unit vector from sender to receiver
-
-    Return
-    ------
-    -
-    """
-    u = wf.vec_u
-    v = wf.vec_v
-    hpssb, hcssb = wf.get_hphc(tf)
-    tf_size = tf.shape[0]
-    h_size = hpssb.shape[0]
-    if tf_size > h_size:
-        hp = np.zeros_like(tf)
-        hc = np.zeros_like(tf)
-        hp[:h_size] = hpssb
-        hc[:h_size] = hcssb
-    elif tf_size < h_size:
-        hp = hpssb[-tf_size:]
-        hc = hcssb[-tf_size:]
-    else:
-        hp = hpssb
-        hc = hcssb
-
-    xi_p, xi_c = cal_zeta(u, v, nl)
-    return hp*xi_p+hc*xi_c
-
-
-def get_td_response(wf, det, tf, TDIgen=1):
+def get_td_response(wf, tf, det='TQ', TDIgen=1):
+    """TODO: here we calculate orbits of the detectors only once at tf, but considering TDI_delay here,
+         their positions need to be **recalculated**, e.g. at tf-L, tf-2*L, ..."""
     if TDIgen == 1:
         TDI_delay = 4
     else:
         raise NotImplementedError
 
+    det = detectors[det](tf)
     p1, p2, p3 = det.orbit_1, det.orbit_2, det.orbit_3
     L = det.L_T
     n1 = -det.Uni_vec_23
@@ -168,55 +137,40 @@ def get_td_response(wf, det, tf, TDIgen=1):
     n3 = -det.Uni_vec_12
 
     k = wf.vec_k
+    p_p, p_c = wf.polarization()
+    xi1 = (_matrix_res_pro(n1, p_p), _matrix_res_pro(n1, p_c))
+    xi2 = (_matrix_res_pro(n2, p_p), _matrix_res_pro(n2, p_c))
+    xi3 = (_matrix_res_pro(n3, p_p), _matrix_res_pro(n3, p_c))
 
-    kp1 = dot_arr(k, p1)
-    kn1 = dot_arr(k, n1)
-    kp2 = dot_arr(k, p2)
-    kn2 = dot_arr(k, n2)
-    kp3 = dot_arr(k, p3)
-    kn3 = dot_arr(k, n3)
-
-    H3_p2 = {}
-    H3_p1 = {}
-    H1_p3 = {}
-    H1_p2 = {}
-    H2_p3 = {}
-    H2_p1 = {}
+    kp1 = np.dot(k, p1)
+    kp2 = np.dot(k, p2)
+    kp3 = np.dot(k, p3)
+    kn1 = np.dot(k, n1)
+    kn2 = np.dot(k, n2)
+    kn3 = np.dot(k, n3)
 
     tf_kp1, tf_kp2, tf_kp3 = tf-kp1, tf-kp2, tf-kp3
 
-    for i in range(TDI_delay+1):
-        tag = L*i
-        H3_p2[i] = H(wf, tf_kp2-tag, n3)
-        H3_p1[i] = H(wf, tf_kp1-tag, n3)
-        H1_p3[i] = H(wf, tf_kp3-tag, n1)
-        H1_p2[i] = H(wf, tf_kp2-tag, n1)
-        H2_p3[i] = H(wf, tf_kp3-tag, n2)
-        H2_p1[i] = H(wf, tf_kp1-tag, n2)
+    # Here `i` is for `i*L` TDI_delay, in 1st generation TDI we consider delay up to 4,
+    # i.e. t-0L, t-1L, t-2L, t-3L, t-4L. And then we calculate difference between each L delay
+    def h_tdi_delay(tf_s, xi_p, xi_c):
+        h_list = [wf.get_hphc(tf_s - i_*L) for i_ in range(TDI_delay+1)]
+        return [hp*xi_p+hc*xi_c for (hp, hc) in h_list]
 
-    yslr = {}
-    y12 = {}
-    y23 = {}
-    y31 = {}
-    y21 = {}
-    y32 = {}
-    y13 = {}
+    h3_p2 = h_tdi_delay(tf_kp2, *xi3)
+    h3_p1 = h_tdi_delay(tf_kp1, *xi3)
+    h2_p3 = h_tdi_delay(tf_kp3, *xi2)
+    h2_p1 = h_tdi_delay(tf_kp1, *xi2)
+    h1_p3 = h_tdi_delay(tf_kp3, *xi1)
+    h1_p2 = h_tdi_delay(tf_kp2, *xi1)
 
-    for i in range(TDI_delay):
-        y12[f"{i}L"] = (H3_p1[i+1]-H3_p2[i])/2/(1+kn3)
-        y21[f"{i}L"] = (H3_p2[i+1]-H3_p1[i])/2/(1-kn3)
+    def get_y(hi_pj, hi_pk, denominator):
+        return [(hi_pj[i+1]-hi_pk[i])/denominator for i in range(TDI_delay)]
 
-        y23[f"{i}L"] = (H1_p2[i+1]-H1_p3[i])/2/(1+kn1)
-        y32[f"{i}L"] = (H1_p3[i+1]-H1_p2[i])/2/(1-kn1)
-
-        y31[f"{i}L"] = (H2_p3[i+1]-H2_p1[i])/2/(1+kn2)
-        y13[f"{i}L"] = (H2_p1[i+1]-H2_p3[i])/2/(1-kn2)
-
-    yslr[(1, 2)] = y12
-    yslr[(2, 1)] = y21
-    yslr[(2, 3)] = y23
-    yslr[(3, 2)] = y32
-    yslr[(3, 1)] = y31
-    yslr[(1, 3)] = y13
-
-    return yslr
+    y_slr = {(1, 2): get_y(h3_p1, h3_p2, 2*(1+kn3)),
+             (2, 1): get_y(h3_p2, h3_p1, 2*(1-kn3)),
+             (1, 3): get_y(h2_p1, h2_p3, 2*(1-kn2)),
+             (3, 1): get_y(h2_p3, h2_p1, 2*(1+kn2)),
+             (2, 3): get_y(h1_p2, h1_p3, 2*(1+kn1)),
+             (3, 2): get_y(h1_p3, h1_p2, 2*(1-kn1))}
+    return y_slr

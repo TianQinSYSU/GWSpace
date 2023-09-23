@@ -18,8 +18,8 @@ else:
 
 
 class Orbit(object):
-    __slots__ = ('_get_pos', 'kappa0', 'orbit_1', 'orbit_2', 'orbit_3', 'p_0',
-                 'p_12', 'p_23', 'p_31', 'Uni_vec_12', 'Uni_vec_13', 'Uni_vec_23')
+    __slots__ = ('kappa0', 'orbit_1', 'orbit_2', 'orbit_3', 'p_0',
+                 'Uni_vec_12', 'Uni_vec_13', 'Uni_vec_23')
     armLength = None
     f_0 = None  # orbital frequency
     ecc = 0.
@@ -61,11 +61,6 @@ class TianQinOrbit(Orbit):
         self.orbit_1 = self.p_0+self.detector_orbit_xyz(alp_t1)
         self.orbit_2 = self.p_0+self.detector_orbit_xyz(alp_t2)
         self.orbit_3 = self.p_0+self.detector_orbit_xyz(alp_t3)
-
-        # For TDI response
-        self.p_12 = self.orbit_1+self.orbit_2
-        self.p_23 = self.orbit_2+self.orbit_3
-        self.p_31 = self.orbit_3+self.orbit_1
 
         # The unit vector between three spacecrafts
         self.Uni_vec_12 = (self.orbit_2-self.orbit_1)/self.L_T
@@ -131,11 +126,6 @@ class LISAOrbit(Orbit):
         self.orbit_1 = self.detector_orbit_xyz(time, n=1)
         self.orbit_2 = self.detector_orbit_xyz(time, n=2)
         self.orbit_3 = self.detector_orbit_xyz(time, n=3)
-
-        # For TDI response
-        self.p_12 = self.orbit_1+self.orbit_2
-        self.p_23 = self.orbit_2+self.orbit_3
-        self.p_31 = self.orbit_3+self.orbit_1
 
         # The unit vector between three spacecrafts
         self.Uni_vec_12 = (self.orbit_2-self.orbit_1)/self.L_T

@@ -54,37 +54,12 @@ ParsValue2Second = {
 }
 
 
-# ==========================
-def dot_arr(u, v):
-    return u[0]*v[0]+u[1]*v[1]+u[2]*v[2]
-
-
-def dot_arr_H_arr(u, H, v):
-    """
-    Calculate u cdot H cdot v
-    --------------------------
-    Parameter:
-    - u: np array with shape of (3, ndim)
-    - v: np array with shape of (3, ndim)
-    - H: np array with shape of (3, 3)
-    ------------------------------------
-    Return:
-    - ss = n.H.n
-    """
-    ss = np.zeros_like(u.shape[1])
-    for i in range(3):
-        for j in range(3):
-            ss += u[i]*H[i, j]*v[j]
-    return ss
-
-
 def to_m1m2(m_chirp, eta):
     m1 = m_chirp/(2*eta**(3/5))*(1+(1-4*eta)**0.5)
     m2 = m_chirp/eta**(3/5)-m1
     return m1, m2
 
 
-# ==========================
 def luminosity_distance_approx(z, omega_m=Omega_m_Planck2018):
     """
     An analytical approximation of the luminosity distance

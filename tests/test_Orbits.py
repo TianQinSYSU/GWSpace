@@ -17,7 +17,7 @@ from csgwsim.Orbit import get_pos
 
 st = time.time()
 Tobs = YRSID_SI
-delta_T = 3600
+delta_T = 10
 tf = np.arange(0, Tobs, delta_T)
 
 TQOrbit = TianQinOrbit(tf)

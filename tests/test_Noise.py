@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-#-*- coding: utf-8 -*-  
-#==================================
+# -*- coding: utf-8 -*-
+# ==================================
 # File Name: test_Noise.py
 # Author: ekli
 # Mail: lekf123@163.com
 # Created Time: 2023-09-05 15:03:28
-#==================================
+# ==================================
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,7 +15,7 @@ from csgwsim.Constants import PI, C_SI
 from csgwsim.wrap import frequency_noise_from_psd
 
 if __name__ == "__main__":
-    #freq_ = np.logspace(-5, 0, 1001)
+    # freq_ = np.logspace(-5, 0, 1001)
     freq_ = np.linspace(1e-4, 1, 2**20)
     la = LISANoise()
     lisa_sa, lisa_sp = la.noises(freq_)
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     TX, TXY = noise_XYZ(freq_, tq_sa, tq_sp, tq.armL)
 
     noise_TX = frequency_noise_from_psd(TX, freq_[1]-freq_[0])
-    np.save("noise_TX.npy", noise_TX)
+    # np.save("noise_TX.npy", noise_TX)
 
     # =======================================
     plt.figure()

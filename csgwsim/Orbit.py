@@ -9,7 +9,7 @@
 """Space detectors' orbits, note that the orbits are in nature unit(in second)"""
 
 import numpy as np
-from csgwsim.Constants import C_SI, PI, PI_3, EarthOrbitFreq_SI, EarthEccentricity, Perihelion_Ang, AU_T
+from csgwsim.Constants import C_SI, PI, PI_3, EarthOrbitFreq_SI, EarthEcc, Perihelion_Ang, AU_T, G_SI, EarthMass
 
 if __package__ or "." in __name__:
     from csgwsim import libFastGB
@@ -18,12 +18,12 @@ else:
 
 
 class Orbit(object):
-    __slots__ = ('kappa0', 'orbit_1', 'orbit_2', 'orbit_3', 'p_0',
-                 'Uni_vec_12', 'Uni_vec_13', 'Uni_vec_23')
+    __slots__ = ('kappa0', 'kappa_earth', 'orbits')
     armLength = None
-    f_0 = None  # orbital frequency
-    ecc = 0.
     beta0 = 0.  # angle measured from the \tilde{x} axis to the perigee of the spacecraft orbit
+
+    def __init__(self, kappa_earth=0.):
+        self.kappa_earth = kappa_earth  # the longitude measured from the vernal equinox at t = 0
 
     @property
     def L_T(self):
@@ -35,21 +35,38 @@ class Orbit(object):
         """semi-major axis of the spacecraft orbit (in second)"""
         return self.armLength/(C_SI*np.sqrt(3))
 
+    @property
+    def f_0(self):
+        """orbital frequency"""
+        raise NotImplementedError("Subclasses should provide a property to calculate orbital frequency")
+
+    @property
+    def ecc(self):
+        """Eccentricity of the spacecraft."""
+        return 0.
+
+    @property
+    def p_0(self):
+        return np.sum(self.orbits, axis=0) / 3
+
+    def uni_vec_ij(self, i, j):
+        """The unit vector between three spacecrafts:
+         Here we define uni_vec_12 = (orbit_2-orbit_1)/self.L_T"""
+        return (self.orbits[j-1]-self.orbits[i-1])/self.L_T
+
 
 class TianQinOrbit(Orbit):
     """See Hu et al. https://iopscience.iop.org/article/10.1088/1361-6382/aab52f"""
-    __slots__ = 'kappa_earth'
+    __slots__ = '_p_0'
     armLength = np.sqrt(3)*1.0e8
-    f_0 = 3.176e-6  # orbital frequency of the TianQin satellites around the Earth TODO: convert it into a property
     # ecliptic lon & lat of J0806.3+1527
     theta_s = -4.7/180*PI
     phi_s = 120.5/180*PI
 
-    def __init__(self, time, kappa0=0., kappa_earth=0.):
-        # TODO: here we do not store the time series into the class
-        Orbit.__init__(self)
+    def __init__(self, time, kappa_earth=0., kappa0=0.):
+        # Here we do not store the time series into the class
+        Orbit.__init__(self, kappa_earth)
         self.kappa0 = kappa0  # initial orbit phase of the first(n=1) spacecraft measured from \tilde{x} axis
-        self.kappa_earth = kappa_earth  # the longitude measured from the vernal equinox at t = 0
 
         # Spacecraft orbit phase of the nth TQ satellites
         alp_t1 = self.alpha_detector(time, n=1)
@@ -57,18 +74,15 @@ class TianQinOrbit(Orbit):
         alp_t3 = self.alpha_detector(time, n=3)
 
         # 3D coordinate of each spacecraft vector (SSB)
-        self.p_0 = self.earth_orbit_xyz(time)
-        self.orbit_1 = self.p_0+self.detector_orbit_xyz(alp_t1)
-        self.orbit_2 = self.p_0+self.detector_orbit_xyz(alp_t2)
-        self.orbit_3 = self.p_0+self.detector_orbit_xyz(alp_t3)
+        self._p_0 = self.earth_orbit_xyz(time)
+        self.orbits = (self._p_0+self.detector_orbit_xyz(alp_t1),
+                       self._p_0+self.detector_orbit_xyz(alp_t2),
+                       self._p_0+self.detector_orbit_xyz(alp_t3))
 
-        # The unit vector between three spacecrafts
-        self.Uni_vec_12 = (self.orbit_2-self.orbit_1)/self.L_T
-        self.Uni_vec_13 = (self.orbit_3-self.orbit_1)/self.L_T
-        self.Uni_vec_23 = (self.orbit_3-self.orbit_2)/self.L_T
-        # self.Uni_vec_21 = -self.Uni_vec_12
-        # self.Uni_vec_31 = -self.Uni_vec_13
-        # self.Uni_vec_32 = -self.Uni_vec_23
+    @property
+    def f_0(self):
+        """orbital frequency of the TianQin satellites around the Earth (~ 3.18e-6 Hz)"""
+        return np.sqrt(G_SI*EarthMass/(self.R_T*C_SI)**3)/(2*PI)
 
     def alpha_detector(self, time, n):
         """The orbit phase of the n-th spacecraft in the detector plane."""
@@ -84,14 +98,15 @@ class TianQinOrbit(Orbit):
         csa, sia = np.cos(alpha_earth), np.sin(alpha_earth)
         csa2, sia2 = np.cos(alpha_earth*2), np.sin(alpha_earth*2)
 
-        x = AU_T * (csa + 0.5*EarthEccentricity * (csa2-3) - 3/4*EarthEccentricity**2 * csa * (1-csa2))
-        y = AU_T * (sia + 0.5*EarthEccentricity * sia2 + 1/4*EarthEccentricity**2 * sia * (3*csa2-1))
+        x = AU_T * (csa+0.5*EarthEcc*(csa2-3)-3/4*EarthEcc**2*csa*(1-csa2))
+        y = AU_T * (sia+0.5*EarthEcc*sia2+1/4*EarthEcc**2*sia*(3*csa2-1))
         z = np.zeros(len(csa))
         return np.array([x, y, z])
 
-    # def p_0(self, time):
-    #     """TQ constellation center: (TQ1+TQ2+TQ3)/3 (Earth barycenter)"""
-    #     return self.earth_orbit_xyz(time)
+    @property
+    def p_0(self):
+        """TQ constellation center: (TQ1+TQ2+TQ3)/3 (Earth barycenter)"""
+        return self._p_0
 
     def detector_orbit_xyz(self, alp_t):
         sin_alp_t, cos_alp_t, cos_alp_2_t = np.sin(alp_t), np.cos(alp_t), np.cos(2*alp_t)
@@ -116,24 +131,14 @@ class TianQinOrbit(Orbit):
 class LISAOrbit(Orbit):
     """See "LDC-manual-002.pdf" (Eq. 48-52)"""
     armLength = 25*1e8  # Arm-length (changed from 5e9 to 2.5e9 after 2017)
-    f_0 = EarthOrbitFreq_SI  # orbital frequency of LISA
 
-    def __init__(self, time, kappa0=0):
-        Orbit.__init__(self)
-        self.kappa0 = kappa0  # the initial azimuthal position of the guiding center in the ecliptic plane
+    def __init__(self, time, kappa_earth=0):
+        Orbit.__init__(self, kappa_earth)
 
         # 3D coordinate of each spacecraft vector (SSB)
-        self.orbit_1 = self.detector_orbit_xyz(time, n=1)
-        self.orbit_2 = self.detector_orbit_xyz(time, n=2)
-        self.orbit_3 = self.detector_orbit_xyz(time, n=3)
-
-        # The unit vector between three spacecrafts
-        self.Uni_vec_12 = (self.orbit_2-self.orbit_1)/self.L_T
-        self.Uni_vec_13 = (self.orbit_3-self.orbit_1)/self.L_T
-        self.Uni_vec_23 = (self.orbit_3-self.orbit_2)/self.L_T
-        # self.Uni_vec_21 = -self.Uni_vec_12
-        # self.Uni_vec_31 = -self.Uni_vec_13
-        # self.Uni_vec_32 = -self.Uni_vec_23
+        self.orbits = (self.detector_orbit_xyz(time, n=1),
+                       self.detector_orbit_xyz(time, n=2),
+                       self.detector_orbit_xyz(time, n=3))
 
     @property
     def ecc(self):
@@ -141,13 +146,19 @@ class LISAOrbit(Orbit):
         return self.L_T/(2 * 3**0.5 * AU_T)
 
     @property
-    def p_0(self):
-        return (self.orbit_1+self.orbit_2+self.orbit_3) / 3
+    def f_0(self):
+        """orbital frequency of LISA"""
+        return EarthOrbitFreq_SI
+
+    @property
+    def kappa0(self):
+        """the initial azimuthal position of the guiding center in the ecliptic plane"""
+        return self.kappa_earth - Perihelion_Ang - 20/180*PI
 
     def alpha_detector(self, time):
         return 2*PI * self.f_0 * time + self.kappa0
 
-    def detector_orbit_xyz(self, time, n):
+    def detector_orbit_xyz(self, time, n):  # TODO: add 2nd order
         beta = 2*PI_3*(n-1) + self.beta0
         snb, csb = np.sin(beta), np.cos(beta)
         alpha_lisa = self.alpha_detector(time)
@@ -158,6 +169,15 @@ class LISAOrbit(Orbit):
         y = AU_T * (sin_alp_t + ecc*(sin_alp_t*cos_alp_t*csb - (1+cos_alp_t**2)*snb))
         z = -AU_T * np.sqrt(3) * ecc * np.cos(alpha_lisa - beta)
         return np.array([x, y, z])
+
+
+class TaijiOrbit(LISAOrbit):
+    armLength = 3e9
+
+    @property
+    def kappa0(self):
+        """the initial azimuthal position of the guiding center in the ecliptic plane"""
+        return self.kappa_earth - Perihelion_Ang + 20/180*PI
 
 
 def get_pos(tf, detector="TianQin", toT=True):
@@ -195,4 +215,5 @@ def get_pos(tf, detector="TianQin", toT=True):
 
 
 detectors = {'TQ': TianQinOrbit,
-             'LISA': LISAOrbit}
+             'LISA': LISAOrbit,
+             'Taiji': TaijiOrbit}

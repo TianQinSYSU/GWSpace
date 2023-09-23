@@ -53,23 +53,20 @@ YEAR = 31536000
 
 DAYSID_SI = 86164.09053  # Mean sidereal day
 
-# Orbital eccentricity for earth:
-# https://handwiki.org/wiki/Astronomy:Orbital_eccentricity
-EarthEccentricity = 0.01671
-
 # Orbital pulsation: 2pi/year - use sidereal year as found on http://hpiers.obspm.fr/eop-pc/models/constants.html
 # EarthOrbitOmega_SI = 1.99098659277e-7
 EarthOrbitOmega_SI = 2*PI/YRSID_SI
 EarthOrbitFreq_SI = 1/YRSID_SI
 
-# mass of earth: https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
-Earth_mass = 5.9722e24  # [kg]
-
-# vernal equinox is September equinox (09-22/23)
-# perihelion is at about 01-03/04
-# (31 + 30 + 31 + 11)/365.2425 * 2 * PI
-Perihelion_Ang = 1.772
-# angle measured from the vernal equinox to the perihelion
+# https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
+EarthMass = 5.9722e24  # [kg]
+EarthEcc = 0.01671022
+# angle measured from the vernal equinox to the perihelion i.e. **Argument of perihelion**
+# 102.94719/180 * PI
+Perihelion_Ang = 1.7967674211761813
+# # vernal equinox is September equinox (09-22/23)
+# # perihelion is at about 01-03/04
+# # (31 + 30 + 31 + 11)/365.2425 * 2 * PI
 
 # ecliptic longitude and latitude of J0806.3+1527
 J0806_phi = 2.103121748653167  # 120.5

@@ -23,8 +23,7 @@ class TianQinNoise(object):
         self.LT = self.armL/C_SI
 
     def noises(self, freq, unit="relativeFrequency"):
-        """
-        Acceleration noise & Optical Metrology System
+        """ Acceleration noise & Optical Metrology System
         Sp = self.Np / (2 * self.armL)**2 * np.ones_like(freq)
         Sa = self.Na *(1+1e-4/freq) / (2 * PI * freq)**4 / (2 * self.armL)**2
         """
@@ -44,7 +43,8 @@ class TianQinNoise(object):
             Soms_nu = Soms_d*(omega/C_SI)**2
             return Sa_nu, Soms_nu  # Spm, Sop
         else:
-            print(f"No such unit of {self.unit}")
+            raise ValueError(f"Unknown unit: {unit}. "
+                             f"Supported detectors: {'|'.join(['displacement', 'relativeFrequency'])}")
 
     def sensitivity(self, freq):
         Sa, Sp = self.noises(freq, unit="displacement")
@@ -54,7 +54,7 @@ class TianQinNoise(object):
         return 10./3/self.armL**2*sens*tmp
 
 
-class LISANoise(object):
+class LISANoise(TianQinNoise):
     """
     For LISA noise
     the model is SciRDv1
@@ -70,15 +70,10 @@ class LISANoise(object):
     # Smos = 2.25e-22  # m^2/Hz, 1.5e-11**2
 
     def __init__(self, Na=3e-15**2, Np=15.0e-12**2, armL=2.5e9):
-        self.Na = Na
-        self.Np = Np
-        self.armL = armL
-        self.LT = self.armL/C_SI
+        TianQinNoise.__init__(self, Na, Np, armL)
 
     def noises(self, freq, unit="relativeFrequency"):
-        """
-        Acceleration noise & Optical Metrology System
-        """
+        """ Acceleration noise & Optical Metrology System """
         # In acceleration
         Sa_a = self.Na*(1.+(0.4e-3/freq)**2)*(1+(freq/8e-3)**4)
 
@@ -94,7 +89,8 @@ class LISANoise(object):
             Soms_nu = Soms_d*(2*PI*freq/C_SI)**2
             return Sa_nu, Soms_nu  # Spm, Sop
         else:
-            print(f"No such unit of {self.unit}")
+            raise ValueError(f"Unknown unit: {unit}. "
+                             f"Supported detectors: {'|'.join(['displacement', 'relativeFrequency'])}")
 
     def sensitivity(self, freq, includewd=None):
         Sa, Sp = self.noises(freq, unit="displacement")
@@ -123,18 +119,11 @@ class LISANoise(object):
         return sens
 
 
-def SGal(fr, pars):
+def SGal(fr, Amp, alpha, sl1, kn, sl2):
     """
     TODO To be described
     """
-    Amp = pars[0]
-    alpha = pars[1]
-    sl1 = pars[2]
-    kn = pars[3]
-    sl2 = pars[4]
-    Sgal = Amp*np.exp(-(fr**alpha)*sl1)*(fr**(-7./3.))*0.5*(1.0+np.tanh(-(fr-kn)*sl2))
-
-    return Sgal
+    return Amp*np.exp(-(fr**alpha)*sl1)*(fr**(-7./3.))*0.5*(1.0+np.tanh(-(fr-kn)*sl2))
 
 
 def GalConf(fr, Tobs):
@@ -158,18 +147,17 @@ def GalConf(fr, Tobs):
 
     Tmax = 10.0*year
     if Tobs > Tmax:
-        print('I do not do extrapolation, Tobs > Tmax:', Tobs, Tmax)
-        sys.exit(1)
+        raise ValueError(f'I do not do extrapolation, Tobs({Tobs}) > Tmax({Tmax})')
 
     # Interpolate
-    tck1 = interpolate.splrep(Xobs, Slope1, s=0, k=1)
-    tck2 = interpolate.splrep(Xobs, knee, s=0, k=1)
-    tck3 = interpolate.splrep(Xobs, Slope2, s=0, k=1)
-    sl1 = interpolate.splev(Tobs, tck1, der=0)
-    kn = interpolate.splev(Tobs, tck2, der=0)
-    sl2 = interpolate.splev(Tobs, tck3, der=0)
+    tck1 = interpolate.splrep(Xobs, Slope1, k=1)
+    tck2 = interpolate.splrep(Xobs, knee, k=1)
+    tck3 = interpolate.splrep(Xobs, Slope2, k=1)
+    sl1 = interpolate.splev(Tobs, tck1)
+    kn = interpolate.splev(Tobs, tck2)
+    sl2 = interpolate.splev(Tobs, tck3)
     # print "interpolated values: slope1, knee, slope2", sl1, kn, sl2
-    Sgal_int = SGal(fr, [Amp, alpha, sl1, kn, sl2])
+    Sgal_int = SGal(fr, Amp, alpha, sl1, kn, sl2)
 
     return Sgal_int
 

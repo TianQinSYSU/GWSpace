@@ -30,13 +30,11 @@ def trans_y_slr_fd(vec_k, p, det, f):
     :return:
     """
 
-    u12 = det.Uni_vec_12
-    u23 = det.Uni_vec_23
-    u13 = det.Uni_vec_13
+    u12 = det.uni_vec_ij(1, 2)
+    u23 = det.uni_vec_ij(2, 3)
+    u13 = det.uni_vec_ij(1, 3)
     ls = det.L_T
-    p_1 = det.orbit_1
-    p_2 = det.orbit_2
-    p_3 = det.orbit_3
+    p_1, p_2, p_3 = det.orbits
 
     x = np.pi * f * ls
     # com_f = 1j/2 * x in (Marsat et al.) is because it was using the A,E,T which are 1/2 of their LDC definitions
@@ -94,11 +92,11 @@ def get_y_slr_td(wf, tf, det='TQ', TDIgen=1):
         raise NotImplementedError
 
     det = detectors[det](tf)
-    p1, p2, p3 = det.orbit_1, det.orbit_2, det.orbit_3
+    p1, p2, p3 = det.orbits
     L = det.L_T
-    n1 = -det.Uni_vec_23
-    n2 = det.Uni_vec_13
-    n3 = -det.Uni_vec_12
+    n1 = det.uni_vec_ij(3, 2)
+    n2 = det.uni_vec_ij(1, 3)
+    n3 = det.uni_vec_ij(2, 1)
 
     k = wf.vec_k
     p_p, p_c = wf.polarization()

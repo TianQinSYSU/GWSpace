@@ -2,6 +2,8 @@
 
 This is a simple Code for the Science Data Simulator of Space-based gravitational wave detectors.
 
+![gwspace-structure](./docs/gwspace-structure.png?raw=true "gwspace-structure")
+
 To compile the code, using `python setup.py install --with-gsl=/your/gsl/path`
 
 

@@ -68,7 +68,7 @@ extern "C" {
 
 #define DAYSID_SI 86164.09053 // Mean sidereal day
 
-#define EarthEccentricity 0.01671
+#define EarthEccentricity 0.01671022
 /* Orbital eccentricity for earth:
 * https://handwiki.org/wiki/Astronomy:Orbital_eccentricity
 * */

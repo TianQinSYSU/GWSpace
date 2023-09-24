@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from gwspace.Waveform import waveforms
 from gwspace.response import get_y_slr_td, trans_y_slr_fd, get_XYZ_td, get_XYZ_fd, get_AET_fd, tdi_XYZ2AET
 from gwspace.Orbit import detectors
-from gwspace.Constants import DAY, YRSID_SI
+from gwspace.Constants import DAY, YRSID_SI, MONTH
 
 
 def generate_td_data(pars, s_type='gcb', det='TQ', show_y_slr=False):
@@ -137,7 +137,7 @@ if __name__ == "__main__":
                 }
     BHBpars = {"mass1": 3.5e6,
                "mass2": 2.1e5,
-               'T_obs': YRSID_SI,
+               'T_obs': MONTH*3,
                "chi1": 0.2,
                "chi2": 0.1,
                "DL": 1e3,
@@ -147,19 +147,97 @@ if __name__ == "__main__":
                "Beta": 1.2,
                "tc": 0,
                }
-    ecc_par = {'DL': 49.102,  # Luminosity distance (Mpc)
-               'mass1': 21.44,  # Primary mass (solar mass)
-               'mass2': 20.09,  # Secondary mass(solar mass)
-               'Lambda': 3.44,  # Longitude
-               'Beta': -0.074,  # Latitude
+    ecc_par = {'DL': 100,  # Luminosity distance (Mpc)
+               'mass1': 35.6,  # Primary mass (solar mass)
+               'mass2': 30.6,  # Secondary mass(solar mass)
+               'Lambda': 4.7,  # Longitude
+               'Beta': -1.5,  # Latitude
                'phi_c': 0,  # Coalescence phase
-               'T_obs': YRSID_SI,  # Observation time (s)
-               'tc': YRSID_SI,  # Coalescence time (s)
-               'iota': 0.6459,  # Inclination angle
+               'T_obs': MONTH*3,  # Observation time (s)
+               'tc': 0,  # Coalescence time (s)
+               'iota': 0.3,  # Inclination angle
                'var_phi': 0,  # Observer phase
-               'psi': 1.744,  # Polarization angle
-               }
-
-    generate_td_data(GCBpars)
+               'psi': 0.2,  # Polarization angle
+               }  # masses of GW150914
+    # generate_td_data(GCBpars)
     # generate_td_data(EMRIpars, s_type='emri')
     # generate_fd_data(BHBpars, show_y_slr=True)
+
+    from gwspace.Noise import TianQinNoise, LISANoise, TaijiNoise
+
+    tq_noise = TianQinNoise()
+    lisa_noise = LISANoise()
+    taiji_noise = TaijiNoise()
+    freq_ = np.logspace(-5, 0, 10000)
+
+    TQ_A, _ = tq_noise.noise_AET(freq_)
+    LISA_A, _ = lisa_noise.noise_AET(freq_, wd_foreground=90/365.25)
+    Taiji_A, _ = lisa_noise.noise_AET(freq_, wd_foreground=90/365.25)
+
+    BHBwf = waveforms['bhb_PhenomD'](**BHBpars)
+    delta_f = 1e-6  # 1/BHBwf.T_obs
+    freq = np.arange(np.ceil(BHBwf.f_min/delta_f)*delta_f, 1., delta_f)
+    amp, phase, tf = BHBwf.get_amp_phase(freq)
+    amp, phase, tf = amp[(2, 2)], phase[(2, 2)], tf[(2, 2)]
+    h22 = amp*np.exp(1j*phase)*np.exp(2j*np.pi*freq*BHBwf.tc)
+
+    SMBBH_A = {}
+    for d in ['TQ', 'LISA', 'Taiji']:
+        det = detectors[d](tf)
+        y_slr = trans_y_slr_fd(BHBwf.vec_k, BHBwf.p22, det, freq)[0]
+        y_slr = {k: v*h22 for k, v in y_slr.items()}
+        SMBBH_A[d], _, _ = get_AET_fd(y_slr, freq, det.L_T)
+
+    plt.figure(figsize=(12, 8))
+    plt.loglog(freq_, np.sqrt(TQ_A), 'm-', label='TQ_A')
+    plt.loglog(freq_, np.sqrt(LISA_A), 'y-', label='LISA_A')
+    plt.loglog(freq_, np.sqrt(Taiji_A), 'g-', label='Taiji_A')
+    plt.loglog(freq, np.abs(SMBBH_A['TQ'])*np.sqrt(freq), 'r-', label='TQ')
+    plt.loglog(freq, np.abs(SMBBH_A['LISA'])*np.sqrt(freq), 'b-', label='LISA')
+    plt.loglog(freq, np.abs(SMBBH_A['Taiji'])*np.sqrt(freq), 'c-', label='Taiji')
+    plt.xlabel('f(Hz)', fontsize=24)
+    plt.ylabel('$\\sqrt{S_n}$ [Hz$^{-1/2}$]', fontsize=24)
+    plt.tick_params(labelsize=16)
+    plt.grid(which='both', alpha=0.5)
+    plt.xlim(0.9*BHBwf.f_min, 1.1)
+    plt.ylim(1e-23, 1e-16)
+    plt.legend(fontsize=16)
+    plt.tight_layout()
+
+    BHBwf = waveforms['bhb_PhenomD'](**ecc_par)
+    delta_f = 1e-5  # 1/BHBwf.T_obs
+    freq_e0 = np.arange(np.ceil(BHBwf.f_min/delta_f)*delta_f, 1., delta_f)
+    amp, phase, tf = BHBwf.get_amp_phase(freq_e0)
+    amp, phase, tf = amp[(2, 2)], phase[(2, 2)], tf[(2, 2)]
+    h22 = amp*np.exp(1j*phase)*np.exp(2j*np.pi*freq_e0*BHBwf.tc)
+
+    ecc_wf = waveforms['bhb_EccFD'](**ecc_par, eccentricity=0.1)
+
+    smBBH_A_e0, smBBH_A_e1 = {}, {}
+    for d in ['TQ', 'LISA', 'Taiji']:
+        det = detectors[d](tf)
+        y_slr = trans_y_slr_fd(BHBwf.vec_k, BHBwf.p22, det, freq_e0)[0]
+        y_slr = {k: v*h22 for k, v in y_slr.items()}
+        smBBH_A_e0[d], _, _ = get_AET_fd(y_slr, freq_e0, det.L_T)
+
+        smBBH_A_e1[d], freq_e1 = ecc_wf.fd_tdi_response(det=d, delta_f=delta_f)
+
+    plt.figure(figsize=(12, 8))
+    plt.loglog(freq_, np.sqrt(TQ_A), 'm--', label='TQ_A')
+    plt.loglog(freq_, np.sqrt(LISA_A), 'y--', label='LISA_A')
+    plt.loglog(freq_, np.sqrt(Taiji_A), 'g--', label='Taiji_A')
+    plt.loglog(freq_e1, np.abs(smBBH_A_e1['TQ'])*np.sqrt(freq_e1), 'r-', label='TQ: e=0.1')
+    plt.loglog(freq_e1, np.abs(smBBH_A_e1['LISA'])*np.sqrt(freq_e1), 'b-', label='LISA: e=0.1')
+    plt.loglog(freq_e1, np.abs(smBBH_A_e1['Taiji'])*np.sqrt(freq_e1), 'c-', label='Taiji: e=0.1')
+    plt.loglog(freq_e0, np.abs(smBBH_A_e0['TQ'])*np.sqrt(freq_e0), 'm-', label='TQ: e=0')
+    plt.loglog(freq_e0, np.abs(smBBH_A_e0['LISA'])*np.sqrt(freq_e0), 'y-', label='LISA: e=0')
+    plt.loglog(freq_e0, np.abs(smBBH_A_e0['Taiji'])*np.sqrt(freq_e0), 'g-', label='Taiji: e=0')
+    plt.xlabel('f(Hz)', fontsize=24)
+    plt.ylabel('$\\sqrt{S_n}$ [Hz$^{-1/2}$]', fontsize=24)
+    plt.tick_params(labelsize=16)
+    plt.grid(which='both', alpha=0.5)
+    plt.xlim(0.9*BHBwf.f_min, 1.1)
+    plt.ylim(1e-23, 1e-16)
+    plt.legend(fontsize=16)
+    plt.tight_layout()
+

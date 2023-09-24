@@ -14,6 +14,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline as Spline
 from .Orbit import detectors
 from .utils import sYlm
 from .Constants import MSUN_SI, MSUN_unit, MPC_SI, YRSID_SI, PI, C_SI, G_SI
+from .response import trans_y_slr_fd, get_AET_fd
 
 from .eccentric_fd import gen_ecc_fd_and_tf, gen_ecc_fd_waveform
 try:
@@ -292,7 +293,7 @@ class BHBWaveformEcc(BasicWaveform):
         return gen_ecc_fd_and_tf(self.tc, **self.wave_para(), delta_f=delta_f,
                                  f_lower=f_min, f_final=f_max, obs_time=0)
 
-    def fd_tdi_response(self, channel='A', det='TQ', delta_f=None, f_min=None, f_max=1.):
+    def fd_tdi_response(self, channel='A', det='TQ', delta_f=None, f_min=None, f_max=1., **kwargs):
         """Generate F-Domain TDI response for eccentric waveform (EccentricFD).
          Although the eccentric waveform also have (l, m)=(2,2), it has eccentric harmonics,
          which should also calculate separately like what we should do for spherical harmonics."""
@@ -302,7 +303,6 @@ class BHBWaveformEcc(BasicWaveform):
         # if channel not in 'XYZAET':  # <if not all([c in 'XYZAET' for c in channel])> for multichannel mode
         #     raise ValueError(f"[SpaceResponse] Unknown channel {channel}. "
         #                      f"Supported channels: {'|'.join(['X', 'Y', 'Z', 'A', 'E', 'T'])}")
-        # TODO: connect it to new response funcs
         det_class = detectors[det]
         wf, freq = self.gen_ori_waveform(delta_f, f_min, f_max)
 
@@ -313,11 +313,14 @@ class BHBWaveformEcc(BasicWaveform):
             h_p, h_c, tf_vec = wf[i]
             index = (h_p != 0).argmax()
 
-            det = det_class(tf_vec[index:], kappa0=0.)
-            gw_tdi_p, gw_tdi_c = get_fd_response(self.vec_k, (p_p, p_c), det, freq[index:], channel)
+            det = det_class(tf_vec[index:], **kwargs)
+            gw_tdi_p, gw_tdi_c = trans_y_slr_fd(self.vec_k, (p_p, p_c), det, freq[index:])
+            # FIXME: use channel!!!, here only store A channel
+            gw_tdi_p, _, _ = get_AET_fd(gw_tdi_p, freq[index:], det.L_T)
+            gw_tdi_c, _, _ = get_AET_fd(gw_tdi_c, freq[index:], det.L_T)
             gw_tdi[index:] += gw_tdi_p*h_p[index:] + gw_tdi_c*h_c[index:]
 
-        return gw_tdi*t_delay
+        return gw_tdi*t_delay, freq
 
 
 class GCBWaveform(BasicWaveform):

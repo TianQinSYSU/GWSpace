@@ -26,7 +26,7 @@ class TianQinNoise(object):
         """ Acceleration noise & Optical Metrology System"""
         omega = 2*PI*freq
         # In acceleration
-        Sa_a = self.Na  # * (1. + 0.1e-3/freq ) # without the tail of freq
+        Sa_a = self.Na * (1. +0.1e-3/freq )
 
         # In displacement
         Sa_d = Sa_a/omega**4
@@ -46,7 +46,7 @@ class TianQinNoise(object):
     def sensitivity(self, freq):
         Sa, Sp = self.noises(freq, unit="displacement")
         f_star = C_SI/(2*PI*self.armL)
-        sens = (2*(1+np.cos(freq/f_star))*Sa*(1+1e-4/freq)+Sp)
+        sens = (2*(1+np.cos(freq/f_star))*Sa+Sp)
         tmp = (1+(freq/0.41/C_SI*2*self.armL)**2)
         return 10./3/self.armL**2*sens*tmp
 

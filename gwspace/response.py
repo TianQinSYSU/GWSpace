@@ -181,17 +181,17 @@ def get_AET_td(y_slr, TDIgen=1):
     return A, E, T
 
 
-def get_XYZ_fd(y_slr, freq, LT):
+def get_XYZ_fd(y_slr, freq, L_T):
     """
     Calculate XYZ from y_slr in frequency domain
     -------------------------------------------
     Parameters:
     - y_slr: single link response of GW
     - freq: frequency
-    - LT: arm length
+    - L_T: arm length
     """
 
-    Dt = np.exp(2j*np.pi*freq*LT)
+    Dt = np.exp(2j*np.pi*freq*L_T)
     Dt2 = Dt*Dt
 
     X = y_slr[(3, 1)]+Dt*y_slr[(1, 3)]-y_slr[(2, 1)]-Dt*y_slr[(1, 2)]
@@ -201,16 +201,16 @@ def get_XYZ_fd(y_slr, freq, LT):
     return np.array([X, Y, Z])*(1.-Dt2)
 
 
-def get_AET_fd(y_slr, freq, LT):
+def get_AET_fd(y_slr, freq, L_T):
     """
     Calculate AET from y_slr in frequency domain
     -------------------------------------------
     Parameters:
     - y_slr: single link response of GW
     - freq: frequency
-    - LT: arm length
+    - L_T: arm length
     """
-    Dt = np.exp(2j*np.pi*freq*LT)  # Time delay factor
+    Dt = np.exp(2j*np.pi*freq*L_T)  # Time delay factor
     Dt2 = Dt*Dt
 
     A = ((1+Dt)*(y_slr[(3, 1)]+y_slr[(1, 3)])

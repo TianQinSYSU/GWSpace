@@ -130,7 +130,7 @@ class TianQinOrbit(Orbit):
 
 class LISAOrbit(Orbit):
     """See "LDC-manual-002.pdf" (Eq. 48-52)"""
-    armLength = 25*1e8  # Arm-length (changed from 5e9 to 2.5e9 after 2017)
+    armLength = 2.5e9  # Arm-length (changed from 5e9 to 2.5e9 after 2017)
 
     def __init__(self, time, kappa_earth=0):
         Orbit.__init__(self, kappa_earth)

@@ -8,90 +8,90 @@
 # ==================================
 
 import numpy as np
-from gwspace.Constants import C_SI, PI
 from scipy import interpolate
+
+from gwspace.Constants import C_SI, PI
 
 
 class TianQinNoise(object):
-    # Sa = 1e-30  # test mass noise
-    # Sx = 1e-24  # Position / residual Acceleration sensitivity goals shot noise
+    Na = 1e-30  # m^2 s^-4 /Hz, Acceleration noise
+    Np = 1e-24  # m^2 / Hz, Optical metrology noise
+    armLength = np.sqrt(3)*1.0e8
 
-    def __init__(self, Na=1e-30, Np=1e-24, armL=1.7e8):
-        self.Na = Na
-        self.Np = Np
-        self.armL = armL
-        self.LT = self.armL/C_SI
+    @property
+    def L_T(self):
+        """Arm-length in second"""
+        return self.armLength/C_SI
 
-    def noises(self, freq, unit="relativeFrequency"):
-        """ Acceleration noise & Optical Metrology System"""
-        omega = 2*PI*freq
+    @property
+    def f_star(self):
+        return C_SI/(2*PI*self.armLength)
+
+    def noises_displacement(self, freq):
+        """Acceleration noise & Optical Metrology System"""
         # In acceleration
-        Sa_a = self.Na * (1. +0.1e-3/freq )
-
-        # In displacement
-        Sa_d = Sa_a/omega**4
-        Soms_d = self.Np*np.ones_like(freq)
-
-        if unit == "displacement":
-            return Sa_d, Soms_d
-        elif unit == "relativeFrequency":
-            # In Relative frequency unit
-            Sa_nu = Sa_d*(omega/C_SI)**2
-            Soms_nu = Soms_d*(omega/C_SI)**2
-            return Sa_nu, Soms_nu  # Spm, Sop
-        else:
-            raise ValueError(f"Unknown unit: {unit}. "
-                             f"Supported detectors: {'|'.join(['displacement', 'relativeFrequency'])}")
-
-    def sensitivity(self, freq):
-        Sa, Sp = self.noises(freq, unit="displacement")
-        f_star = C_SI/(2*PI*self.armL)
-        sens = (2*(1+np.cos(freq/f_star))*Sa+Sp)
-        tmp = (1+(freq/0.41/C_SI*2*self.armL)**2)
-        return 10./3/self.armL**2*sens*tmp
-
-
-class LISANoise(TianQinNoise):
-    """
-    For LISA noise
-    the model is SciRDv1
-    """
-
-    # f_star_lisa = C_SI/(2*PI*L_lisa)
-    # # # This can be converted to strain spectral density by dividing by the path-length squared:
-    # # S_shot = 1.21e-22  # m^2/Hz, 1.1e-11**2
-    # # S_s_lisa = S_shot / L_lisa**2
-    # # Each inertial sensor is expected to contribute an acceleration noise with spectral density
-    # Sacc = 9e-30  # m^2 s^-4 /Hz, 3e-15**2
-    # # The single-link optical metrology noise is quoted as:
-    # Smos = 2.25e-22  # m^2/Hz, 1.5e-11**2
-
-    def __init__(self, Na=3e-15**2, Np=15.0e-12**2, armL=2.5e9):
-        TianQinNoise.__init__(self, Na, Np, armL)
-
-    def noises(self, freq, unit="relativeFrequency"):
-        """ Acceleration noise & Optical Metrology System """
-        # In acceleration
-        Sa_a = self.Na*(1.+(0.4e-3/freq)**2)*(1+(freq/8e-3)**4)
+        Sa_a = self.Na * (1. + 1e-4/freq)
 
         # In displacement
         Sa_d = Sa_a/(2*PI*freq)**4
-        Soms_d = self.Np*(1+(2e-3/freq)**4)
+        Sp_d = self.Np * np.ones_like(freq)
+        return Sa_d, Sp_d
 
-        if unit == "displacement":
-            return Sa_d, Soms_d
-        elif unit == "relativeFrequency":
-            # In Relative frequency unit
-            Sa_nu = Sa_d*(2*PI*freq/C_SI)**2
-            Soms_nu = Soms_d*(2*PI*freq/C_SI)**2
-            return Sa_nu, Soms_nu  # Spm, Sop
+    def noises_relative_freq(self, freq):
+        Sa_d, Sp_d = self.noises_displacement(freq)
+
+        # In Relative frequency unit
+        Sa_nu = Sa_d*(2*PI*freq/C_SI)**2
+        Sp_nu = Sp_d*(2*PI*freq/C_SI)**2
+        return Sa_nu, Sp_nu
+
+    def sensitivity(self, freq):  # TODO
+        Sa_d, Sp_d = self.noises_displacement(freq)
+        sens = (2*(1+np.cos(freq/self.f_star))*Sa_d + Sp_d)
+        tmp = (1+(freq/0.41/C_SI*2*self.armLength)**2)
+        return 10./3/self.armLength**2*sens*tmp
+
+    def noise_XYZ(self, freq, unit="relative_frequency"):
+        if unit == "relative_frequency":  # TODO
+            Sa, Sp = self.noises_relative_freq(freq)
+        elif unit == "displacement":
+            Sa, Sp = self.noises_displacement(freq)
         else:
             raise ValueError(f"Unknown unit: {unit}. "
-                             f"Supported detectors: {'|'.join(['displacement', 'relativeFrequency'])}")
+                             f"Supported units: {'|'.join(['displacement', 'relative_frequency'])}")
+        u = 2*PI * freq * self.L_T
+        s_x = 16 * np.sin(u)**2 * (2*(1+np.cos(u)**2)*Sa + Sp)
+        s_xy = -8 * np.sin(u)**2 * np.cos(u) * (4*Sa + Sp)
+        return s_x, s_xy
 
-    def sensitivity(self, freq, includewd=None):
-        Sa, Sp = self.noises(freq, unit="displacement")
-        All_m = np.sqrt(4*Sa+Sp)
+    def noise_AET(self, freq):
+        # s_ae = 8 * np.sin(u)**2 * (4*(1+np.cos(u)+np.cos(u)**2)*Sa + (2+np.cos(u))*Sp)
+        # s_t = 16 * np.sin(u)**2 * (1-np.cos(u)) * (2*(1-np.cos(u))*Sa + Sp)
+        s_x, s_xy = self.noise_XYZ(freq)
+        s_ae = s_x - s_xy
+        s_t = s_x + 2*s_xy
+        return s_ae, s_t
+
+
+class LISANoise(TianQinNoise):
+    """ For LISA noise, the model is SciRDv1 """
+    Na = 9e-30  # m^2 s^-4 /Hz, 3e-15**2
+    Np = 2.25e-22  # m^2/Hz, 1.5e-11**2
+    armLength = 2.5e9  # Arm-length (changed from 5e9 to 2.5e9 after 2017)
+
+    def noises_displacement(self, freq):
+        """ Acceleration noise & Optical Metrology System """
+        # In acceleration
+        Sa_a = self.Na * (1.+(0.4e-3/freq)**2) * (1+(freq/8e-3)**4)
+
+        # In displacement
+        Sa_d = Sa_a/(2*PI*freq)**4
+        Sp_d = self.Np * (1+(2e-3/freq)**4)
+        return Sa_d, Sp_d
+
+    def sensitivity(self, freq, wd_foreground=0.):  # TODO
+        Sa_d, Sp_d = self.noises_displacement(freq)
+        All_m = np.sqrt(4*Sa_d + Sp_d)
 
         # Average the antenna response
         AvResp = np.sqrt(5)
@@ -100,100 +100,76 @@ class LISANoise(TianQinNoise):
         Proj = 2./np.sqrt(3)
 
         # Approximate transfer function
-        f0 = 1./(2.*self.LT)
+        f0 = 1./(2.*self.L_T)
         a = 0.41
         T = np.sqrt(1+(freq/(a*f0))**2)
-        sens = (AvResp*Proj*T*All_m/self.armL)**2
+        sens = (AvResp*Proj*T*All_m/self.armLength)**2
 
-        if includewd is not None:
-            day = 86400.0
-            year = 365.25*24.0*3600.0
-            if (includewd < day/year) or (includewd > 10.0):
-                raise NotImplementedError
-            Sgal = GalConf(freq, includewd*year)
-            sens = sens+Sgal
-
+        if wd_foreground:
+            s_gal = self._gal_conf(freq, wd_foreground)
+            sens += s_gal
         return sens
 
+    def noise_XYZ(self, freq, wd_foreground=0.):
+        sx, sxy = super().noise_XYZ(freq)
+        if wd_foreground:
+            sx += self.wd_foreground_X(freq, wd_foreground)
+        return sx, sxy
 
-def SGal(fr, Amp, alpha, sl1, kn, sl2):
-    return Amp*np.exp(-(fr**alpha)*sl1)*(fr**(-7./3.))*0.5*(1.0+np.tanh(-(fr-kn)*sl2))
+    def noise_AET(self, freq, wd_foreground=0.):
+        ae, tt = super().noise_AET(freq)
+        if wd_foreground:
+            ae += self.wd_foreground_AE(freq, wd_foreground)
+        return ae, tt
+
+    def _gal_conf(self, f, duration):
+        day = 86400.0
+        month = 30.5*day
+        year = 365.25*day
+        if (duration < day/year) or (duration > 10.):
+            raise NotImplementedError
+        Tobs = duration * year
+
+        Amp = 3.26651613e-44
+        alpha = 1.18300266e+00
+
+        Xobs = [1.0*day, 3.0*month, 6.0*month, 1.0*year, 2.0*year, 4.0*year, 10.0*year]
+        Slope1 = [9.41315118e+02, 1.36887568e+03, 1.68729474e+03, 1.76327234e+03, 2.32678814e+03, 3.01430978e+03,
+                  3.74970124e+03]
+        knee = [1.15120924e-02, 4.01884128e-03, 3.47302482e-03, 2.77606177e-03, 2.41178384e-03, 2.09278117e-03,
+                1.57362626e-03]
+        Slope2 = [1.03239773e+02, 1.03351646e+03, 1.62204855e+03, 1.68631844e+03, 2.06821665e+03, 2.95774596e+03,
+                  3.15199454e+03]
+
+        tck1 = interpolate.splrep(Xobs, Slope1, k=1)
+        tck2 = interpolate.splrep(Xobs, knee, k=1)
+        tck3 = interpolate.splrep(Xobs, Slope2, k=1)
+        sl1 = interpolate.splev(Tobs, tck1)
+        kn = interpolate.splev(Tobs, tck2)
+        sl2 = interpolate.splev(Tobs, tck3)
+        return Amp*np.exp(-(f**alpha)*sl1)*(f**(-7./3.))*0.5*(1.0+np.tanh(-(f-kn)*sl2))
+
+    def wd_foreground_X(self, f, duration):
+        """duration: in [yr]s """
+        u = 2*PI * f * self.L_T
+        t = 4. * u**2 * np.sin(u)**2
+        Sg_sens = self._gal_conf(f, duration)
+        return t * Sg_sens
+
+    def wd_foreground_AE(self, f, duration):
+        return 1.5 * self.wd_foreground_X(f, duration)
 
 
-def GalConf(fr, Tobs):
-    day = 86400.0
-    month = day*30.5
-    year = 365.25*24.0*3600.0
+class TaijiNoise(LISANoise):
+    Na = 9e-30  # m^2 s^-4 /Hz, 3e-15**2
+    Np = 6.4e-23  # m^2/Hz, 8e-12**2
+    armLength = 3e9
 
-    Amp = 3.26651613e-44
-    alpha = 1.18300266e+00
-
-    Xobs = [1.0*day, 3.0*month, 6.0*month, 1.0*year, 2.0*year, 4.0*year, 10.0*year]
-    Slope1 = [9.41315118e+02, 1.36887568e+03, 1.68729474e+03, 1.76327234e+03, 2.32678814e+03, 3.01430978e+03,
-              3.74970124e+03]
-    knee = [1.15120924e-02, 4.01884128e-03, 3.47302482e-03, 2.77606177e-03, 2.41178384e-03, 2.09278117e-03,
-            1.57362626e-03]
-    Slope2 = [1.03239773e+02, 1.03351646e+03, 1.62204855e+03, 1.68631844e+03, 2.06821665e+03, 2.95774596e+03,
-              3.15199454e+03]
-
-    Tmax = 10.0*year
-    if Tobs > Tmax:
-        raise ValueError(f'I do not do extrapolation, Tobs({Tobs}) > Tmax({Tmax})')
-
-    # Interpolate
-    tck1 = interpolate.splrep(Xobs, Slope1, k=1)
-    tck2 = interpolate.splrep(Xobs, knee, k=1)
-    tck3 = interpolate.splrep(Xobs, Slope2, k=1)
-    sl1 = interpolate.splev(Tobs, tck1)
-    kn = interpolate.splev(Tobs, tck2)
-    sl2 = interpolate.splev(Tobs, tck3)
-    # print "interpolated values: slope1, knee, slope2", sl1, kn, sl2
-    Sgal_int = SGal(fr, Amp, alpha, sl1, kn, sl2)
-
-    return Sgal_int
-
-
-def WDconfusionX(f, armLT, duration):
-    # duration is assumed to be in years
-    day = 86400.0
-    year = 365.25*24.0*3600.0
-    if (duration < day/year) or (duration > 10.0):
+    def _gal_conf(self, f, duration):
         raise NotImplementedError
 
-    x = 2.0*PI*armLT*f
-    t = 4.0*x**2*np.sin(x)**2
-    Sg_sens = GalConf(f, duration*year)
-    # t = 4 * x**2 * np.sin(x)**2 * (1.0 if obs == 'X' else 1.5)
-    return t*Sg_sens
-
-
-def WDconfusionAE(f, armLT, duration):
-    SgX = WDconfusionX(f, armLT, duration)
-    return 1.5*SgX
-
-
-def noise_XYZ(freq, Sa, Sp, armL, includewd=None):
-    u = freq*(2*PI*armL/C_SI)
-    cu = np.cos(u)
-    su = np.sin(u)
-    su2 = su*su
-    sx = 16*su2*(2*(1+cu*cu)*Sa+Sp)
-    sxy = -8*su2*cu*(Sp+4*Sa)
-    if includewd is not None:
-        sx += WDconfusionX(freq, armL/C_SI, includewd)
-    return sx, sxy
-
-
-def noise_AET(freq, Sa, Sp, armL, includewd=None):
-    u = freq*(2*PI*armL/C_SI)
-    cu = np.cos(u)
-    su = np.sin(u)
-    su2 = su*su
-    ae = 8*su2*((2+cu)*Sp+4*(1+cu+cu**2)*Sa)
-    tt = 16*su2*(1-cu)*(Sp+2*(1-cu)*Sa)
-    if includewd is not None:
-        ae += WDconfusionAE(freq, armL/C_SI, includewd)
-    return ae, ae, tt
+    def wd_foreground_X(self, f, duration):
+        raise NotImplementedError
 
 
 class WhiteNoise:

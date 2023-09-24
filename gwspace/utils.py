@@ -3,7 +3,7 @@
 # ==================================
 # File Name: utils.py
 # Author: En-Kun Li, Han Wang
-# Mail`: lienk@mail.sysu.edu.cn, wanghan657@mail2.sysu.edu.cn
+# Mail: lienk@mail.sysu.edu.cn, wanghan657@mail2.sysu.edu.cn
 # Created Time: 2023-08-11 23:05:45
 # ==================================
 

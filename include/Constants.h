@@ -77,8 +77,10 @@ extern "C" {
 
 // vernal equinox is Septemper equinox (09-22/23) 
 // perihelion is at about 01-03/04
-// (30 + 31 + 30 + 12)/365.2425 * 2 * PI
-#define Perihelion_Ang 1.772 /* angle measured from the vernal equinox to the perihelion */
+// ##(30 + 31 + 30 + 12)/365.2425 * 2 * PI
+// angle measured from the vernal equinox to the perihelion i.e. **Argument of perihelion**
+// 102.94719/180 * PI
+#define Perihelion_Ang 1.796767421176181 /* angle measured from the vernal equinox to the perihelion */
 
 /***********************************************************/
 /* ecliptic longitude and latitude of J0806.3+1527 */

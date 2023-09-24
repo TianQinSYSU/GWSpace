@@ -216,4 +216,6 @@ def get_pos(tf, detector="TianQin", toT=True):
 
 detectors = {'TQ': TianQinOrbit,
              'LISA': LISAOrbit,
-             'Taiji': TaijiOrbit}
+             'Taiji': TaijiOrbit,
+             'TianQin': TianQinOrbit,
+             }

@@ -1,4 +1,4 @@
-# Code for Space-borne Gravitational-Wave Detectors (CSGWD)
+# GWSpace: A multi-mission Science Data Simulator for Space-based Gravitational Wave Detection
 
 This is a simple Code for the Science Data Simulator of Space-based gravitational wave detectors.
 

@@ -2,17 +2,17 @@
 # -*- coding: utf-8 -*-
 # ==================================
 # File Name: Orbit.py
-# Author: ekli
-# Mail: lekf123@163.com
+# Author: En-Kun Li, Han Wang
+# Mail: lienk@mail.sysu.edu.cn, wanghan657@mail2.sysu.edu.cn
 # Created Time: 2023-08-01 10:23:11
 # ==================================
 """Space detectors' orbits, note that the orbits are in nature unit(in second)"""
 
 import numpy as np
-from csgwsim.Constants import C_SI, PI, PI_3, EarthOrbitFreq_SI, EarthEcc, Perihelion_Ang, AU_T, G_SI, EarthMass
+from gwspace.Constants import C_SI, PI, PI_3, EarthOrbitFreq_SI, EarthEcc, Perihelion_Ang, AU_T, G_SI, EarthMass
 
 if __package__ or "." in __name__:
-    from csgwsim import libFastGB
+    from gwspace import libFastGB
 else:
     import libFastGB
 
@@ -98,8 +98,8 @@ class TianQinOrbit(Orbit):
         csa, sia = np.cos(alpha_earth), np.sin(alpha_earth)
         csa2, sia2 = np.cos(alpha_earth*2), np.sin(alpha_earth*2)
 
-        x = AU_T * (csa+0.5*EarthEcc*(csa2-3)-3/4*EarthEcc**2*csa*(1-csa2))
-        y = AU_T * (sia+0.5*EarthEcc*sia2+1/4*EarthEcc**2*sia*(3*csa2-1))
+        x = AU_T * (csa + 0.5*EarthEcc * (csa2-3) - 3/4*EarthEcc**2 * csa * (1-csa2))
+        y = AU_T * (sia + 0.5*EarthEcc * sia2 + 1/4*EarthEcc**2 * sia * (3*csa2-1))
         z = np.zeros(len(csa))
         return np.array([x, y, z])
 

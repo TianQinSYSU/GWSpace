@@ -5,11 +5,11 @@
 # the SWIG interface file instead.
 
 import numpy as np
-from csgwsim.wrap import FrequencyArray
-from csgwsim.utils import countdown
+from gwspace.wrap import FrequencyArray
+from gwspace.utils import countdown
 
 if __package__ or "." in __name__:
-    from csgwsim import libFastGB
+    from gwspace import libFastGB
 else:
     import libFastGB
 

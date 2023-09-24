@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 # ==================================
 # File Name: test_utils.py
-# Author: ekli
-# Mail: lekf123@163.com
+# Author: En-Kun Li
+# Mail: lienk@mail.sysu.edu.cn
 # Created Time: 2023-09-06 09:49:53
 # ==================================
 
 import time
-from csgwsim.utils import spin_weighted_spherical_harmonic, sYlm
+from gwspace.utils import spin_weighted_spherical_harmonic, sYlm
 
 
 def test_sYlm():

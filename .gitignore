@@ -7,7 +7,7 @@ gitpush.sh
 
 .idea
 .ipynb_checkpoints/
-tests/csgwsim
+tests/gwspace
 Waveforms
 
 src/_FastGB.c

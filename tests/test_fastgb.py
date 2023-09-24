@@ -2,15 +2,15 @@
 # -*- coding: utf-8 -*-
 # ==================================
 # File Name: test_fastgb.py
-# Author: ekli
-# Mail: lekf123@163.com
+# Author: En-Kun Li
+# Mail: lienk@mail.sysu.edu.cn
 # Created Time: 2023-09-07 10:05:09
 # ==================================
 
 import numpy as np
-from csgwsim import FastGB as FB
+from gwspace import FastGB as FB
 import matplotlib.pyplot as plt
-from csgwsim import libFastGB as _FB
+from gwspace import libFastGB as _FB
 
 
 def GenerateFastGB(p, Tobs, Cadence, oversample, TD=False):  # 默认TD = False，即生成频域信号。如果要生成时域信号那么需要标明TD = True

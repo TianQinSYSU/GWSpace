@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 # ==================================
 # File Name: Noise.py
-# Author: ekli
-# Mail: lekf123@163.com
+# Author: En-Kun Li, Han Wang
+# Mail: lienk@mail.sysu.edu.cn, wanghan657@mail2.sysu.edu.cn
 # Created Time: 2022-11-04 11:03:09
 # ==================================
 
 import numpy as np
-from csgwsim.Constants import C_SI, PI
+from gwspace.Constants import C_SI, PI
 from scipy import interpolate
 
 
@@ -23,17 +23,14 @@ class TianQinNoise(object):
         self.LT = self.armL/C_SI
 
     def noises(self, freq, unit="relativeFrequency"):
-        """ Acceleration noise & Optical Metrology System
-        Sp = self.Np / (2 * self.armL)**2 * np.ones_like(freq)
-        Sa = self.Na *(1+1e-4/freq) / (2 * PI * freq)**4 / (2 * self.armL)**2
-        """
+        """ Acceleration noise & Optical Metrology System"""
         omega = 2*PI*freq
         # In acceleration
         Sa_a = self.Na  # * (1. + 0.1e-3/freq ) # without the tail of freq
 
         # In displacement
         Sa_d = Sa_a/omega**4
-        Soms_d = self.Np/(2*self.armL)**2*np.ones_like(freq)
+        Soms_d = self.Np*np.ones_like(freq)
 
         if unit == "displacement":
             return Sa_d, Soms_d
@@ -79,7 +76,7 @@ class LISANoise(TianQinNoise):
 
         # In displacement
         Sa_d = Sa_a/(2*PI*freq)**4
-        Soms_d = self.Np/(2*self.armL)**2*(1+(2e-3/freq)**4)
+        Soms_d = self.Np*(1+(2e-3/freq)**4)
 
         if unit == "displacement":
             return Sa_d, Soms_d
@@ -120,16 +117,10 @@ class LISANoise(TianQinNoise):
 
 
 def SGal(fr, Amp, alpha, sl1, kn, sl2):
-    """
-    TODO To be described
-    """
     return Amp*np.exp(-(fr**alpha)*sl1)*(fr**(-7./3.))*0.5*(1.0+np.tanh(-(fr-kn)*sl2))
 
 
 def GalConf(fr, Tobs):
-    """
-    TODO To be described
-    """
     day = 86400.0
     month = day*30.5
     year = 365.25*24.0*3600.0
@@ -163,9 +154,6 @@ def GalConf(fr, Tobs):
 
 
 def WDconfusionX(f, armLT, duration):
-    """
-    TODO To be described
-    """
     # duration is assumed to be in years
     day = 86400.0
     year = 365.25*24.0*3600.0
@@ -180,9 +168,6 @@ def WDconfusionX(f, armLT, duration):
 
 
 def WDconfusionAE(f, armLT, duration):
-    """
-    TODO To be described
-    """
     SgX = WDconfusionX(f, armLT, duration)
     return 1.5*SgX
 

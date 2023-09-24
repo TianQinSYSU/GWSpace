@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 # ==================================
 # File Name: Constants.py
-# Author: ekli
-# Mail: lekf123@163.com
+# Author: En-Kun Li, Han Wang
+# Mail: lienk@mail.sysu.edu.cn, wanghan657@mail2.sysu.edu.cn
 # Created Time: 2023-08-14 23:09:12
 # ==================================
 

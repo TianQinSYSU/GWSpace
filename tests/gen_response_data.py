@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 # ==================================
 # File Name: gen_response_data.py
-# Author: ekli
-# Mail: lekf123@163.com
+# Author: En-Kun Li, Han Wang
+# Mail: lienk@mail.sysu.edu.cn, wanghan657@mail2.sysu.edu.cn
 # Created Time: 2023-08-31 09:40:34
 # ==================================
 
@@ -11,10 +11,10 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
-from csgwsim.Waveform import waveforms
-from csgwsim.response import get_y_slr_td, trans_y_slr_fd, get_XYZ_td, get_XYZ_fd, get_AET_fd, tdi_XYZ2AET
-from csgwsim.Orbit import detectors
-from csgwsim.Constants import DAY, YRSID_SI
+from gwspace.Waveform import waveforms
+from gwspace.response import get_y_slr_td, trans_y_slr_fd, get_XYZ_td, get_XYZ_fd, get_AET_fd, tdi_XYZ2AET
+from gwspace.Orbit import detectors
+from gwspace.Constants import DAY, YRSID_SI
 
 
 def generate_td_data(pars, s_type='gcb', det='TQ', show_y_slr=False):

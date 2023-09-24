@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 # ==================================
 # File Name: Waveform.py
-# Author: ekli
-# Mail: lekf123@163.com
+# Author: En-Kun Li, Han Wang
+# Mail: lienk@mail.sysu.edu.cn, wanghan657@mail2.sysu.edu.cn
 # Created Time: 2023-08-01 12:32:36
 # ==================================
 

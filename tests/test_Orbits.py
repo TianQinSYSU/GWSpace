@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 # ==================================
 # File Name: test_Orbits.py
-# Author: ekli
-# Mail: lekf123@163.com
+# Author: En-Kun Li, Han Wang
+# Mail: lienk@mail.sysu.edu.cn, wanghan657@mail2.sysu.edu.cn
 # Created Time: 2023-09-05 17:55:52
 # ==================================
 
@@ -11,9 +11,9 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
-from csgwsim.Constants import YRSID_SI, DAY
-from csgwsim.Orbit import TianQinOrbit
-from csgwsim.Orbit import get_pos
+from gwspace.Constants import YRSID_SI, DAY
+from gwspace.Orbit import TianQinOrbit
+from gwspace.Orbit import get_pos
 
 st = time.time()
 Tobs = YRSID_SI

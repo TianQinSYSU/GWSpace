@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 # ==================================
 # File Name: test_Waveform.py
-# Author: ekli
-# Mail: lekf123@163.com
+# Author: En-Kun Li, Han Wang
+# Mail: lienk@mail.sysu.edu.cn, wanghan657@mail2.sysu.edu.cn
 # Created Time: 2023-09-05 17:52:12
 # ==================================
 
@@ -11,8 +11,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from time import time, strftime
 
-from csgwsim.Waveform import BHBWaveform, GCBWaveform, BHBWaveformEcc, EMRIWaveform, BurstWaveform
-from csgwsim.Constants import YRSID_SI
+from gwspace.Waveform import BHBWaveform, GCBWaveform, BHBWaveformEcc, EMRIWaveform, BurstWaveform
+from gwspace.Constants import YRSID_SI
 
 
 def test_Burst():

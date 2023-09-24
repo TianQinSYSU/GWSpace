@@ -1,4 +1,6 @@
 # coding: utf-8
+# Author: En-Kun Li, Han Wang
+# Mail: lienk@mail.sysu.edu.cn, wanghan657@mail2.sysu.edu.cn
 """Some wrap functions TODO: add descriptions"""
 
 import numpy as np

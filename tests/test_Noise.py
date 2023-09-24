@@ -2,17 +2,17 @@
 # -*- coding: utf-8 -*-
 # ==================================
 # File Name: test_Noise.py
-# Author: ekli
-# Mail: lekf123@163.com
+# Author: En-Kun Li
+# Mail: lienk@mail.sysu.edu.cn
 # Created Time: 2023-09-05 15:03:28
 # ==================================
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-from csgwsim.Noise import TianQinNoise, LISANoise, noise_XYZ, noise_AET
-from csgwsim.Constants import PI, C_SI
-from csgwsim.wrap import frequency_noise_from_psd
+from gwspace.Noise import TianQinNoise, LISANoise, noise_XYZ, noise_AET
+from gwspace.Constants import PI, C_SI
+from gwspace.wrap import frequency_noise_from_psd
 
 if __name__ == "__main__":
     # freq_ = np.logspace(-5, 0, 1001)

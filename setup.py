@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 # ==================================
 # File Name: setup.py
-# Author: ekli
-# Mail: lekf123@163.com
+# Author: En-Kun Li, Han Wang
+# Mail: lienk@mail.sysu.edu.cn, wanghan657@mail2.sysu.edu.cn
 # Created Time: 2023-09-06 19:43:34
 # ==================================
 
@@ -31,7 +31,7 @@ include_gsl_dir = gsl_prefix+"/include"
 # Update these paths accordingly
 
 # extensions
-code_lib = 'csgwsim'
+code_lib = 'gwspace'
 
 
 def func_ext(name, src):
@@ -73,9 +73,9 @@ extensions.append(eccfd_ext)
 extensions.append(imrphd_ext)
 
 setup(
-    name='csgwsim',
+    name='gwspace',
     version='0.0.1',
     ext_modules=cythonize(extensions),
-    author='',
+    author='En-Kun Li, Han Wang',
     packages=find_packages(exclude=('tests', 'docs')),
 )

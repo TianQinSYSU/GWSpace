@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 # ==================================
 # File Name: utils.py
-# Author: ekli
-# Mail: lekf123@163.com
+# Author: En-Kun Li, Han Wang
+# Mail`: lienk@mail.sysu.edu.cn, wanghan657@mail2.sysu.edu.cn
 # Created Time: 2023-08-11 23:05:45
 # ==================================
 
@@ -13,7 +13,7 @@ import yaml
 import numpy as np
 from numpy import pi, sqrt, cos, sin, exp
 
-from csgwsim.Constants import C_SI, H0_SI, Omega_m_Planck2018
+from gwspace.Constants import C_SI, H0_SI, Omega_m_Planck2018
 
 
 def sinc(x):

@@ -68,7 +68,7 @@ extern "C" {
 #define AU_SI 1.4959787066e11
 #define AU_T 499.0047837027308 // AU_SI / C_SI
 
-/* Sideral year as found on http://hpiers.obspm.fr/eop-pc/models/constants.html */
+/* Sidereal year as found on http://hpiers.obspm.fr/eop-pc/models/constants.html */
 #define YRSID_SI 3.15581497635e7 
 
 // Mean sidereal day

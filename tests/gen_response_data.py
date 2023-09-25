@@ -260,9 +260,10 @@ if __name__ == "__main__":
                'var_phi': 0,  # Observer phase
                'psi': 0.2,  # Polarization angle
                }  # masses of GW150914
-    # generate_td_data(GCBpars)
+    generate_td_data(GCBpars)
     # generate_td_data(EMRIpars, s_type='emri')
     # generate_fd_data(BHBpars, show_y_slr=True)A
 
     generate_MBHB_with_PSD_joint(BHBpars)
     generate_SBHB_with_PSD_joint(ecc_par)
+

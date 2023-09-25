@@ -517,8 +517,8 @@ void get_basis_tensors(struct Waveform *wfm)
 	{
 		for(j=0;j<3;j++)
 		{
-			//wfm->eplus[i][j]  = u[i]*u[j] - v[i]*v[j]; // liyn: "The initial procedure is "eplus=vv-uu", here changed to "uu-vv"
-			wfm->eplus[i][j]  = v[i]*v[j] - u[i]*u[j];
+			wfm->eplus[i][j]  = u[i]*u[j] - v[i]*v[j]; // liyn: "The initial procedure is "eplus=vv-uu", here changed to "uu-vv"
+			//wfm->eplus[i][j]  = v[i]*v[j] - u[i]*u[j];
 			wfm->ecross[i][j] = u[i]*v[j] + v[i]*u[j];
 			//wfm->ecross[i][j] = -u[i]*v[j] - v[i]*u[j];
 		}
@@ -552,8 +552,11 @@ void get_basis_vecs(double *params, double *u, double *v, double *k)
 	cosph = cos(phi);
 	sinph = sin(phi);
 
-	u[0] =  costh*cosph;  u[1] =  costh*sinph;  u[2] = -sinth;
-	v[0] =  sinph;        v[1] = -cosph;        v[2] =  0.;
+	//u[0] =  costh*cosph;  u[1] =  costh*sinph;  u[2] = -sinth;
+	//v[0] =  sinph;        v[1] = -cosph;        v[2] =  0.;
+    // ekli change to lisa like uvk
+    u[0] = sinph;         u[1] = -cosph;
+    v[0] = -costh*cosph;  v[1] = -costh*sinph;  v[2] = sinth;
 	k[0] = -sinth*cosph;  k[1] = -sinth*sinph;  k[2] = -costh;
 
 	return;
@@ -588,8 +591,8 @@ void get_transfer(struct Waveform *wfm, double t)
 			{
 				//Argument of transfer function
 				// FIXME
-				//arg1 = 0.5*wfm->fonfs[i]*(1. - wfm->kdotr[i][j]); //liyn: The initial procedure used "1+kr", here changed to "1-kr"
-				arg1 = 0.5*wfm->fonfs[i]*(1. + wfm->kdotr[i][j]);
+				arg1 = 0.5*wfm->fonfs[i]*(1. - wfm->kdotr[i][j]); //liyn: The initial procedure used "1+kr", here changed to "1-kr"
+				//arg1 = 0.5*wfm->fonfs[i]*(1. + wfm->kdotr[i][j]);
 
 				//Argument of complex exponentials
 				arg2 = PI2*f0*wfm->xi[i] + phi0 - df*t;

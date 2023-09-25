@@ -72,6 +72,24 @@ extensions.append(fastgb_ext)
 extensions.append(eccfd_ext)
 extensions.append(imrphd_ext)
 
+# translate the Constants.h to Constants.py
+fp_const_h = "./include/Constants.h"
+fp_const_py = "./gwspace/Constants.py"
+
+with open(fp_const_h, "r") as fp_in:
+    with open(fp_const_py, "w") as fp_out:
+        lines = fp_in.readlines()
+        for line in lines:
+            if (len(line.split())) >= 3:
+                if line.split()[0] == "#define":
+                    try:
+                        _ = float(line.split()[2])
+                        string_out = line.split()[1] + " = " + line.split()[2] + "\n"
+                        fp_out.write(string_out)
+
+                    except ValueError as e:
+                        continue
+
 setup(
     name='gwspace',
     version='0.0.1',

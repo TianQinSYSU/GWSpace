@@ -4,6 +4,11 @@
  * \brief C header defining useful physical constants (values taken from LAL).
  * Also defines boolean conventions.
  *
+ *------------------------------------------------
+ * \author En-Kun Li, SYSU - China
+ *
+ * \brief add some more constants
+ * \date 2023-09-25
  */
 
 #ifndef _CONSTANTS_H
@@ -50,9 +55,6 @@ extern "C" {
 #define INVSQRT3     0.577350269189625764509148780501957455
 #define INVSQRT6     0.408248290463863016366214012450981898
 
-#define GAMMA 0.577215664901532860606512090082402431
-
-
 /**********************************************************************/
 /**************** Physical constants in SI units **********************/
 
@@ -64,23 +66,40 @@ extern "C" {
 #define KPC_SI 3085.6775807e16
 #define MPC_SI 3085677.5807e16
 #define AU_SI 1.4959787066e11
-#define YRSID_SI 3.15581497635e7 /* Sideral year as found on http://hpiers.obspm.fr/eop-pc/models/constants.html */
+#define AU_T 499.0047837027308 // AU_SI / C_SI
 
-#define DAYSID_SI 86164.09053 // Mean sidereal day
+/* Sideral year as found on http://hpiers.obspm.fr/eop-pc/models/constants.html */
+#define YRSID_SI 3.15581497635e7 
 
+// Mean sidereal day
+#define DAYSID_SI 86164.09053 
+
+#define DAY 86400
+#define MONTH 2592000
+#define YEAR 31536000
+
+
+#define EarthOrbitOmega_SI 1.99098659277e-7 
+/* Orbital pulsation: 2pi/year - use sidereal year as found on http://hpiers.obspm.fr/eop-pc/models/constants.html */
+#define EarthOrbitFreq_SI 3.168753578692357e-8
+
+// https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
+#define EarthMass 5.9722e24 // # [kg]
+#define EarthEcc 0.01671022
 #define EarthEccentricity 0.01671022
 /* Orbital eccentricity for earth:
 * https://handwiki.org/wiki/Astronomy:Orbital_eccentricity
 * */
 
-#define EarthOrbitOmega_SI 1.99098659277e-7 /* Orbital pulsation: 2pi/year - use sidereal year as found on http://hpiers.obspm.fr/eop-pc/models/constants.html */
-
+// angle measured from the vernal equinox to the perihelion i.e. **Argument of perihelion**
+// 102.94719/180 * PI
+#define Perihelion_Ang 1.7967674211761813
 // vernal equinox is Septemper equinox (09-22/23) 
 // perihelion is at about 01-03/04
 // ##(30 + 31 + 30 + 12)/365.2425 * 2 * PI
 // angle measured from the vernal equinox to the perihelion i.e. **Argument of perihelion**
 // 102.94719/180 * PI
-#define Perihelion_Ang 1.796767421176181 /* angle measured from the vernal equinox to the perihelion */
+/* angle measured from the vernal equinox to the perihelion */
 
 /***********************************************************/
 /* ecliptic longitude and latitude of J0806.3+1527 */
@@ -88,6 +107,11 @@ extern "C" {
 #define J0806_phi 2.103121748653167 // 120.5
 #define J0806_theta 1.65282680163863 // -4.7 = 90 + 4.7 
 
+
+// cosmological constants
+#define H0 67.4  //# in km/s/Mpc: Planck 2018 1807.06209
+#define H0_SI 2.184285241645694e-18  // H0*1.e3/MPC_SI  # in /s
+#define Omega_m_Planck2018 0.315  //# Planck 2018 1807.06209
 /**********************************************************/
 /********** Constants used to relate time scales **********/
 

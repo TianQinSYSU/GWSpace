@@ -8,5 +8,3 @@ scipy
 requests
 h5py
 tqdm
-few
-PyIMRPhenomD

@@ -7,6 +7,7 @@ gitpush.sh
 
 .idea
 .ipynb_checkpoints/
+*.ipynb
 tests/gwspace
 Waveforms
 

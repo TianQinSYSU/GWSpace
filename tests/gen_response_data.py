@@ -105,6 +105,7 @@ def generate_fd_data(pars, s_type='bhb_PhenomD', det='TQ', show_y_slr=False):
     plt.legend()
     plt.tight_layout()
 
+
 def generate_MBHB_with_PSD_joint(pars, s_type='bhb_PhenomD'):
     tq_noise = TianQinNoise()
     lisa_noise = LISANoise()
@@ -151,7 +152,7 @@ def generate_MBHB_with_PSD_joint(pars, s_type='bhb_PhenomD'):
     plt.show()
 
 
-def generate_SBHB_with_PSD_joint(ecc_par, s_type='bhb_EccFD'):
+def generate_SBHB_with_PSD_joint(par, s_type='bhb_EccFD'):
     tq_noise = TianQinNoise()
     lisa_noise = LISANoise()
     taiji_noise = TaijiNoise()
@@ -160,16 +161,14 @@ def generate_SBHB_with_PSD_joint(ecc_par, s_type='bhb_EccFD'):
     LISA_A, _ = lisa_noise.noise_AET(freq_, wd_foreground=90/365.25)
     Taiji_A, _ = taiji_noise.noise_AET(freq_)
     
-    
-    BHBwf = waveforms['bhb_PhenomD'](**ecc_par)
+    BHBwf = waveforms['bhb_PhenomD'](**par)
     delta_f = 1e-5  # 1/BHBwf.T_obs
     freq_e0 = np.arange(np.ceil(BHBwf.f_min/delta_f)*delta_f, 1., delta_f)
     amp, phase, tf = BHBwf.get_amp_phase(freq_e0)
     amp, phase, tf = amp[(2, 2)], phase[(2, 2)], tf[(2, 2)]
     h22 = amp*np.exp(1j*phase)*np.exp(2j*np.pi*freq_e0*BHBwf.tc)
 
-
-    ecc_wf = waveforms[s_type](**ecc_par, eccentricity=0.1)
+    ecc_wf = waveforms[s_type](**par, eccentricity=0.1)
     smBBH_A_e0, smBBH_A_e1 = {}, {}
     for d in ['TQ', 'LISA', 'Taiji']:
         det = detectors[d](tf)
@@ -199,7 +198,7 @@ def generate_SBHB_with_PSD_joint(ecc_par, s_type='bhb_EccFD'):
     
     # plt.ylim(1e-23, 1e-16)
     
-    plt.legend(loc="best", ncols=2)#fontsize=12)
+    plt.legend(loc="best", ncols=2)  # fontsize=12)
     plt.tight_layout()
     
     # plt.savefig("../../../TQ-SDS/figs/SMBH_fd.pdf")
@@ -266,4 +265,3 @@ if __name__ == "__main__":
 
     generate_MBHB_with_PSD_joint(BHBpars)
     generate_SBHB_with_PSD_joint(ecc_par)
-

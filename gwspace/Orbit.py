@@ -9,7 +9,8 @@
 """Space detectors' orbits, note that the orbits are in nature unit(in second)"""
 
 import numpy as np
-from gwspace.Constants import C_SI, PI, PI_3, EarthOrbitFreq_SI, EarthEcc, Perihelion_Ang, AU_T, G_SI, EarthMass
+from gwspace.Constants import (C_SI, PI, PI_3, G_SI, AU_T, J0806_phi, J0806_theta,
+                               EarthOrbitFreq_SI, EarthEcc, Perihelion_Ang, EarthMass)
 
 if __package__ or "." in __name__:
     from gwspace import libFastGB
@@ -60,8 +61,8 @@ class TianQinOrbit(Orbit):
     __slots__ = '_p_0'
     armLength = np.sqrt(3)*1.0e8
     # ecliptic lon & lat of J0806.3+1527
-    theta_s = -4.7/180*PI
-    phi_s = 120.5/180*PI
+    theta_s = np.pi/2 - J0806_theta
+    phi_s = J0806_phi
 
     def __init__(self, time, kappa_earth=0., kappa0=0.):
         # Here we do not store the time series into the class

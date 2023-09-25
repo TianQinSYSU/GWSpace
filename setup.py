@@ -95,6 +95,5 @@ setup(
     version='0.0.1',
     ext_modules=cythonize(extensions),
     author='En-Kun Li, Han Wang',
-    version = '0.0.1',
-    packages=find_packages(exclude=('tests', 'docs')),
+    packages=find_packages(),
 )

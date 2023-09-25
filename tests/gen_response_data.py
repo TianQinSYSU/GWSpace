@@ -106,10 +106,6 @@ def generate_fd_data(pars, s_type='bhb_PhenomD', det='TQ', show_y_slr=False):
     plt.tight_layout()
 
 def generate_MBHB_with_PSD_joint(pars, s_type='bhb_PhenomD'):
-    # generate_td_data(GCBpars)
-    # generate_td_data(EMRIpars, s_type='emri')
-    # generate_fd_data(BHBpars, show_y_slr=True)
-    
     tq_noise = TianQinNoise()
     lisa_noise = LISANoise()
     taiji_noise = TaijiNoise()
@@ -143,18 +139,17 @@ def generate_MBHB_with_PSD_joint(pars, s_type='bhb_PhenomD'):
     
     plt.xlabel('Frequency [Hz]')
     plt.ylabel('$\\sqrt{S_n}$ [Hz$^{-1/2}$]')
-    #plt.tick_params(labelsize=12)
-    #plt.grid(which='both', alpha=0.5)
-    #plt.xlim(0.9*BHBwf.f_min, 1e-1)
+    # plt.tick_params(labelsize=12)
+    # plt.grid(which='both', alpha=0.5)
+    # plt.xlim(0.9*BHBwf.f_min, 1e-1)
     plt.xlim(1e-4, 1e-1)
     plt.ylim(1e-23, 1e-16)
-    plt.legend(loc="best") #fontsize=12)
+    plt.legend(loc="best")  # fontsize=12)
     plt.tight_layout()
     
-    #plt.savefig("../../../TQ-SDS/figs/MBHB_fd.pdf")
+    # plt.savefig("../../../TQ-SDS/figs/MBHB_fd.pdf")
     plt.show()
 
-    return
 
 def generate_SBHB_with_PSD_joint(ecc_par, s_type='bhb_EccFD'):
     tq_noise = TianQinNoise()
@@ -196,18 +191,18 @@ def generate_SBHB_with_PSD_joint(ecc_par, s_type='bhb_EccFD'):
     plt.loglog(freq_e0, np.abs(smBBH_A_e0['LISA'])*np.sqrt(freq_e0), 'y--', label='LISA: e=0')
     plt.loglog(freq_e0, np.abs(smBBH_A_e0['Taiji'])*np.sqrt(freq_e0), 'g--', label='Taiji: e=0')
         
-    plt.xlabel('Frequency [Hz]')#, fontsize=12)
-    plt.ylabel('$\\sqrt{S_n}$ [Hz$^{-1/2}$]')#, fontsize=12)
+    plt.xlabel('Frequency [Hz]')  # , fontsize=12)
+    plt.ylabel('$\\sqrt{S_n}$ [Hz$^{-1/2}$]')  # , fontsize=12)
     plt.tick_params(labelsize=12)
-    #plt.grid(which='both', alpha=0.5)
+    # plt.grid(which='both', alpha=0.5)
     plt.xlim(BHBwf.f_min, 1)
     
-    #plt.ylim(1e-23, 1e-16)
+    # plt.ylim(1e-23, 1e-16)
     
     plt.legend(loc="best", ncols=2)#fontsize=12)
     plt.tight_layout()
     
-    #plt.savefig("../../../TQ-SDS/figs/SMBH_fd.pdf")
+    # plt.savefig("../../../TQ-SDS/figs/SMBH_fd.pdf")
     plt.show()
 
 
@@ -268,8 +263,6 @@ if __name__ == "__main__":
     # generate_td_data(GCBpars)
     # generate_td_data(EMRIpars, s_type='emri')
     # generate_fd_data(BHBpars, show_y_slr=True)A
-    
 
     generate_MBHB_with_PSD_joint(BHBpars)
     generate_SBHB_with_PSD_joint(ecc_par)
-

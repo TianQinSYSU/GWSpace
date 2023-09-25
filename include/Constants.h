@@ -60,11 +60,11 @@ extern "C" {
 
 #define C_SI 299792458.
 #define G_SI 6.67259e-11
-#define MSUN_SI 1.98892e30
+#define MSUN_SI 1.988546954961461467461011951140572744e30
 #define MTSUN_SI 4.9254923218988636432342917247829673e-6
-#define PC_SI 3.0856775807e16
-#define KPC_SI 3085.6775807e16
-#define MPC_SI 3085677.5807e16
+#define PC_SI 3.085677581491367278913937957796471611e16
+#define KPC_SI 3.085677581491367278913937957796471611e19
+#define MPC_SI 3.085677581491367278913937957796471611e22
 #define AU_SI 1.4959787066e11
 #define AU_T 499.0047837027308 // AU_SI / C_SI
 
@@ -86,7 +86,6 @@ extern "C" {
 // https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
 #define EarthMass 5.9722e24 // # [kg]
 #define EarthEcc 0.01671022
-#define EarthEccentricity 0.01671022
 /* Orbital eccentricity for earth:
 * https://handwiki.org/wiki/Astronomy:Orbital_eccentricity
 * */

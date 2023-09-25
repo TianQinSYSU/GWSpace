@@ -13,7 +13,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline as Spline
 
 from .Orbit import detectors
 from .utils import sYlm
-from .Constants import MSUN_SI, MSUN_unit, MPC_SI, YRSID_SI, PI, C_SI, G_SI
+from .Constants import MSUN_SI, MTSUN_SI, MPC_SI, YRSID_SI, PI, C_SI, G_SI
 from .response import trans_y_slr_fd, get_AET_fd
 
 from .eccentric_fd import gen_ecc_fd_and_tf, gen_ecc_fd_waveform
@@ -174,7 +174,7 @@ class BHBWaveform(BasicWaveform):
 
     @property
     def f_min(self):
-        return 5**(3/8)/(8*np.pi) * (MSUN_unit*self.Mc)**(-5/8) * self.T_obs**(-3/8)
+        return 5**(3/8)/(8*np.pi) * (MTSUN_SI*self.Mc)**(-5/8) * self.T_obs**(-3/8)
 
     def p_lm(self, l=2, m=2):  # FIXME: Is that necessary to calculate both h_(l,m) and h_(l,-m)=h_(l,m)_conj?
         """See Marsat et al. (Eq. 16) https://journals.aps.org/prd/abstract/10.1103/PhysRevD.103.083011"""
@@ -268,7 +268,7 @@ class BHBWaveformEcc(BasicWaveform):
 
     @property
     def f_min(self):
-        return 5**(3/8)/(8*np.pi) * (MSUN_unit*self.Mc)**(-5/8) * self.T_obs**(-3/8)
+        return 5**(3/8)/(8*np.pi) * (MTSUN_SI*self.Mc)**(-5/8) * self.T_obs**(-3/8)
 
     def wave_para(self):
         args = {'mass1': self.mass1*MSUN_SI,

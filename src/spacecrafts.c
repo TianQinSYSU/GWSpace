@@ -92,7 +92,7 @@ void spacecraft_TianQin(double t, double *x, double *y, double *z)
     double beta = Perihelion_Ang;
     double sna = sin(alpha - beta);
     double csa = cos(alpha - beta);
-    double ecc = EarthEccentricity;
+    double ecc = EarthEcc;
     double ecc2 = ecc*ecc;
 
     double x_earth = AU_SI *( csa - ecc * (1+sna*sna) - 1.5*ecc2 * csa*sna*sna);

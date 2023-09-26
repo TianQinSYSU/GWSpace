@@ -517,8 +517,8 @@ void get_basis_tensors(struct Waveform *wfm)
 	{
 		for(j=0;j<3;j++)
 		{
-			wfm->eplus[i][j]  = u[i]*u[j] - v[i]*v[j]; // liyn: "The initial procedure is "eplus=vv-uu", here changed to "uu-vv"
-			//wfm->eplus[i][j]  = v[i]*v[j] - u[i]*u[j];
+			//wfm->eplus[i][j]  = u[i]*u[j] - v[i]*v[j];
+			wfm->eplus[i][j]  = v[i]*v[j] - u[i]*u[j];
 			wfm->ecross[i][j] = u[i]*v[j] + v[i]*u[j];
 			//wfm->ecross[i][j] = -u[i]*v[j] - v[i]*u[j];
 		}

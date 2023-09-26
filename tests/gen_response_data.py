@@ -133,10 +133,16 @@ def generate_MBHB_with_PSD_joint(pars, s_type='bhb_PhenomD'):
     plt.loglog(freq_, np.sqrt(TQ_A), 'k--', label='TQ noise')
     plt.loglog(freq_, np.sqrt(LISA_A), 'k-.', label='LISA noise')
     plt.loglog(freq_, np.sqrt(Taiji_A), 'k:', label='Taiji noise')
+
+    ## to determine where the waveform is zero
+    #print(np.where(SMBBH_A['TQ'] == 0))
+    print()
+    ndim = 10850-1
+    plt.loglog(freq[:ndim], np.abs(SMBBH_A['TQ'][:ndim])*np.sqrt(freq[:ndim]), 'r-', label='TQ')
+    plt.loglog(freq[:ndim], np.abs(SMBBH_A['LISA'][:ndim])*np.sqrt(freq[:ndim]), 'g-', label='LISA')
+    plt.loglog(freq[:ndim], np.abs(SMBBH_A['Taiji'][:ndim])*np.sqrt(freq[:ndim]), 'b-', label='Taiji')
+
     
-    plt.loglog(freq, np.abs(SMBBH_A['TQ'])*np.sqrt(freq), 'r-', label='TQ')
-    plt.loglog(freq, np.abs(SMBBH_A['LISA'])*np.sqrt(freq), 'g-', label='LISA')
-    plt.loglog(freq, np.abs(SMBBH_A['Taiji'])*np.sqrt(freq), 'b-', label='Taiji')
     
     plt.xlabel('Frequency [Hz]')
     plt.ylabel('$\\sqrt{S_n}$ [Hz$^{-1/2}$]')
@@ -148,7 +154,7 @@ def generate_MBHB_with_PSD_joint(pars, s_type='bhb_PhenomD'):
     plt.legend(loc="best")  # fontsize=12)
     plt.tight_layout()
     
-    # plt.savefig("../../../TQ-SDS/figs/MBHB_fd.pdf")
+    #plt.savefig("../../../TQ-SDS/figs/MBHB_fd.pdf")
     plt.show()
 
 

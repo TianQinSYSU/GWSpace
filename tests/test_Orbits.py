@@ -111,7 +111,7 @@ tt = tf/DAY
 
 ax.plot(tt, theta_ltq/np.pi*180, '--r', label="LISA-TianQin")
 ax.plot(tt, theta_tjtq/np.pi*180, '--b', label="TaiJi-TianQin")
-ax.plot(tt, theta_ltj/np.pi*180-20, '--g', label=r"(LISA-TaiJi) - 40$^\circ$")
+ax.plot(tt, theta_ltj/np.pi*180-20, '--g', label=r"(LISA-TaiJi) - 20$^\circ$")
 
 ax.axhline(20, color='gray', ls=':')
 

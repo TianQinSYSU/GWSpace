@@ -1,6 +1,6 @@
 # GWSpace: A multi-mission Science Data Simulator for Space-based Gravitational Wave Detection
 
-GWSpace is a Python package for the Science Data Simulator of Space-based gravitational wave detectors.
+GWSpace is a Python package for the Science Data Simulator of Space-based gravitational wave detectors. It computes gravitational waveforms for different sources observable by Space-based gravitational wave detectors in time domain or frequency domain. For more details, see [doc file](./doc/GWSpace.pdf) or [arXiv:2309:15020](https://arxiv.org/abs/2309.15020).
 
 ![gwspace-structure](./docs/gwspace-structure.png?raw=true "gwspace-structure")
 

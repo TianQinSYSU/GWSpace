@@ -28,9 +28,9 @@ The following waveform will be automatically complied during the installation:
 
   - This is a modified version of 
 
-- Binary black hole (BBH): `pyIMRPhenomD`
+- Binary black hole (BBH): [`pyIMRPhenomD`](https://github.com/XGI-MSU/PyIMRPhenomD)
 
-  - This is
+  - This module implements the IMRPhenomD in a pure python code, compiled with the numba just in time compiler.
 
 - Stellar-mass BBH (with eccentricity): `EccentricFD`
 

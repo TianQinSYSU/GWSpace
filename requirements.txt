@@ -8,3 +8,7 @@ scipy
 requests
 h5py
 tqdm
+
+# requirements for SGWB
+healpy
+sympy

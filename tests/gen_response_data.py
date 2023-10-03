@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from gwspace.Waveform import waveforms
 from gwspace.response import get_y_slr_td, trans_y_slr_fd, get_XYZ_td, get_XYZ_fd, get_AET_fd, tdi_XYZ2AET
 from gwspace.Orbit import detectors
-from gwspace.Constants import DAY, YRSID_SI, MONTH
+from gwspace.constants import DAY, YRSID_SI, MONTH
 from gwspace.Noise import TianQinNoise, LISANoise, TaijiNoise
 
 

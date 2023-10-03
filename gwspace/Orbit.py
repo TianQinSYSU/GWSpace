@@ -9,7 +9,7 @@
 """Space detectors' orbits, note that the orbits are in nature unit(in second)"""
 
 import numpy as np
-from gwspace.Constants import (C_SI, PI, PI_3, G_SI, AU_T, J0806_phi, J0806_theta,
+from gwspace.constants import (C_SI, PI, PI_3, G_SI, AU_T, J0806_phi, J0806_theta,
                                EarthOrbitFreq_SI, EarthEcc, Perihelion_Ang, EarthMass)
 
 if __package__ or "." in __name__:

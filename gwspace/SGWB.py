@@ -14,7 +14,7 @@ from sympy.physics.quantum.cg import CG
 from gwspace import response
 from gwspace.Orbit import detectors
 from gwspace.wrap import frequency_noise_from_psd
-from gwspace.Constants import H0_SI
+from gwspace.constants import H0_SI
 
 
 class SGWB(object):
@@ -60,7 +60,7 @@ class SGWB(object):
         self.bm_idx = np.zeros(2*self.blm_size-self.blmax-1, dtype='int')
         for ii in range(self.bl_idx.size):
             # lval, mval = Alm.getlm(blmax, jj)
-            self.bl_idx[ii], self.bm_idx[ii] = self.idxtoalm(blmax, ii)
+            self.bl_idx[ii], self.bm_idx[ii] = self.idx_2_alm(blmax, ii)
         alms_inj = self.blm_2_alm(self.blms)
         alms_inj2 = alms_inj/(alms_inj[0]*np.sqrt(4*np.pi))
         # extract only the non-negative components
@@ -105,9 +105,9 @@ class SGWB(object):
         for ii in range(beta_vals.shape[0]):
             for jj in range(beta_vals.shape[1]):
                 for kk in range(beta_vals.shape[2]):
-                    l1, m1 = self.idxtoalm(self.blmax, jj)
-                    l2, m2 = self.idxtoalm(self.blmax, kk)
-                    L, M = self.idxtoalm(self.almax, ii)
+                    l1, m1 = self.idx_2_alm(self.blmax, jj)
+                    l2, m2 = self.idx_2_alm(self.blmax, kk)
+                    L, M = self.idx_2_alm(self.almax, ii)
 
                     # Clebsch-Gordan coefficient
                     cg0 = (CG(l1, 0, l2, 0, L, 0).doit()).evalf()
@@ -147,7 +147,8 @@ class SGWB(object):
 
         return alm_vals
 
-    def idxtoalm(self, lmax, ii):
+    @staticmethod
+    def idx_2_alm(lmax, ii):
         """ index --> (l, m) function which works for negative indices too """
         alm_size = Alm.getsize(lmax)
         if ii >= (2*alm_size-lmax-1):

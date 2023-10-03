@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from time import time, strftime
 
 from gwspace.Waveform import BHBWaveform, GCBWaveform, BHBWaveformEcc, EMRIWaveform, BurstWaveform
-from gwspace.Constants import YRSID_SI
+from gwspace.constants import YRSID_SI
 
 
 def test_Burst():

@@ -10,7 +10,7 @@
 import numpy as np
 from scipy import interpolate
 
-from gwspace.Constants import C_SI, PI
+from gwspace.constants import C_SI, PI
 
 
 class TianQinNoise(object):
@@ -170,6 +170,13 @@ class TaijiNoise(LISANoise):
 
     def wd_foreground_X(self, f, duration):
         raise NotImplementedError
+
+
+detector_noises = {'TQ': TianQinNoise,
+                   'LISA': LISANoise,
+                   'Taiji': TaijiNoise,
+                   'TianQin': TianQinNoise,
+                   }
 
 
 class WhiteNoise:

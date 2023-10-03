@@ -11,7 +11,7 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
-from gwspace.Constants import YRSID_SI, DAY
+from gwspace.constants import YRSID_SI, DAY
 from gwspace.Orbit import TianQinOrbit
 from gwspace.Orbit import get_pos
 

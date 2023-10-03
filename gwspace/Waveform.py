@@ -11,18 +11,18 @@ import numpy as np
 from numpy import sin, cos, sqrt
 from scipy.interpolate import InterpolatedUnivariateSpline as Spline
 
-from .Orbit import detectors
-from .utils import sYlm
-from .Constants import MSUN_SI, MTSUN_SI, MPC_SI, YRSID_SI, PI, C_SI, G_SI
-from .response import trans_y_slr_fd, get_AET_fd
+from gwspace.Orbit import detectors
+from gwspace.utils import sYlm
+from gwspace.constants import MSUN_SI, MTSUN_SI, MPC_SI, YRSID_SI, PI, C_SI, G_SI
+from gwspace.response import trans_y_slr_fd, get_AET_fd
 
-from .eccentric_fd import gen_ecc_fd_and_tf, gen_ecc_fd_waveform
+from gwspace.eccentric_fd import gen_ecc_fd_and_tf, gen_ecc_fd_waveform
 try:
     from PyIMRPhenomD import IMRPhenomD as pyIMRD
     from PyIMRPhenomD import IMRPhenomD_const as pyimrc
     use_py_phd = True
 except ImportError:
-    from .pyIMRPhenomD import IMRPhenomDh22AmpPhase as pyIMRD
+    from gwspace.pyIMRPhenomD import IMRPhenomDh22AmpPhase as pyIMRD
     use_py_phd = False
 
 

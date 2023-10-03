@@ -13,7 +13,7 @@ import yaml
 import numpy as np
 from numpy import pi, sqrt, cos, sin, exp
 
-from gwspace.Constants import C_SI, H0_SI, Omega_m_Planck2018
+from gwspace.constants import C_SI, H0_SI, Omega_m_Planck2018
 
 
 def sinc(x):

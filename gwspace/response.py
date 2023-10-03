@@ -9,7 +9,7 @@
 
 import numpy as np
 from numba import jit
-from .Orbit import detectors
+from gwspace.Orbit import detectors
 
 
 @jit(nopython=True)

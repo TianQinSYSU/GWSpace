@@ -24,13 +24,15 @@ As seen in the figure above, we use different waveforms for different gravitatio
 
 The following waveform will be automatically complied during the installation:
 
-- Galactic binary: `FastGB`
+- Galactic compact binary: `FastGB` and `GCBWaveform`
 
-  - This is a modified version of galactic compact binary (GCB) waveform generation code, using a fast/slow decomposition of the waveform to reduce the computational cost.
+  - `FastGB`: a modified version of galactic compact binary (GCB) waveform generation code, which is based on the implementation of `Galaxy` in the Mock LISA Data Challenges' package. The code using a fast/slow decomposition of the waveform to reduce the computational cost, for more details about the original construction of the method see [arXiv:0704.1808](https://arxiv.org/abs/0704.1808).
+  - `GCBWaveform`: a Python code to generate the waveform of GCB in time domain.
 
-- Binary black hole (BBH): [`pyIMRPhenomD`](https://github.com/XGI-MSU/PyIMRPhenomD)
-
-  - This module implements the IMRPhenomD in a pure python code, compiled with the numba just in time compiler.
+- Binary black hole (BBH): `PyIMRPhenomD` and `pyIMRPhenomD`
+    
+  - [`PyIMRPhenomD`](https://github.com/XGI-MSU/PyIMRPhenomD): implements the `IMRPhenomD` waveform in a pure python code, compiled with the numba just in time compiler.
+  - `pyIMRPhenomD`: a `C` code developed by Michael Puerrer to implement the `IMRPhenomD` waveform.
 
 - Stellar-mass BBH (with eccentricity): `EccentricFD`
 
@@ -39,6 +41,10 @@ The following waveform will be automatically complied during the installation:
   - If you want to check the original codes, see files in [LALSuite](https://github.com/lscsoft/lalsuite/tree/master/lalsimulation/lib)
 
   - If you want a pure modified version of this waveform, check [this link](https://github.com/HumphreyWang/pyEccentricFD)
+
+- Stochastic gravitational wave background (SGWB): 
+
+  - With the help of `healpy` to generate a SGWB signal of power law type.
 
 
 ## Library dependence

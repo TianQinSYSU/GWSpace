@@ -1,11 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# ==================================
-# File Name: SGWB.py
-# Author: Zhiyuan Li
-# Mail:
-# ==================================
-
 import numpy as np
 import healpy as hp
 from healpy import Alm
@@ -15,6 +7,7 @@ from gwspace.response import trans_y_slr_fd, get_XYZ_fd
 from gwspace.Orbit import detectors
 from gwspace.wrap import frequency_noise_from_psd
 from gwspace.constants import H0_SI
+from scipy.special import sph_harm
 
 
 class SGWB(object):
@@ -28,34 +21,37 @@ class SGWB(object):
     :param H0: Hubble constant
     """
 
-    def __init__(self, nside, omega0, alpha, blm_vals, blmax, H0=H0_SI):
-        self.blm_size = Alm.getsize(blmax)
-        if len(blm_vals) != self.blm_size:
-            raise ValueError('The size of the input blm array does not match the size defined by lmax')
+    def __init__(self, nside, omega0, alpha, theta, phi, H0=H0_SI):
+        #if len(blm_vals) != self.blm_size:
+        #    raise ValueError('The size of the input blm array does not match the size defined by lmax')
 
         self.omega0 = omega0
         self.alpha = alpha
-        self.blms = np.array(blm_vals, dtype=np.complex128)
-        self.blmax = blmax
         self.H0 = H0
-
-        self.almax = 2*self.blmax
-        self.alm_size = (self.almax+1)**2
-        self.bl_bm_idx = [self.idx_2_alm(self.blmax, ii) for ii in range(2*self.blm_size-self.blmax-1)]
-
-        beta_vals = self.calc_beta()
-        blm_full = self.calc_blm_full()
-        alms_inj = np.einsum('ijk,j,k', beta_vals, blm_full, blm_full)
-        alms_inj2 = alms_inj/(alms_inj[0]*np.sqrt(4*np.pi))
-        # extract only the non-negative components
-        alms_non_neg = alms_inj2[0:hp.Alm.getsize(self.almax)]
-
-        self.skymap_inj = hp.alm2map(alms_non_neg, nside)
         self.npix = hp.nside2npix(nside)
-        # Array of pixel indices
         pix_idx = np.arange(self.npix)
-        # Angular coordinates of pixel indices
         self.thetas, self.phis = hp.pix2ang(nside, pix_idx)
+        if theta == None and phi==None:
+            self.skymap_inj = 1/self.npix*np.ones(self.npix)
+        elif theta>=0 and theta<= np.pi and phi>=0 and phi<=2*np.pi:        
+            self.blmax = 2
+            self.blm_size = Alm.getsize(self.blmax)
+            self.almax = 2*self.blmax
+            self.alm_size = (self.almax+1)**2
+            self.bl_bm_idx = [self.idx_2_alm(self.blmax, ii) for ii in range(2*self.blm_size-self.blmax-1)]
+            Ylms = np.zeros(self.blm_size, dtype='complex')
+            for ii in range(self.blm_size):
+                lval, mval = self.idx_2_alm(self.blmax, ii)
+                Ylms[ii] = sph_harm(mval, lval, phi, theta)
+            self.blms = np.array(Ylms, dtype=np.complex128)
+            beta_vals = self.calc_beta()
+            blm_full = self.calc_blm_full()
+            alms_inj = np.einsum('ijk,j,k', beta_vals, blm_full, blm_full)
+            alms_inj2 = alms_inj/(alms_inj[0]*np.sqrt(4*np.pi))
+            alms_non_neg = alms_inj2[0:hp.Alm.getsize(self.almax)]
+            self.skymap_inj = hp.alm2map(alms_non_neg, nside)
+        else:
+            print("the range of theta or phi is wrong")
     
     def get_ori_signal(self, frange, Ttot, fref=0.01):
         """
@@ -67,8 +63,8 @@ class SGWB(object):
         """
         Omegaf = self.omega0*(frange/fref)**self.alpha
         Sgw = Omegaf*(3/(4*frange**3))*(self.H0/np.pi)**2
-        Sgw_Gu = frequency_noise_from_psd(Sgw, 1/Ttot, seed=123)
-        return np.einsum('i,j->ij', (2/Ttot)*Sgw_Gu*Sgw_Gu.conj(), self.skymap_inj)  # Gaussian signal
+        Sgw_Gaussian = frequency_noise_from_psd(Sgw, 1/Ttot, seed=123)
+        return np.einsum('i,j->ij', (2/Ttot)*Sgw_Gaussian*Sgw_Gaussian.conj(), self.skymap_inj)  # Gaussian signal
 
     def get_response_signal(self, fmin, fmax, fn, tsegmid, Ttot, det='TQ'):
         """
@@ -98,10 +94,11 @@ class SGWB(object):
         det_ORF = (1/(8*np.pi))*(np.einsum("mjkl,njkl->mnjkl", np.conj(det_res_plus), det_res_plus)
                                  + np.einsum("mjkl,njkl->mnjkl", np.conj(det_res_cross), det_res_cross))/(
                                   2*np.pi*frange[None, None, :, None, None]*det.L_T)**2
-        signal_in_gu = self.get_ori_signal(frange, Ttot)
-        res_signal = signal_in_gu[None, None, :, None, :]*det_ORF
+        signal_in_gaussian = self.get_ori_signal(frange, Ttot)
+        res_signal = signal_in_gaussian[None, None, :, None, :]*det_ORF
         res_signal = (4*np.pi)*np.sum(res_signal, axis=4)/self.npix
-        return res_signal, frange
+        #return res_signal, frange,det_ORF
+        return res_signal,frange
 
     def calc_beta(self):
         beta_vals = np.zeros((self.alm_size, 2*self.blm_size-self.blmax-1, 2*self.blm_size-self.blmax-1))
@@ -155,18 +152,33 @@ class SGWB(object):
                 m = -m
         return l, m
 
+    #@property
+    #def vec_u(self):
+    #    return np.array([-np.sin(self.phis), np.cos(self.phis), np.zeros(len(self.phis))])
+
+    #@property
+    #def vec_v(self):
+    #    return np.array([np.cos(self.thetas)*np.cos(self.phis),
+    #                     np.cos(self.thetas)*np.sin(self.phis),
+    #                     -np.sin(self.thetas)])
+
+    #@property
+    #def vec_k(self):
+    #    return np.array([-np.sin(self.thetas)*np.cos(self.phis),
+    #                     -np.sin(self.thetas)*np.sin(self.phis),
+    #                     -np.cos(self.thetas)])  # Vector of sources
     @property
     def vec_u(self):
-        return np.array([-np.sin(self.phis), np.cos(self.phis), np.zeros(len(self.phis))])
+        return np.array([np.sin(self.phis), -np.cos(self.phis), np.zeros(len(self.phis))])
 
     @property
     def vec_v(self):
-        return np.array([np.cos(self.thetas)*np.cos(self.phis),
-                         np.cos(self.thetas)*np.sin(self.phis),
-                         -np.sin(self.thetas)])
+        return np.array([-np.sin(np.pi/2-self.thetas)*np.cos(self.phis),
+                         -np.sin(np.pi/2-self.thetas)*np.sin(self.phis),
+                         np.cos(np.pi/2-self.thetas)])
 
     @property
     def vec_k(self):
-        return np.array([-np.sin(self.thetas)*np.cos(self.phis),
-                         -np.sin(self.thetas)*np.sin(self.phis),
-                         -np.cos(self.thetas)])  # Vector of sources
+        return np.array([-np.cos(np.pi/2-self.thetas)*np.cos(self.phis),
+                         -np.cos(np.pi/2-self.thetas)*np.sin(self.phis),
+                         -np.sin(np.pi/2-self.thetas)])  # Vector of sources

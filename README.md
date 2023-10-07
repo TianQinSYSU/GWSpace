@@ -26,7 +26,7 @@ The following waveform will be automatically complied during the installation:
 
 - Galactic binary: `FastGB`
 
-  - This is a modified version of 
+  - This is a modified version of galactic compact binary (GCB) waveform generation code, using a fast/slow decomposition of the waveform to reduce the computational cost.
 
 - Binary black hole (BBH): [`pyIMRPhenomD`](https://github.com/XGI-MSU/PyIMRPhenomD)
 
@@ -78,5 +78,5 @@ pip install -r requirements.txt
 
 - [En-Kun Li](https://github.com/ekli-sysu)
 - [Han Wang](https://github.com/HumphreyWang)
-- Ya-Nan Li
+- [Ya-Nan Li](https://github.com/liyn55)
 - ...

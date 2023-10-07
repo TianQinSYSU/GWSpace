@@ -22,17 +22,17 @@ As seen in the figure above, we use different waveforms for different gravitatio
 
   - Need to install `gsl` and `lapack`
 
-The following waveform will be automatically complied during the installation:
+<!--The following waveform will be automatically complied during the installation:-->
 
 - Galactic compact binary: `FastGB` and `GCBWaveform`
 
-  - `FastGB`: a modified version of galactic compact binary (GCB) waveform generation code, which is based on the implementation of `Galaxy` in the Mock LISA Data Challenges' package. The code using a fast/slow decomposition of the waveform to reduce the computational cost, for more details about the original construction of the method see [arXiv:0704.1808](https://arxiv.org/abs/0704.1808).
+  - `FastGB`: a modified version of galactic compact binary (GCB) waveform generation code, which is based on the implementation of `Galaxy` in the Mock LISA Data Challenges' package. The code using a fast/slow decomposition of the waveform to reduce the computational cost, for more details about the original construction of the method see [arXiv:0704.1808](https://arxiv.org/abs/0704.1808). It will be automatically compiled during the installation.
   - `GCBWaveform`: a Python code to generate the waveform of GCB in time domain.
 
 - Binary black hole (BBH): `PyIMRPhenomD` and `pyIMRPhenomD`
     
-  - [`PyIMRPhenomD`](https://github.com/XGI-MSU/PyIMRPhenomD): implements the `IMRPhenomD` waveform in a pure python code, compiled with the numba just in time compiler.
-  - `pyIMRPhenomD`: a `C` code developed by Michael Puerrer to implement the `IMRPhenomD` waveform.
+  - [`PyIMRPhenomD`](https://github.com/XGI-MSU/PyIMRPhenomD): implements the `IMRPhenomD` waveform in a pure python code, compiled with the numba just in time compiler. If you prefer using this code, you need to install it manually.
+  - `pyIMRPhenomD`: a `C` code developed by Michael Puerrer to implement the `IMRPhenomD` waveform. It will be compiled automatically.
 
 - Stellar-mass BBH (with eccentricity): `EccentricFD`
 

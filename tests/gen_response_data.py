@@ -267,7 +267,7 @@ if __name__ == "__main__":
                }  # masses of GW150914
     generate_td_data(GCBpars)
     # generate_td_data(EMRIpars, s_type='emri')
-    # generate_fd_data(BHBpars, show_y_slr=True)A
+    # generate_fd_data(BHBpars, show_y_slr=False)
 
-    generate_MBHB_with_PSD_joint(BHBpars)
-    generate_SBHB_with_PSD_joint(ecc_par)
+    # generate_MBHB_with_PSD_joint(BHBpars)
+    # generate_SBHB_with_PSD_joint(ecc_par)

@@ -2,6 +2,8 @@
 **/build
 gitpush.sh
 
+.DS_Store
+
 *.so
 *.npy
 

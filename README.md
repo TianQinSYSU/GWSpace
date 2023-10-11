@@ -22,15 +22,17 @@ As seen in the figure above, we use different waveforms for different gravitatio
 
   - Need to install `gsl` and `lapack`
 
-The following waveform will be automatically complied during the installation:
+<!--The following waveform will be automatically complied during the installation:-->
 
-- Galactic binary: `FastGB`
+- Galactic compact binary: `FastGB` and `GCBWaveform`
 
-  - This is a modified version of galactic compact binary (GCB) waveform generation code, using a fast/slow decomposition of the waveform to reduce the computational cost.
+  - `FastGB`: a modified version of galactic compact binary (GCB) waveform generation code, which is based on the implementation of `Galaxy` in the Mock LISA Data Challenge (MLDC). The code using a fast/slow decomposition of the waveform to reduce the computational cost, for more details about the original construction of the method see [arXiv:0704.1808](https://arxiv.org/abs/0704.1808). It will be automatically compiled during the installation.
+  - `GCBWaveform`: a Python code to generate the waveform of GCB in time domain.
 
-- Binary black hole (BBH): [`pyIMRPhenomD`](https://github.com/XGI-MSU/PyIMRPhenomD)
-
-  - This module implements the IMRPhenomD in a pure python code, compiled with the numba just in time compiler.
+- Binary black hole (BBH): `PyIMRPhenomD` and `pyIMRPhenomD`
+    
+  - [`PyIMRPhenomD`](https://github.com/XGI-MSU/PyIMRPhenomD): implements the `IMRPhenomD` waveform in a pure python code, compiled with the numba just in time compiler. If you prefer using this code, you need to install it manually.
+  - `pyIMRPhenomD`: a `C` code developed by Michael Puerrer to implement the `IMRPhenomD` waveform. It will be compiled automatically.
 
 - Stellar-mass BBH (with eccentricity): `EccentricFD`
 
@@ -39,6 +41,10 @@ The following waveform will be automatically complied during the installation:
   - If you want to check the original codes, see files in [LALSuite](https://github.com/lscsoft/lalsuite/tree/master/lalsimulation/lib)
 
   - If you want a pure modified version of this waveform, check [this link](https://github.com/HumphreyWang/pyEccentricFD)
+
+- Stochastic gravitational wave background (SGWB): 
+
+  - With the help of `healpy` to generate a SGWB signal of power law type.
 
 
 ## Library dependence
@@ -71,8 +77,8 @@ pip install -r requirements.txt
 
 - As `lapack-3.11.0` already includes `lapacke`, you can compile the `lapack`, and then enter the `LAPACKE` dir, and compile `lapacke`. 
 - The generated lib `liblapacke.a` will be generated at the top dir.
-- Copy the `liblapacke.a` and `liblapack.a` to your include path (e.g. `/usr/local/include`)
-- Copy files in the `LAPACKE/include` to your include path (e.g. `/usr/local/lib`)
+- Copy the `liblapacke.a` and `liblapack.a` to your lib path (e.g. `/usr/local/lib`)
+- Copy files in the `LAPACKE/include` to your include path (e.g. `/usr/local/include`)
 
 ## Author lists
 

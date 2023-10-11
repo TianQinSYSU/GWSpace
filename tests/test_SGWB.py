@@ -17,14 +17,16 @@ from gwspace.SGWB import SGWB
 SGWBpars = {"nside": 8,
             "omega0": 5e-11,
             "alpha": 0.667,
-            "blm_vals": (1.0, 0.75, 0.5, 0.7j, 0.7-0.3j, 1.1j),
-            "blmax": 2
+            "T_obs": 63*5000,
+            # "blm_vals": (1.0, 0.75, 0.5, 0.7j, 0.7-0.3j, 1.1j),
+            # "blmax": 2,
+            "theta": 1.3,
+            "phi": 1.2,
             }
 signal_pars = {"fmax": 0.2,
                "fmin": 0.001,
                "fn": 200,
                "tsegmid": 5000,
-               "Ttot": 63*5000,
                }
 st = time.time()
 SGWB_signal = SGWB(**SGWBpars)
@@ -32,7 +34,7 @@ res_signal, frange = SGWB_signal.get_response_signal(**signal_pars)
 ed = time.time()
 print(f"Time cost: {ed-st} s")
 
-signal_in_gu = SGWB_signal.get_ori_signal(frange, signal_pars["Ttot"])
+signal_in_gu = SGWB_signal.get_ori_signal(frange)
 hp.mollview(signal_in_gu[0, :], title="The response signal")
 
 tq = TianQinNoise()

@@ -26,24 +26,39 @@ except ImportError:
     use_py_phd = False
 
 
+def _p0(Lambda, Beta):
+    """See "LDC-manual-002.pdf" (Eq. 12, 13) & Marsat et al. (Eq. 14)"""
+    sib, csb = sin(Beta), cos(Beta)
+    sil, csl = sin(Lambda), cos(Lambda)
+    sil2, csl2 = sin(2*Lambda), cos(2*Lambda)
+
+    p0_plus = np.array([-sib**2*csl**2+sil**2, (sib**2+1)*(-sil*csl), sib*csb*csl,
+                        (sib**2+1)*(-sil*csl), -sib**2*sil**2+csl**2, sib*csb*sil,
+                        sib*csb*csl, sib*csb*sil, -csb**2]).reshape(3, 3)
+    p0_cross = np.array([-sib*sil2, sib*csl2, csb*sil,
+                         sib*csl2, sib*sil2, -csb*csl,
+                         csb*sil, -csb*csl, 0]).reshape(3, 3)
+    return p0_plus, p0_cross  # uu-vv, uv+vu
+
+
 # Note1: one can use __slots__=('mass1', 'mass2', 'etc') to fix the attributes
 #        then the class will not have __dict__ anymore, and attributes in __slots__ are read-only.
 # Note2: One can use @DynamicAttrs to avoid warnings of 'no attribute'.
 class BasicWaveform(object):
     """
-    Class for waveform
-    -------------------------------
-    Parameters:
-    - pars: dict of parameters for different sources
-    such as:
-        - type: GCB; BHB; EMRI; SGWB for different sources
-        - lambda: longitude of the source in ecliptic coordinates
-        - beta: latitude of the source in ecliptic coordinates
-        - psi: polarization angle
-        - iota: inclination angle
-        - Mc: chirp mass
-        - DL: luminosity distance
-        - etc
+
+    :param mass1: Primary mass (solar mass)
+    :param mass2: Secondary mass(solar mass)
+    :param T_obs: Observation time (s)
+    :param DL: Luminosity distance (Mpc)
+    :param Lambda: Longitude (0, 2pi)
+    :param Beta: Latitude **(pi/2, -pi/2)** [instead of (0, pi)]
+    :param phi_c: Coalescence phase (0, 2pi)
+    :param tc: Coalescence time (s)
+    :param iota: Inclination angle (0, pi)
+    :param var_phi: Observer phase (0, 2pi)
+    :param psi: Polarization angle (0, pi)
+    :param kwargs: additional parameters need to save
     """
     __slots__ = ('mass1', 'mass2', 'T_obs', 'DL', 'Lambda', 'Beta',
                  'phi_c', 'tc', 'iota', 'var_phi', 'psi', 'add_para')
@@ -99,23 +114,9 @@ class BasicWaveform(object):
                          -cos(self.Beta)*sin(self.Lambda),
                          -sin(self.Beta)])  # Vector of sources
 
-    def _p0(self):
-        """See "LDC-manual-002.pdf" (Eq. 12, 13) & Marsat et al. (Eq. 14)"""
-        sib, csb = sin(self.Beta), cos(self.Beta)
-        sil, csl = sin(self.Lambda), cos(self.Lambda)
-        sil2, csl2 = sin(2*self.Lambda), cos(2*self.Lambda)
-
-        p0_plus = np.array([-sib**2 * csl**2 + sil**2, (sib**2+1)*(-sil*csl),  sib*csb*csl,
-                            (sib**2+1)*(-sil*csl),     -sib**2*sil**2+csl**2,  sib*csb*sil,
-                            sib*csb*csl,                sib*csb*sil,          -csb**2]).reshape(3, 3)
-        p0_cross = np.array([-sib*sil2, sib*csl2,  csb*sil,
-                             sib*csl2,  sib*sil2, -csb*csl,
-                             csb*sil,  -csb*csl,   0]).reshape(3, 3)
-        return p0_plus, p0_cross  # uu-vv, uv+vu
-
     def polarization(self):
         """See "LDC-manual-002.pdf" (Eq. 19)"""
-        p0_plus, p0_cross = self._p0()
+        p0_plus, p0_cross = _p0(self.Lambda, self.Beta)
         p_plus = p0_plus*cos(2*self.psi) + p0_cross*sin(2*self.psi)
         p_cross = - p0_plus*sin(2*self.psi) + p0_cross*cos(2*self.psi)
         return p_plus, p_cross
@@ -178,7 +179,7 @@ class BHBWaveform(BasicWaveform):
 
     def p_lm(self, l=2, m=2):  # FIXME: Is that necessary to calculate both h_(l,m) and h_(l,-m)=h_(l,m)_conj?
         """See Marsat et al. (Eq. 16) https://journals.aps.org/prd/abstract/10.1103/PhysRevD.103.083011"""
-        p0_plus, p0_cross = self._p0()
+        p0_plus, p0_cross = _p0(self.Lambda, self.Beta)
         y_lm = sYlm(-2, l, m, self.iota, self.var_phi)
         y_l_m_conj = sYlm(-2, l, -m, self.iota, self.var_phi).conjugate()
         return (1/2 * y_lm * np.exp(-2j*self.psi) * (p0_plus + 1j*p0_cross) +
@@ -187,7 +188,7 @@ class BHBWaveform(BasicWaveform):
     @property
     def p22(self):
         """See "LDC-manual-002.pdf" (Eq. 31)"""
-        p0_plus, p0_cross = self._p0()
+        p0_plus, p0_cross = _p0(self.Lambda, self.Beta)
         y22 = sqrt(5/4/PI) * cos(self.iota/2)**4 * np.exp(2j*self.var_phi)
         y2_2_conj = sqrt(5/4/PI) * sin(self.iota/2)**4 * np.exp(2j*self.var_phi)
 

@@ -26,7 +26,7 @@ As seen in the figure above, we use different waveforms for different gravitatio
 
 - Galactic compact binary: `FastGB` and `GCBWaveform`
 
-  - `FastGB`: a modified version of galactic compact binary (GCB) waveform generation code, which is based on the implementation of `Galaxy` in the Mock LISA Data Challenges' package. The code using a fast/slow decomposition of the waveform to reduce the computational cost, for more details about the original construction of the method see [arXiv:0704.1808](https://arxiv.org/abs/0704.1808). It will be automatically compiled during the installation.
+  - `FastGB`: a modified version of galactic compact binary (GCB) waveform generation code, which is based on the implementation of `Galaxy` in the Mock LISA Data Challenge (MLDC). The code using a fast/slow decomposition of the waveform to reduce the computational cost, for more details about the original construction of the method see [arXiv:0704.1808](https://arxiv.org/abs/0704.1808). It will be automatically compiled during the installation.
   - `GCBWaveform`: a Python code to generate the waveform of GCB in time domain.
 
 - Binary black hole (BBH): `PyIMRPhenomD` and `pyIMRPhenomD`
@@ -77,8 +77,8 @@ pip install -r requirements.txt
 
 - As `lapack-3.11.0` already includes `lapacke`, you can compile the `lapack`, and then enter the `LAPACKE` dir, and compile `lapacke`. 
 - The generated lib `liblapacke.a` will be generated at the top dir.
-- Copy the `liblapacke.a` and `liblapack.a` to your include path (e.g. `/usr/local/include`)
-- Copy files in the `LAPACKE/include` to your include path (e.g. `/usr/local/lib`)
+- Copy the `liblapacke.a` and `liblapack.a` to your lib path (e.g. `/usr/local/lib`)
+- Copy files in the `LAPACKE/include` to your include path (e.g. `/usr/local/include`)
 
 ## Author lists
 

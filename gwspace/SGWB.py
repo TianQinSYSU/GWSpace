@@ -3,7 +3,7 @@ import healpy as hp
 from healpy import Alm
 from sympy.physics.wigner import clebsch_gordan
 
-from gwspace.response import trans_y_slr_fd, get_XYZ_fd
+from gwspace.response import trans_XYZ_fd
 from gwspace.Orbit import detectors
 from gwspace.wrap import frequency_noise_from_psd
 from gwspace.Waveform import _p0  # FIXME
@@ -79,16 +79,14 @@ class SGWB(object):
         vec_k = self.vec_k
         e_plus_cross = [_p0(p, np.pi/2-t) for p, t in np.column_stack((self.phis, self.thetas))]
         det = detectors[det](tf)
-        det_res_plus = np.zeros((3, fn, tf.size, self.npix), dtype="complex")
-        det_res_cross = np.zeros((3, fn, tf.size, self.npix), dtype="complex")
+        res_plus = np.zeros((3, fn, tf.size, self.npix), dtype=np.complex128)
+        res_cross = np.zeros((3, fn, tf.size, self.npix), dtype=np.complex128)
         for i in range(self.npix):
             for j in range(fn):  # TODO: polish this
-                y_plus, y_cross = trans_y_slr_fd(vec_k[:, i], e_plus_cross[i], det, frange[j])
-                det_res_plus[:, j, :, i] = get_XYZ_fd(y_plus, frange[j], det.L_T)
-                det_res_cross[:, j, :, i] = get_XYZ_fd(y_cross, frange[j], det.L_T)
+                res_plus[:, j, :, i], res_cross[:, j, :, i] = trans_XYZ_fd(vec_k[i], e_plus_cross[i], det, frange[j])
         # det_ORF is 3*3*frequency*t*pixel
-        det_ORF = (1/(8*np.pi))*(np.einsum("mjkl,njkl->mnjkl", det_res_plus.conj(), det_res_plus)
-                                 + np.einsum("mjkl,njkl->mnjkl", det_res_cross.conj(), det_res_cross))/(
+        det_ORF = (1/(8*np.pi))*(np.einsum("mjkl,njkl->mnjkl", res_plus.conj(), res_plus)
+                                 + np.einsum("mjkl,njkl->mnjkl", res_cross.conj(), res_cross))/(
                                   2*np.pi*frange[None, None, :, None, None]*det.L_T)**2
         gaussian_signal = self.get_ori_signal(frange)
         res_signal = gaussian_signal[None, None, :, None, :]*det_ORF
@@ -150,4 +148,4 @@ class SGWB(object):
     def vec_k(self):
         return np.array([-np.sin(self.thetas)*np.cos(self.phis),
                          -np.sin(self.thetas)*np.sin(self.phis),
-                         -np.cos(self.thetas)])  # Vector of sources
+                         -np.cos(self.thetas)]).T  # Vector of sources

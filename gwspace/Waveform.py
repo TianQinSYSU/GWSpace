@@ -14,7 +14,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline as Spline
 from gwspace.Orbit import detectors
 from gwspace.utils import sYlm
 from gwspace.constants import MSUN_SI, MTSUN_SI, MPC_SI, YRSID_SI, PI, C_SI, G_SI
-from gwspace.response import trans_y_slr_fd, get_AET_fd
+from gwspace.response import trans_AET_fd
 
 from gwspace.eccentric_fd import gen_ecc_fd_and_tf, gen_ecc_fd_waveform
 try:
@@ -315,11 +315,9 @@ class BHBWaveformEcc(BasicWaveform):
             index = (h_p != 0).argmax()
 
             det = det_class(tf_vec[index:], **kwargs)
-            gw_tdi_p, gw_tdi_c = trans_y_slr_fd(self.vec_k, (p_p, p_c), det, freq[index:])
             # FIXME: use channel!!!, here only store A channel
-            gw_tdi_p, _, _ = get_AET_fd(gw_tdi_p, freq[index:], det.L_T)
-            gw_tdi_c, _, _ = get_AET_fd(gw_tdi_c, freq[index:], det.L_T)
-            gw_tdi[index:] += gw_tdi_p*h_p[index:] + gw_tdi_c*h_c[index:]
+            gw_tdi_p, gw_tdi_c = trans_AET_fd(self.vec_k, (p_p, p_c), det, freq[index:])
+            gw_tdi[index:] += gw_tdi_p[0]*h_p[index:] + gw_tdi_c[0]*h_c[index:]
 
         return gw_tdi*t_delay, freq
 

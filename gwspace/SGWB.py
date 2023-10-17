@@ -3,7 +3,7 @@ import healpy as hp
 from healpy import Alm
 from sympy.physics.wigner import clebsch_gordan
 
-from gwspace.response import trans_y_slr_fd, get_XYZ_fd
+from gwspace.response import trans_XYZ_fd
 from gwspace.Orbit import detectors
 from gwspace.wrap import frequency_noise_from_psd
 from gwspace.Waveform import _p0  # FIXME
@@ -43,7 +43,7 @@ class SGWB(object):
             self.blms = np.array([sph_harm(m, l, phi, theta) for (l, m) in l_m_val], dtype=np.complex128)
             beta_vals = self.calc_beta()
             blm_full = self.calc_blm_full()
-            alms_inj = np.einsum('ijk,j,k', beta_vals, blm_full, blm_full)
+            alms_inj = np.dot(np.dot(beta_vals, blm_full), blm_full)
             alms_inj2 = alms_inj/(alms_inj[0]*np.sqrt(4*np.pi))
             alms_non_neg = alms_inj2[0:hp.Alm.getsize(self.almax)]
             self.skymap_inj = hp.alm2map(alms_non_neg, nside)
@@ -51,49 +51,48 @@ class SGWB(object):
             raise ValueError("the range of theta or phi is wrong")
 
     def get_ori_signal(self, frange, fref=0.01, seed=123):
-        """generate Gaussian signal
+        """ Generate a SGWB signal follows the Gaussian noise.
 
         :param frange: the frequency range
         :param fref: (Hz) the reference frequency
-        :param seed:
-        :return:
+        :param seed: seed for np.random.seed
+        :return: ndarray: shape(self.npix, frange.size)
         """
         Omegaf = self.omega0*(frange/fref)**self.alpha
         Sgw = Omegaf*(3/(4*frange**3))*(H0_SI/np.pi)**2
         Sgw = frequency_noise_from_psd(Sgw, 1/self.T_obs, seed=seed)
-        return np.einsum('i,j->ij', (2/self.T_obs)*Sgw*Sgw.conj(), self.skymap_inj)
+        return np.outer(self.skymap_inj, (2/self.T_obs) * np.real(Sgw*Sgw.conj()))
 
-    def get_response_signal(self, fmin, fmax, fn, tsegmid, det='TQ'):
-        """
+    def get_response_signal(self, f_min, f_max, fn, t_segm, det='TQ'):
+        """ Generate a responsed (XYZ) signal for a given GW detector.
 
-        :param fmin: (Hz) the minimum frequency we generate
-        :param fmax: (Hz) the maximum frequency we generate
-        :param fn: the frequency segment number
-        :param tsegmid: the time segment length (in seconds), for TQ we usually use 5000s or 3600s,
-         The ORF error is less than 3%
-        :param det: the detector type
-        :return:
+        :param f_min: (Hz) the minimum frequency we generate
+        :param f_max: (Hz) the maximum frequency we generate
+        :param fn: the number of frequency segments
+        :param t_segm: the length of time segments (in seconds), usually choose ~ 3600s for TQ,
+         the ORF error can be less than 3%
+        :param det: str, the detector type
+        :return: (res_signal, frange): (ndarray: shape(fn, tf.size, 3, 3), ndarray: shape(fn, ))
         """
-        frange = np.linspace(fmin, fmax, fn)
-        tf = np.arange(0, self.T_obs, tsegmid)
+        frange = np.linspace(f_min, f_max, fn)
+        gaussian_signal = self.get_ori_signal(frange)
+
+        tf = np.arange(0, self.T_obs, t_segm)
         vec_k = self.vec_k
         e_plus_cross = [_p0(p, np.pi/2-t) for p, t in np.column_stack((self.phis, self.thetas))]
         det = detectors[det](tf)
-        det_res_plus = np.zeros((3, fn, tf.size, self.npix), dtype="complex")
-        det_res_cross = np.zeros((3, fn, tf.size, self.npix), dtype="complex")
+
+        res_signal = np.zeros((fn, tf.size, 3, 3), dtype=np.complex128)
         for i in range(self.npix):
-            for j in range(fn):  # TODO: polish this
-                y_plus, y_cross = trans_y_slr_fd(vec_k[:, i], e_plus_cross[i], det, frange[j])
-                det_res_plus[:, j, :, i] = get_XYZ_fd(y_plus, frange[j], det.L_T)
-                det_res_cross[:, j, :, i] = get_XYZ_fd(y_cross, frange[j], det.L_T)
-        # det_ORF is 3*3*frequency*t*pixel
-        det_ORF = (1/(8*np.pi))*(np.einsum("mjkl,njkl->mnjkl", det_res_plus.conj(), det_res_plus)
-                                 + np.einsum("mjkl,njkl->mnjkl", det_res_cross.conj(), det_res_cross))/(
-                                  2*np.pi*frange[None, None, :, None, None]*det.L_T)**2
-        gaussian_signal = self.get_ori_signal(frange)
-        res_signal = gaussian_signal[None, None, :, None, :]*det_ORF
-        res_signal = (4*np.pi)*np.sum(res_signal, axis=4)/self.npix
-        # return res_signal, frange, det_ORF
+            v_k, e_p_c = vec_k[i], e_plus_cross[i]
+            for j in range(fn):
+                res_p, res_c = trans_XYZ_fd(v_k, e_p_c, det, frange[j])  # both with shape(3, tf.size)
+                det_ORF_temp = (np.einsum("ml,nl->lmn", res_p.conj(), res_p)
+                                + np.einsum("ml,nl->lmn", res_c.conj(), res_c))
+                # res_signal = det_ORF * gaussian_signal
+                res_signal[j] += gaussian_signal[i, j] * det_ORF_temp / (8*np.pi) / (2*np.pi*frange[j]*det.L_T)**2
+
+        res_signal *= (4*np.pi)/self.npix
         return res_signal, frange
 
     def calc_beta(self):
@@ -106,24 +105,22 @@ class SGWB(object):
         l2, m2 = v_idx_2_alm(self.blmax, kk)
         L, M = v_idx_2_alm(self.almax, ii)
 
-        cg0 = np.vectorize(lambda l_1, l_2, L_: float(clebsch_gordan(l_1, l_2, L_, 0, 0, 0)))
-        cg1 = np.vectorize(lambda l_1, m_1, l_2, m_2, L_, M_: float(clebsch_gordan(l_1, l_2, L_, m_1, m_2, M_)))
-        beta_vals = (np.sqrt((2*l1+1)*(2*l2+1)/((4*np.pi)*(2*L+1))) *
-                     cg0(l1, l2, L)*cg1(l1, m1, l2, m2, L, M))
+        cg = np.vectorize(lambda l_1, m_1, l_2, m_2, L_, M_: float(clebsch_gordan(l_1, l_2, L_, m_1, m_2, M_)))
+        beta_vals = (np.sqrt((2*l1+1)*(2*l2+1)/(4*np.pi*(2*L+1))) *
+                     cg(l1, 0, l2, 0, L, 0)*cg(l1, m1, l2, m2, L, M))
         return beta_vals
 
     def calc_blm_full(self):
         """convert blm array into a full blm array with -m values too"""
         # Array of blm values for both +ve and -ve indices
-        blms_full = np.zeros(2*self.blm_size-self.blmax-1, dtype='complex')
+        blms_full = np.zeros(2*self.blm_size-self.blmax-1, dtype=np.complex128)
 
         for jj in range(blms_full.size):
             lval, mval = self.bl_bm_idx[jj]
 
             if mval >= 0:
                 blms_full[jj] = self.blms[Alm.getidx(self.blmax, lval, mval)]
-
-            elif mval < 0:
+            else:
                 mval = -mval
                 blms_full[jj] = (-1)**mval * np.conj(self.blms[Alm.getidx(self.blmax, lval, mval)])
 
@@ -150,4 +147,4 @@ class SGWB(object):
     def vec_k(self):
         return np.array([-np.sin(self.thetas)*np.cos(self.phis),
                          -np.sin(self.thetas)*np.sin(self.phis),
-                         -np.cos(self.thetas)])  # Vector of sources
+                         -np.cos(self.thetas)]).T  # Vector of sources

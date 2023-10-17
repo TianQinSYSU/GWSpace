@@ -20,16 +20,104 @@ def _matrix_res_pro(n, p):
             + n[2] * p[2, 0] * n[0] + n[2] * p[2, 1] * n[1] + n[2] * p[2, 2] * n[2])
 
 
+def get_y_slr_td(wf, tf, det, TDIgen=1):
+    """TODO: here we calculate orbits of the detectors only once at tf, but considering TDI_delay here,
+         their positions need to be **recalculated**, e.g. at tf-L, tf-2*L, ..."""
+    if TDIgen == 1:
+        TDI_delay = 4
+    elif TDIgen == 2:
+        TDI_delay = 8
+    else:
+        raise NotImplementedError
+
+    det = detectors[det](tf)
+    p1, p2, p3 = det.orbits
+    L = det.L_T
+    n1 = det.uni_vec_ij(3, 2)
+    n2 = det.uni_vec_ij(1, 3)
+    n3 = det.uni_vec_ij(2, 1)
+
+    k = wf.vec_k
+    p_p, p_c = wf.polarization()
+    xi1 = (_matrix_res_pro(n1, p_p), _matrix_res_pro(n1, p_c))
+    xi2 = (_matrix_res_pro(n2, p_p), _matrix_res_pro(n2, p_c))
+    xi3 = (_matrix_res_pro(n3, p_p), _matrix_res_pro(n3, p_c))
+
+    kp1 = np.dot(k, p1)
+    kp2 = np.dot(k, p2)
+    kp3 = np.dot(k, p3)
+    kn1 = np.dot(k, n1)
+    kn2 = np.dot(k, n2)
+    kn3 = np.dot(k, n3)
+
+    tf_kp1, tf_kp2, tf_kp3 = tf-kp1, tf-kp2, tf-kp3
+
+    # Here `i` is for `i*L` TDI_delay, in 1st generation TDI we consider delay up to 4,
+    # i.e. t-0L, t-1L, t-2L, t-3L, t-4L. And then we calculate difference between each L delay
+    def h_tdi_delay(tf_s, xi_p, xi_c):
+        h_list = [wf.get_hphc(tf_s - i_*L) for i_ in range(TDI_delay+1)]
+        return [hp*xi_p+hc*xi_c for (hp, hc) in h_list]
+
+    h3_p2 = h_tdi_delay(tf_kp2, *xi3)
+    h3_p1 = h_tdi_delay(tf_kp1, *xi3)
+    h2_p3 = h_tdi_delay(tf_kp3, *xi2)
+    h2_p1 = h_tdi_delay(tf_kp1, *xi2)
+    h1_p3 = h_tdi_delay(tf_kp3, *xi1)
+    h1_p2 = h_tdi_delay(tf_kp2, *xi1)
+
+    def get_y(hi_pj, hi_pk, denominator):
+        return [(hi_pj[i+1]-hi_pk[i])/denominator for i in range(TDI_delay)]
+
+    y_slr = {(1, 2): get_y(h3_p1, h3_p2, 2*(1+kn3)),
+             (2, 1): get_y(h3_p2, h3_p1, 2*(1-kn3)),
+             (1, 3): get_y(h2_p1, h2_p3, 2*(1-kn2)),
+             (3, 1): get_y(h2_p3, h2_p1, 2*(1+kn2)),
+             (2, 3): get_y(h1_p2, h1_p3, 2*(1+kn1)),
+             (3, 2): get_y(h1_p3, h1_p2, 2*(1-kn1))}
+    return y_slr
+
+
+def tdi_XYZ2AET(X, Y, Z):
+    """ Calculate AET channel from XYZ """
+    A = 1/np.sqrt(2)*(Z-X)
+    E = 1/np.sqrt(6)*(X-2*Y+Z)
+    T = 1/np.sqrt(3)*(X+Y+Z)
+    return A, E, T
+
+
+def get_XYZ_td(wf, tf, det='TQ', TDIgen=1):
+    """ Generate TDI XYZ in different TDI generation """
+    y_slr = get_y_slr_td(wf, tf, det, TDIgen)
+    y31, y13 = y_slr[(3, 1)], y_slr[(1, 3)]
+    y12, y21 = y_slr[(1, 2)], y_slr[(2, 1)]
+    y23, y32 = y_slr[(2, 3)], y_slr[(3, 2)]
+
+    if TDIgen == 1:
+        X = (y31[0]+y13[1]+y21[2]+y12[3] - y21[0]-y12[1]-y31[2]-y13[3])
+        Y = (y12[0]+y21[1]+y32[2]+y23[3] - y32[0]-y23[1]-y12[2]-y21[3])
+        Z = (y23[0]+y32[1]+y13[2]+y31[3] - y13[0]-y31[1]-y23[2]-y32[3])
+    elif TDIgen == 2:
+        X = (y31[0]+y13[1]+y21[2]+y12[3] + y21[4]+y12[5]+y31[6]+y13[7]
+             - y21[0]-y12[1]-y31[2]-y13[3] - y31[4]-y13[5]-y21[6]-y12[7])
+        Y = (y12[0]+y21[1]+y32[2]+y23[3] + y32[4]+y23[5]+y12[6]+y21[7]
+             - y32[0]-y23[1]-y12[2]-y21[3] - y12[4]-y21[5]-y32[6]-y23[7])
+        Z = (y23[0]+y32[1]+y13[2]+y31[3] + y13[4]+y31[5]+y23[6]+y32[7]
+             - y13[0]-y31[1]-y23[2]-y32[3] - y23[4]-y32[5]-y13[6]-y31[7])
+    else:
+        raise NotImplementedError
+
+    return X, Y, Z
+
+
+def get_AET_td(wf, tf, det='TQ', TDIgen=1):
+    """ Generate TDI AET in different TDI generation """
+    X, Y, Z = get_XYZ_td(wf, tf, det, TDIgen)
+    A, E, T = tdi_XYZ2AET(X, Y, Z)
+    return A, E, T
+
+
 def trans_y_slr_fd(vec_k, p, det, f):
-    """ See Marsat et al. (Eq. 21, 28) https://journals.aps.org/prd/abstract/10.1103/PhysRevD.103.083011
-
-    :param vec_k: the prop direction of GWs (x,y,z), which is determined by (lambda, beta)
-    :param p: p is a tuple, i.e. a series of P_lm (or P_x, P_+, i.e. e^+, e^x in $h = h_+ e^+ + h_x e^x$)
-    :param det:
-    :param f:
-    :return:
-    """
-
+    """ See Marsat et al. (Eq. 21, 28) https://journals.aps.org/prd/abstract/10.1103/PhysRevD.103.083011 """
     u12 = det.uni_vec_ij(1, 2)
     u23 = det.uni_vec_ij(2, 3)
     u13 = det.uni_vec_ij(1, 3)
@@ -83,148 +171,70 @@ def trans_y_slr_fd(vec_k, p, det, f):
     return tuple(trans_response(p_0) for p_0 in p)
 
 
-def get_y_slr_td(wf, tf, det='TQ', TDIgen=1):
-    """TODO: here we calculate orbits of the detectors only once at tf, but considering TDI_delay here,
-         their positions need to be **recalculated**, e.g. at tf-L, tf-2*L, ..."""
+def trans_XYZ_fd(vec_k, p, det, f, TDIgen=1):
+    """ Calculate XYZ from y_slr in frequency domain, unlike in time domain, it returns the transfer function.
+     To get the responsed waveform, you need to multiply it by the original waveform manually.
+
+    :param vec_k: the prop direction of GWs (x,y,z), which is determined by (lambda, beta)
+    :param p: p is a tuple, i.e. a series of P_lm (or P_x, P_+, i.e. e^+, e^x in $h = h_+ e^+ + h_x e^x$)
+    :param det: GW detector Orbit object
+    :param f: frequency array
+    :param TDIgen: TDI generation
+    :return: tuple with same length of tuple p
+    """
+    y_slr_list = trans_y_slr_fd(vec_k, p, det, f)
+    Dt = np.exp(2j*np.pi*f*det.L_T)
+    Dt2 = Dt*Dt    
+
+    def trans_xyz(y_slr):
+        X = y_slr[(3, 1)]+Dt*y_slr[(1, 3)]-y_slr[(2, 1)]-Dt*y_slr[(1, 2)]
+        Y = y_slr[(1, 2)]+Dt*y_slr[(2, 1)]-y_slr[(3, 2)]-Dt*y_slr[(2, 3)]
+        Z = y_slr[(2, 3)]+Dt*y_slr[(3, 2)]-y_slr[(1, 3)]-Dt*y_slr[(3, 1)]
+        return np.array([X, Y, Z])*(1.-Dt2)
+
     if TDIgen == 1:
-        TDI_delay = 4
+        return tuple(trans_xyz(y) for y in y_slr_list)
+    elif TDIgen == 2:
+        fact = 1-Dt2*Dt2
+        return tuple(trans_xyz(y)*fact for y in y_slr_list)
     else:
         raise NotImplementedError
 
-    det = detectors[det](tf)
-    p1, p2, p3 = det.orbits
-    L = det.L_T
-    n1 = det.uni_vec_ij(3, 2)
-    n2 = det.uni_vec_ij(1, 3)
-    n3 = det.uni_vec_ij(2, 1)
 
-    k = wf.vec_k
-    p_p, p_c = wf.polarization()
-    xi1 = (_matrix_res_pro(n1, p_p), _matrix_res_pro(n1, p_c))
-    xi2 = (_matrix_res_pro(n2, p_p), _matrix_res_pro(n2, p_c))
-    xi3 = (_matrix_res_pro(n3, p_p), _matrix_res_pro(n3, p_c))
+def trans_AET_fd(vec_k, p, det, f, TDIgen=1):
+    """ Calculate AET from y_slr in frequency domain, unlike in time domain, it returns the transfer function.
+     To get the responsed waveform, you need to multiply it by the original waveform manually.
 
-    kp1 = np.dot(k, p1)
-    kp2 = np.dot(k, p2)
-    kp3 = np.dot(k, p3)
-    kn1 = np.dot(k, n1)
-    kn2 = np.dot(k, n2)
-    kn3 = np.dot(k, n3)
-
-    tf_kp1, tf_kp2, tf_kp3 = tf-kp1, tf-kp2, tf-kp3
-
-    # Here `i` is for `i*L` TDI_delay, in 1st generation TDI we consider delay up to 4,
-    # i.e. t-0L, t-1L, t-2L, t-3L, t-4L. And then we calculate difference between each L delay
-    def h_tdi_delay(tf_s, xi_p, xi_c):
-        h_list = [wf.get_hphc(tf_s - i_*L) for i_ in range(TDI_delay+1)]
-        return [hp*xi_p+hc*xi_c for (hp, hc) in h_list]
-
-    h3_p2 = h_tdi_delay(tf_kp2, *xi3)
-    h3_p1 = h_tdi_delay(tf_kp1, *xi3)
-    h2_p3 = h_tdi_delay(tf_kp3, *xi2)
-    h2_p1 = h_tdi_delay(tf_kp1, *xi2)
-    h1_p3 = h_tdi_delay(tf_kp3, *xi1)
-    h1_p2 = h_tdi_delay(tf_kp2, *xi1)
-
-    def get_y(hi_pj, hi_pk, denominator):
-        return [(hi_pj[i+1]-hi_pk[i])/denominator for i in range(TDI_delay)]
-
-    y_slr = {(1, 2): get_y(h3_p1, h3_p2, 2*(1+kn3)),
-             (2, 1): get_y(h3_p2, h3_p1, 2*(1-kn3)),
-             (1, 3): get_y(h2_p1, h2_p3, 2*(1-kn2)),
-             (3, 1): get_y(h2_p3, h2_p1, 2*(1+kn2)),
-             (2, 3): get_y(h1_p2, h1_p3, 2*(1+kn1)),
-             (3, 2): get_y(h1_p3, h1_p2, 2*(1-kn1))}
-    return y_slr
-
-
-def tdi_XYZ2AET(X, Y, Z):
+    :param vec_k: the prop direction of GWs (x,y,z), which is determined by (lambda, beta)
+    :param p: p is a tuple, i.e. a series of P_lm (or P_x, P_+, i.e. e^+, e^x in $h = h_+ e^+ + h_x e^x$)
+    :param det: GW detector Orbit object
+    :param f: frequency array
+    :param TDIgen: TDI generation
+    :return: tuple with same length of tuple p
     """
-    Calculate AET channel from XYZ
-    """
-    A = 1/np.sqrt(2)*(Z-X)
-    E = 1/np.sqrt(6)*(X-2*Y+Z)
-    T = 1/np.sqrt(3)*(X+Y+Z)
-    return A, E, T
+    y_slr_list = trans_y_slr_fd(vec_k, p, det, f)
+    Dt = np.exp(2j*np.pi*f*det.L_T)  # Time delay factor
+    Dt2 = Dt*Dt
 
-
-def get_XYZ_td(y_slr, TDIgen=1):
-    """
-    Generate TDI XYZ in the TDIgen generation
-    -----------------------------------------
-    Parameters
-    ----------
-    """
-    y31 = y_slr[(3, 1)]
-    y13 = y_slr[(1, 3)]
-    y12 = y_slr[(1, 2)]
-    y21 = y_slr[(2, 1)]
-    y23 = y_slr[(2, 3)]
-    y32 = y_slr[(3, 2)]
-
+    def trans_aet(y_slr):
+        A = ((1+Dt)*(y_slr[(3, 1)]+y_slr[(1, 3)])
+             - y_slr[(2, 3)]-Dt*y_slr[(3, 2)]
+             - y_slr[(2, 1)]-Dt*y_slr[(1, 2)])
+        E = ((1-Dt)*(y_slr[(1, 3)]-y_slr[(3, 1)])
+             + (1+2*Dt)*(y_slr[(2, 1)]-y_slr[(2, 3)])
+             + (2+Dt)*(y_slr[(1, 2)]-y_slr[(3, 2)]))
+        T = (1-Dt)*(y_slr[(1, 3)]-y_slr[(3, 1)]
+                    + y_slr[(2, 1)]-y_slr[(1, 2)]
+                    + y_slr[(3, 2)]-y_slr[(2, 3)])
+        A *= 1/np.sqrt(2)*(Dt2-1)
+        E *= 1/np.sqrt(6)*(Dt2-1)
+        T *= 1/np.sqrt(3)*(Dt2-1)
+        return np.array([A, E, T])
+    
     if TDIgen == 1:
-        X = (y31[0]+y13[1]+y21[2]+y12[3]
-             - y21[0]-y12[1]-y31[2]-y13[3])
-        Y = (y12[0]+y21[1]+y32[2]+y23[3]
-             - y32[0]-y23[1]-y12[2]-y21[3])
-        Z = (y23[0]+y32[1]+y13[2]+y31[3]
-             - y13[0]-y31[1]-y23[2]-y32[3])
+        return tuple(trans_aet(y) for y in y_slr_list)
+    elif TDIgen == 2:
+        fact = 1 - Dt2*Dt2
+        return tuple(trans_aet(y)*fact for y in y_slr_list)
     else:
         raise NotImplementedError
-
-    return X, Y, Z
-
-
-def get_AET_td(y_slr, TDIgen=1):
-    X, Y, Z = get_XYZ_td(y_slr, TDIgen)
-    A, E, T = tdi_XYZ2AET(X, Y, Z)
-    return A, E, T
-
-
-def get_XYZ_fd(y_slr, freq, L_T):
-    """
-    Calculate XYZ from y_slr in frequency domain
-    -------------------------------------------
-    Parameters:
-    - y_slr: single link response of GW
-    - freq: frequency
-    - L_T: arm length
-    """
-
-    Dt = np.exp(2j*np.pi*freq*L_T)
-    Dt2 = Dt*Dt
-
-    X = y_slr[(3, 1)]+Dt*y_slr[(1, 3)]-y_slr[(2, 1)]-Dt*y_slr[(1, 2)]
-    Y = y_slr[(1, 2)]+Dt*y_slr[(2, 1)]-y_slr[(3, 2)]-Dt*y_slr[(2, 3)]
-    Z = y_slr[(2, 3)]+Dt*y_slr[(3, 2)]-y_slr[(1, 3)]-Dt*y_slr[(3, 1)]
-
-    return np.array([X, Y, Z])*(1.-Dt2)
-
-
-def get_AET_fd(y_slr, freq, L_T):
-    """
-    Calculate AET from y_slr in frequency domain
-    -------------------------------------------
-    Parameters:
-    - y_slr: single link response of GW
-    - freq: frequency
-    - L_T: arm length
-    """
-    Dt = np.exp(2j*np.pi*freq*L_T)  # Time delay factor
-    Dt2 = Dt*Dt
-
-    A = ((1+Dt)*(y_slr[(3, 1)]+y_slr[(1, 3)])
-         - y_slr[(2, 3)]-Dt*y_slr[(3, 2)]
-         - y_slr[(2, 1)]-Dt*y_slr[(1, 2)])
-    E = ((1-Dt)*(y_slr[(1, 3)]-y_slr[(3, 1)])
-         + (1+2*Dt)*(y_slr[(2, 1)]-y_slr[(2, 3)])
-         + (2+Dt)*(y_slr[(1, 2)]-y_slr[(3, 2)]))
-    T = (1-Dt)*(y_slr[(1, 3)]-y_slr[(3, 1)]
-                + y_slr[(2, 1)]-y_slr[(1, 2)]
-                + y_slr[(3, 2)]-y_slr[(2, 3)])
-
-    A = 1/np.sqrt(2)*(Dt2-1)*A
-    E = 1/np.sqrt(6)*(Dt2-1)*E
-    T = 1/np.sqrt(3)*(Dt2-1)*T
-
-    return np.array([A, E, T])

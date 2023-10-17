@@ -23,10 +23,10 @@ SGWBpars = {"nside": 8,
             "theta": 1.3,
             "phi": 1.2,
             }
-signal_pars = {"fmax": 0.2,
-               "fmin": 0.001,
+signal_pars = {"f_max": 0.2,
+               "f_min": 0.001,
                "fn": 200,
-               "tsegmid": 5000,
+               "t_segm": 5000,
                }
 st = time.time()
 SGWB_signal = SGWB(**SGWBpars)
@@ -35,19 +35,18 @@ ed = time.time()
 print(f"Time cost: {ed-st} s")
 
 signal_in_gu = SGWB_signal.get_ori_signal(frange)
-hp.mollview(signal_in_gu[0, :], title="The response signal")
+hp.mollview(signal_in_gu[:, 0], title="The response signal")
 
 tq = TianQinNoise()
 TX, TXY = tq.noise_XYZ(frange, unit="displacement")/(2e8*np.sqrt(3))**2
 
 plt.figure()
 plt.loglog(frange, TX, label="XYZ channels noise PSD")
-plt.loglog(frange, res_signal[0, 0, :, 0], label="inject signal sample")
+plt.loglog(frange, np.abs(res_signal[:, 0, 0, 0]), label="inject signal sample")
 plt.xlabel('frequency[Hz]')
 plt.ylabel('PSD [Hz]')
 plt.legend(loc='best')
 plt.show()
 
-# one year SNR for SGWB
-SNR = np.sqrt(24*3600*3.64*np.sum(res_signal[0, 0, :, 0]**2/TX**2)/frange.size)
-print(SNR)
+SNR = np.sqrt(24*3600*3.64*np.sum(res_signal[:, 0, 0, 0]**2/TX**2).real/frange.size)
+print("1 year SNR for SGWB:", SNR)

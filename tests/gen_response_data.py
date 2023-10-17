@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from gwspace.Waveform import waveforms
-from gwspace.response import get_y_slr_td, trans_y_slr_fd, get_XYZ_td, get_XYZ_fd, get_AET_fd, tdi_XYZ2AET
+from gwspace.response import get_y_slr_td, trans_y_slr_fd, get_XYZ_td, trans_XYZ_fd, trans_AET_fd, tdi_XYZ2AET
 from gwspace.Orbit import detectors
 from gwspace.constants import DAY, YRSID_SI, MONTH
 from gwspace.Noise import TianQinNoise, LISANoise, TaijiNoise
@@ -29,12 +29,12 @@ def generate_td_data(pars, s_type='gcb', det='TQ', show_y_slr=False):
 
     print(f"Testing of {s_type} waveform")
     wf = waveforms[s_type](**pars)
-    st = time.time()
-    y_slr = get_y_slr_td(wf, tf, det)
-    ed = time.time()
-    print(f"Time cost is {ed-st} s for {tf.shape[0]} points")
-
     if show_y_slr:
+        st = time.time()
+        y_slr = get_y_slr_td(wf, tf, det)
+        ed = time.time()
+        print(f"Time cost is {ed-st} s for {tf.shape[0]} points")
+
         tags = [(1, 2), (2, 1), (2, 3), (3, 2), (3, 1), (1, 3)]
         for i, tag in enumerate(tags):
             plt.figure()
@@ -44,7 +44,7 @@ def generate_td_data(pars, s_type='gcb', det='TQ', show_y_slr=False):
                 plt.title(f"y_{tag} [{j}]L")
 
     st = time.time()
-    X, Y, Z = get_XYZ_td(y_slr)
+    X, Y, Z = get_XYZ_td(wf, tf, det)
     A, E, T = tdi_XYZ2AET(X, Y, Z)
     ed = time.time()
     print("Time cost for cal XYZ and AET with y_slr is ", ed-st)
@@ -75,13 +75,13 @@ def generate_fd_data(pars, s_type='bhb_PhenomD', det='TQ', show_y_slr=False):
     det = detectors[det](tf)
     h22 = amp * np.exp(1j*phase) * np.exp(2j*np.pi*freq*BHBwf.tc)
 
-    st = time.time()
-    y_slr = trans_y_slr_fd(BHBwf.vec_k, BHBwf.p22, det, freq)[0]
-    y_slr = {k: v*h22 for k, v in y_slr.items()}
-    ed = time.time()
-    print(f"time cost for the fd response is {ed-st} s")
-
     if show_y_slr:
+        st = time.time()
+        y_slr = trans_y_slr_fd(BHBwf.vec_k, BHBwf.p22, det, freq)[0]
+        y_slr = {k: v*h22 for k, v in y_slr.items()}
+        ed = time.time()
+        print(f"time cost for the fd response is {ed-st} s")
+
         ln = [(1, 2), (2, 3), (3, 1), (1, 3), (3, 2), (2, 1)]
         plt.figure()
         plt.xscale('log')
@@ -90,8 +90,8 @@ def generate_fd_data(pars, s_type='bhb_PhenomD', det='TQ', show_y_slr=False):
         plt.legend()
         plt.tight_layout()
 
-    X, Y, Z = get_XYZ_fd(y_slr, freq, det.L_T)
-    A, E, T = get_AET_fd(y_slr, freq, det.L_T)
+    X, Y, Z = trans_XYZ_fd(BHBwf.vec_k, BHBwf.p22, det, freq)[0]*h22
+    A, E, T = trans_AET_fd(BHBwf.vec_k, BHBwf.p22, det, freq)[0]*h22
 
     plt.figure()
     plt.loglog(freq, np.abs(X), '-', label='X')
@@ -125,37 +125,27 @@ def generate_MBHB_with_PSD_joint(pars, s_type='bhb_PhenomD'):
 
     for d in ['TQ', 'LISA', 'Taiji']:
         det = detectors[d](tf)
-        y_slr = trans_y_slr_fd(BHBwf.vec_k, BHBwf.p22, det, freq)[0]
-        y_slr = {k: v*h22 for k, v in y_slr.items()}
-        SMBBH_A[d], _, _ = get_AET_fd(y_slr, freq, det.L_T)
+        SMBBH_A[d], _, _ = trans_AET_fd(BHBwf.vec_k, BHBwf.p22, det, freq)[0]*h22
 
     plt.figure(figsize=(9, 6))
     plt.loglog(freq_, np.sqrt(TQ_A), 'k--', label='TQ noise')
     plt.loglog(freq_, np.sqrt(LISA_A), 'k-.', label='LISA noise')
     plt.loglog(freq_, np.sqrt(Taiji_A), 'k:', label='Taiji noise')
 
-    ## to determine where the waveform is zero
-    #print(np.where(SMBBH_A['TQ'] == 0))
-    print()
+    # to determine where the waveform is zero
+    # print(np.where(SMBBH_A['TQ'] == 0))
     ndim = 10850-1
     plt.loglog(freq[:ndim], np.abs(SMBBH_A['TQ'][:ndim])*np.sqrt(freq[:ndim]), 'r-', label='TQ')
     plt.loglog(freq[:ndim], np.abs(SMBBH_A['LISA'][:ndim])*np.sqrt(freq[:ndim]), 'g-', label='LISA')
     plt.loglog(freq[:ndim], np.abs(SMBBH_A['Taiji'][:ndim])*np.sqrt(freq[:ndim]), 'b-', label='Taiji')
 
-    
-    
     plt.xlabel('Frequency [Hz]')
     plt.ylabel('$\\sqrt{S_n}$ [Hz$^{-1/2}$]')
     # plt.tick_params(labelsize=12)
-    # plt.grid(which='both', alpha=0.5)
-    # plt.xlim(0.9*BHBwf.f_min, 1e-1)
     plt.xlim(1e-4, 1e-1)
     plt.ylim(1e-23, 1e-16)
     plt.legend(loc="best")  # fontsize=12)
     plt.tight_layout()
-    
-    #plt.savefig("../../../TQ-SDS/figs/MBHB_fd.pdf")
-    plt.show()
 
 
 def generate_SBHB_with_PSD_joint(par, s_type='bhb_EccFD'):
@@ -178,9 +168,7 @@ def generate_SBHB_with_PSD_joint(par, s_type='bhb_EccFD'):
     smBBH_A_e0, smBBH_A_e1 = {}, {}
     for d in ['TQ', 'LISA', 'Taiji']:
         det = detectors[d](tf)
-        y_slr = trans_y_slr_fd(BHBwf.vec_k, BHBwf.p22, det, freq_e0)[0]
-        y_slr = {k: v*h22 for k, v in y_slr.items()}
-        smBBH_A_e0[d], _, _ = get_AET_fd(y_slr, freq_e0, det.L_T)
+        smBBH_A_e0[d], _, _ = trans_AET_fd(BHBwf.vec_k, BHBwf.p22, det, freq_e0)[0]*h22
         smBBH_A_e1[d], freq_e1 = ecc_wf.fd_tdi_response(det=d, delta_f=delta_f)
         
     plt.figure(figsize=(9, 6))
@@ -199,16 +187,10 @@ def generate_SBHB_with_PSD_joint(par, s_type='bhb_EccFD'):
     plt.xlabel('Frequency [Hz]')  # , fontsize=12)
     plt.ylabel('$\\sqrt{S_n}$ [Hz$^{-1/2}$]')  # , fontsize=12)
     plt.tick_params(labelsize=12)
-    # plt.grid(which='both', alpha=0.5)
     plt.xlim(BHBwf.f_min, 1)
-    
     # plt.ylim(1e-23, 1e-16)
-    
     plt.legend(loc="best", ncols=2)  # fontsize=12)
     plt.tight_layout()
-    
-    # plt.savefig("../../../TQ-SDS/figs/SMBH_fd.pdf")
-    plt.show()
 
 
 if __name__ == "__main__":
@@ -265,9 +247,9 @@ if __name__ == "__main__":
                'var_phi': 0,  # Observer phase
                'psi': 0.2,  # Polarization angle
                }  # masses of GW150914
-    generate_td_data(GCBpars)
+    # generate_td_data(GCBpars)
     # generate_td_data(EMRIpars, s_type='emri')
-    # generate_fd_data(BHBpars, show_y_slr=False)
+    generate_fd_data(BHBpars, show_y_slr=False)
 
     # generate_MBHB_with_PSD_joint(BHBpars)
     # generate_SBHB_with_PSD_joint(ecc_par)

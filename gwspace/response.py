@@ -25,6 +25,8 @@ def get_y_slr_td(wf, tf, det, TDIgen=1):
          their positions need to be **recalculated**, e.g. at tf-L, tf-2*L, ..."""
     if TDIgen == 1:
         TDI_delay = 4
+    elif TDIgen == 2:
+        TDI_delay = 8
     else:
         raise NotImplementedError
 
@@ -94,6 +96,13 @@ def get_XYZ_td(wf, tf, det='TQ', TDIgen=1):
         X = (y31[0]+y13[1]+y21[2]+y12[3] - y21[0]-y12[1]-y31[2]-y13[3])
         Y = (y12[0]+y21[1]+y32[2]+y23[3] - y32[0]-y23[1]-y12[2]-y21[3])
         Z = (y23[0]+y32[1]+y13[2]+y31[3] - y13[0]-y31[1]-y23[2]-y32[3])
+    elif TDIgen == 2:
+        X = (y31[0]+y13[1]+y21[2]+y12[3] + y21[4]+y12[5]+y31[6]+y13[7]
+            - y21[0]-y12[1]-y31[2]-y13[3] - y31[4]-y13[5]-y21[6]-y12[7])
+        Y = (y12[0]+y21[1]+y32[2]+y23[3] + y32[4]+y23[5]+y12[6]+y21[7]
+            - y32[0]-y23[1]-y12[2]-y21[3] - y12[4]-y21[5]-y32[6]-y23[7])
+        Z = (y23[0]+y32[1]+y13[2]+y31[3] + y13[4]+y31[5]+y23[6]+y32[7]
+            - y13[0]-y31[1]-y23[2]-y32[3] - y23[4]-y32[5]-y13[6]-y31[7])
     else:
         raise NotImplementedError
 
@@ -162,7 +171,7 @@ def trans_y_slr_fd(vec_k, p, det, f):
     return tuple(trans_response(p_0) for p_0 in p)
 
 
-def trans_XYZ_fd(vec_k, p, det, f):
+def trans_XYZ_fd(vec_k, p, det, f, TDIgen=1):
     """ Calculate XYZ from y_slr in frequency domain, unlike in time domain, it returns the transfer function.
      To get the responsed waveform, you need to multiply it by the original waveform manually.
 
@@ -170,11 +179,12 @@ def trans_XYZ_fd(vec_k, p, det, f):
     :param p: p is a tuple, i.e. a series of P_lm (or P_x, P_+, i.e. e^+, e^x in $h = h_+ e^+ + h_x e^x$)
     :param det: GW detector Orbit object
     :param f: frequency array
+    :param TDIgen: TDI generation
     :return: tuple with same length of tuple p
     """
     y_slr_list = trans_y_slr_fd(vec_k, p, det, f)
     Dt = np.exp(2j*np.pi*f*det.L_T)
-    Dt2 = Dt*Dt
+    Dt2 = Dt*Dt    
 
     def trans_xyz(y_slr):
         X = y_slr[(3, 1)]+Dt*y_slr[(1, 3)]-y_slr[(2, 1)]-Dt*y_slr[(1, 2)]
@@ -182,10 +192,17 @@ def trans_XYZ_fd(vec_k, p, det, f):
         Z = y_slr[(2, 3)]+Dt*y_slr[(3, 2)]-y_slr[(1, 3)]-Dt*y_slr[(3, 1)]
         return np.array([X, Y, Z])*(1.-Dt2)
 
-    return tuple(trans_xyz(y) for y in y_slr_list)
+    if TDIgen == 1:
+        return tuple(trans_xyz(y) for y in y_slr_list)
+    elif TDIgen == 2:
+        fact = 1-Dt2*Dt2
+        return tuple(trans_xyz(y)*fact for y in y_slr_list)
+    else:
+        raise NotImplementedError
 
 
-def trans_AET_fd(vec_k, p, det, f):
+
+def trans_AET_fd(vec_k, p, det, f, TDIgen=1):
     """ Calculate AET from y_slr in frequency domain, unlike in time domain, it returns the transfer function.
      To get the responsed waveform, you need to multiply it by the original waveform manually.
 
@@ -193,9 +210,10 @@ def trans_AET_fd(vec_k, p, det, f):
     :param p: p is a tuple, i.e. a series of P_lm (or P_x, P_+, i.e. e^+, e^x in $h = h_+ e^+ + h_x e^x$)
     :param det: GW detector Orbit object
     :param f: frequency array
+    :param TDIgen: TDI generation
     :return: tuple with same length of tuple p
     """
-    y_slr_list = trans_y_slr_fd(vec_k, p, det, f)
+    y_slr_list = trans_y_slr_fd(vec_k, p, det, f, TDIgen)
     Dt = np.exp(2j*np.pi*f*det.L_T)  # Time delay factor
     Dt2 = Dt*Dt
 
@@ -213,5 +231,11 @@ def trans_AET_fd(vec_k, p, det, f):
         E *= 1/np.sqrt(6)*(Dt2-1)
         T *= 1/np.sqrt(3)*(Dt2-1)
         return np.array([A, E, T])
-
-    return tuple(trans_aet(y) for y in y_slr_list)
+    
+    if TDIgen == 1:
+        return tuple(trans_aet(y) for y in y_slr_list)
+    elif TDIgen == 2:
+        fact = 1 - Dt2*Dt2
+        return tuple(trans_aet(y)*fact for y in y_slr_list)
+    else:
+        raise NotImplementedError

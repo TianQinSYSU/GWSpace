@@ -16,7 +16,7 @@ from gwspace.constants import C_SI, PI
 class TianQinNoise(object):
     Na = 1e-30  # m^2 s^-4 /Hz, Acceleration noise
     Np = 1e-24  # m^2 / Hz, Optical metrology noise
-    armLength = np.sqrt(3)*1.0e8
+    armLength = 3**0.5 * 1.0e8
 
     @property
     def L_T(self):
@@ -70,10 +70,10 @@ class TianQinNoise(object):
         else:
             raise NotImplementedError
 
-    def noise_AET(self, freq, TDIgen=1):
+    def noise_AET(self, freq, unit="relative_frequency", TDIgen=1):
         # s_ae = 8 * np.sin(u)**2 * (4*(1+np.cos(u)+np.cos(u)**2)*Sa + (2+np.cos(u))*Sp)
         # s_t = 16 * np.sin(u)**2 * (1-np.cos(u)) * (2*(1-np.cos(u))*Sa + Sp)
-        s_x, s_xy = self.noise_XYZ(freq, TDIgen)
+        s_x, s_xy = self.noise_XYZ(freq, unit, TDIgen)
         s_ae = s_x - s_xy
         s_t = s_x + 2*s_xy
         return s_ae, s_t
@@ -122,8 +122,8 @@ class LISANoise(TianQinNoise):
             sx += self.wd_foreground_X(freq, wd_foreground)
         return sx, sxy
 
-    def noise_AET(self, freq, wd_foreground=0., TDIgen=1):
-        ae, tt = super().noise_AET(freq)
+    def noise_AET(self, freq, wd_foreground=0., unit="relative_frequency", TDIgen=1):
+        ae, tt = super().noise_AET(freq, unit, TDIgen)
         if wd_foreground:
             ae += self.wd_foreground_AE(freq, wd_foreground)
         return ae, tt

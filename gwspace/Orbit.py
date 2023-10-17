@@ -9,7 +9,7 @@
 """Space detectors' orbits, note that the orbits are in nature unit(in second)"""
 
 import numpy as np
-from gwspace.constants import (C_SI, PI, PI_3, G_SI, AU_T, J0806_phi, J0806_theta,
+from gwspace.constants import (C_SI, PI, PI_2, PI_3, G_SI, AU_T, J0806_phi, J0806_theta,
                                EarthOrbitFreq_SI, EarthEcc, Perihelion_Ang, EarthMass)
 
 if __package__ or "." in __name__:
@@ -34,7 +34,7 @@ class Orbit(object):
     @property
     def R_T(self):
         """semi-major axis of the spacecraft orbit (in second)"""
-        return self.armLength/(C_SI*np.sqrt(3))
+        return self.armLength/(C_SI * 3**0.5)
 
     @property
     def f_0(self):
@@ -59,9 +59,9 @@ class Orbit(object):
 class TianQinOrbit(Orbit):
     """See Hu et al. https://iopscience.iop.org/article/10.1088/1361-6382/aab52f"""
     __slots__ = '_p_0'
-    armLength = np.sqrt(3)*1.0e8
+    armLength = 3**0.5 * 1.0e8
     # ecliptic lon & lat of J0806.3+1527
-    theta_s = np.pi/2 - J0806_theta
+    theta_s = PI_2 - J0806_theta
     phi_s = J0806_phi
 
     def __init__(self, time, kappa_earth=0., kappa0=0.):
@@ -83,7 +83,7 @@ class TianQinOrbit(Orbit):
     @property
     def f_0(self):
         """orbital frequency of the TianQin satellites around the Earth (~ 3.18e-6 Hz)"""
-        return np.sqrt(G_SI*EarthMass/(self.R_T*C_SI)**3)/(2*PI)
+        return (G_SI*EarthMass/(self.R_T*C_SI)**3)**0.5/(2*PI)
 
     def alpha_detector(self, time, n):
         """The orbit phase of the n-th spacecraft in the detector plane."""

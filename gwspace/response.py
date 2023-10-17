@@ -98,11 +98,11 @@ def get_XYZ_td(wf, tf, det='TQ', TDIgen=1):
         Z = (y23[0]+y32[1]+y13[2]+y31[3] - y13[0]-y31[1]-y23[2]-y32[3])
     elif TDIgen == 2:
         X = (y31[0]+y13[1]+y21[2]+y12[3] + y21[4]+y12[5]+y31[6]+y13[7]
-            - y21[0]-y12[1]-y31[2]-y13[3] - y31[4]-y13[5]-y21[6]-y12[7])
+             - y21[0]-y12[1]-y31[2]-y13[3] - y31[4]-y13[5]-y21[6]-y12[7])
         Y = (y12[0]+y21[1]+y32[2]+y23[3] + y32[4]+y23[5]+y12[6]+y21[7]
-            - y32[0]-y23[1]-y12[2]-y21[3] - y12[4]-y21[5]-y32[6]-y23[7])
+             - y32[0]-y23[1]-y12[2]-y21[3] - y12[4]-y21[5]-y32[6]-y23[7])
         Z = (y23[0]+y32[1]+y13[2]+y31[3] + y13[4]+y31[5]+y23[6]+y32[7]
-            - y13[0]-y31[1]-y23[2]-y32[3] - y23[4]-y32[5]-y13[6]-y31[7])
+             - y13[0]-y31[1]-y23[2]-y32[3] - y23[4]-y32[5]-y13[6]-y31[7])
     else:
         raise NotImplementedError
 
@@ -201,7 +201,6 @@ def trans_XYZ_fd(vec_k, p, det, f, TDIgen=1):
         raise NotImplementedError
 
 
-
 def trans_AET_fd(vec_k, p, det, f, TDIgen=1):
     """ Calculate AET from y_slr in frequency domain, unlike in time domain, it returns the transfer function.
      To get the responsed waveform, you need to multiply it by the original waveform manually.
@@ -213,7 +212,7 @@ def trans_AET_fd(vec_k, p, det, f, TDIgen=1):
     :param TDIgen: TDI generation
     :return: tuple with same length of tuple p
     """
-    y_slr_list = trans_y_slr_fd(vec_k, p, det, f, TDIgen)
+    y_slr_list = trans_y_slr_fd(vec_k, p, det, f)
     Dt = np.exp(2j*np.pi*f*det.L_T)  # Time delay factor
     Dt2 = Dt*Dt
 

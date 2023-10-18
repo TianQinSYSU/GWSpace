@@ -13,10 +13,11 @@ from scipy import interpolate
 from gwspace.constants import C_SI, PI
 
 
-class TianQinNoise(object):
-    Na = 1e-30  # m^2 s^-4 /Hz, Acceleration noise
-    Np = 1e-24  # m^2 / Hz, Optical metrology noise
-    armLength = 3**0.5 * 1.0e8
+class BasicNoise(object):
+    __slots__ = tuple()
+    Na = None  # m^2 s^-4 /Hz, Acceleration noise
+    Np = None  # m^2 / Hz, Optical metrology noise
+    armLength = None
 
     @property
     def L_T(self):
@@ -28,31 +29,25 @@ class TianQinNoise(object):
         return C_SI/(2*PI*self.armLength)
 
     def noises_displacement(self, freq):
-        """Acceleration noise & Optical Metrology System"""
-        # In acceleration
-        Sa_a = self.Na * (1. + 1e-4/freq)
-
-        # In displacement
-        Sa_d = Sa_a/(2*PI*freq)**4
-        Sp_d = self.Np * np.ones_like(freq)
-        return Sa_d, Sp_d
+        """ Return Acceleration noise & Optical metrology system noise (in displacement unit).
+        Need to implement this in customized subclasses. """
+        raise NotImplementedError
 
     def noises_relative_freq(self, freq):
+        """ Return acceleration noise & optical metrology system noise (in relative frequency unit). """
         Sa_d, Sp_d = self.noises_displacement(freq)
 
-        # In Relative frequency unit
         Sa_nu = Sa_d*(2*PI*freq/C_SI)**2
         Sp_nu = Sp_d*(2*PI*freq/C_SI)**2
         return Sa_nu, Sp_nu
 
-    def sensitivity(self, freq):  # TODO
+    def sensitivity(self, freq):
+        """ Sensitivity curve for **2** equivalent Michelson-like detectors (the prefactor is 20/3 not 10/3!) """
         Sa_d, Sp_d = self.noises_displacement(freq)
-        sens = (2*(1+np.cos(freq/self.f_star))*Sa_d + Sp_d)
-        tmp = (1+(freq/0.41/C_SI*2*self.armLength)**2)
-        return 10./3/self.armLength**2*sens*tmp
+        return 20/3 / self.armLength**2 * (4*Sa_d + Sp_d) * (1 + 0.6*(freq/self.f_star)**2)
 
     def noise_XYZ(self, freq, unit="relative_frequency", TDIgen=1):
-        if unit == "relative_frequency":  # TODO
+        if unit == "relative_frequency":
             Sa, Sp = self.noises_relative_freq(freq)
         elif unit == "displacement":
             Sa, Sp = self.noises_displacement(freq)
@@ -66,7 +61,7 @@ class TianQinNoise(object):
             return s_x, s_xy
         elif TDIgen == 2:
             fact = 4*np.sin(2*u)**2
-            return (s_x*fact, s_xy*fact)
+            return s_x*fact, s_xy*fact
         else:
             raise NotImplementedError
 
@@ -79,14 +74,31 @@ class TianQinNoise(object):
         return s_ae, s_t
 
 
-class LISANoise(TianQinNoise):
-    """ For LISA noise, the model is SciRDv1 """
+class TianQinNoise(BasicNoise):
+    """ TianQin noise, See Luo et al. https://iopscience.iop.org/article/10.1088/0264-9381/33/3/035010 """
+    Na = 1e-30  # m^2 s^-4 /Hz, Acceleration noise
+    Np = 1e-24  # m^2 / Hz, Optical metrology noise
+    armLength = 3**0.5 * 1.0e8
+
+    def noises_displacement(self, freq):
+        """ Return acceleration noise & optical metrology system noise (in displacement unit). """
+        # In acceleration
+        Sa_a = self.Na * (1. + 1e-4/freq)
+
+        # In displacement
+        Sa_d = Sa_a/(2*PI*freq)**4
+        Sp_d = self.Np * np.ones_like(freq)
+        return Sa_d, Sp_d
+
+
+class LISANoise(BasicNoise):
+    """ LISA noise, the model is SciRDv1 """
     Na = 9e-30  # m^2 s^-4 /Hz, 3e-15**2
     Np = 2.25e-22  # m^2/Hz, 1.5e-11**2
     armLength = 2.5e9  # Arm-length (changed from 5e9 to 2.5e9 after 2017)
 
     def noises_displacement(self, freq):
-        """ Acceleration noise & Optical Metrology System """
+        """ Return acceleration noise & optical metrology system noise (in displacement unit). """
         # In acceleration
         Sa_a = self.Na * (1.+(0.4e-3/freq)**2) * (1+(freq/8e-3)**4)
 
@@ -95,25 +107,10 @@ class LISANoise(TianQinNoise):
         Sp_d = self.Np * (1+(2e-3/freq)**4)
         return Sa_d, Sp_d
 
-    def sensitivity(self, freq, wd_foreground=0.):  # TODO
-        Sa_d, Sp_d = self.noises_displacement(freq)
-        All_m = np.sqrt(4*Sa_d + Sp_d)
-
-        # Average the antenna response
-        AvResp = np.sqrt(5)
-
-        # projection effect
-        Proj = 2./np.sqrt(3)
-
-        # Approximate transfer function
-        f0 = 1./(2.*self.L_T)
-        a = 0.41
-        T = np.sqrt(1+(freq/(a*f0))**2)
-        sens = (AvResp*Proj*T*All_m/self.armLength)**2
-
+    def sensitivity(self, freq, wd_foreground=0.):
+        sens = super().sensitivity(freq)
         if wd_foreground:
-            s_gal = self._gal_conf(freq, wd_foreground)
-            sens += s_gal
+            sens += self._gal_conf(freq, wd_foreground)
         return sens
 
     def noise_XYZ(self, freq, wd_foreground=0., unit="relative_frequency", TDIgen=1):
@@ -156,7 +153,7 @@ class LISANoise(TianQinNoise):
         return Amp*np.exp(-(f**alpha)*sl1)*(f**(-7./3.))*0.5*(1.0+np.tanh(-(f-kn)*sl2))
 
     def wd_foreground_X(self, f, duration):
-        """duration: in [yr]s """
+        """duration: in [yr] """
         u = 2*PI * f * self.L_T
         t = 4. * u**2 * np.sin(u)**2
         Sg_sens = self._gal_conf(f, duration)
@@ -186,22 +183,14 @@ detector_noises = {'TQ': TianQinNoise,
 
 
 class WhiteNoise:
-    """
-    White noise generator
-    ---------------------
-    for constant powser spectrum density
+    """ White noise generator: for constant powser spectrum density
+
+    :param f_sample: sampling frequencies in Hz.
+    :param psd: constant value of the two-sided power spectrum density
+    :param seed: for the random number generator
     """
 
     def __init__(self, f_sample: float, psd: float = 1., seed=None) -> None:
-        """
-        Creat a White Noise instance
-        ----------------------------
-        Parameters:
-        - f_sample: sampling frequencies in Hz.
-        - psd: constant value of the two-sided power
-            spectrum density
-        - seed: for the random number generator
-        """
         self._fs = f_sample
         self._rms = np.sqrt(f_sample*psd)
         self._rng = np.random.default_rng(seed)
@@ -224,16 +213,3 @@ class WhiteNoise:
     def get_series(self, npts: int) -> np.ndarray:
         """Retrieve an array of npts samples."""
         return self._rng.normal(loc=0., scale=self.rms, size=npts)
-
-
-def white_noise(fs, size, asd):
-    """
-    Generate a white noise
-    ----------------------
-    Parameters:
-    - fs
-    - size
-    - asd
-    """
-    gen = WhiteNoise(fs, asd**2/2)
-    return gen.get_series(size)

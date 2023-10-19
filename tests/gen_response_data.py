@@ -71,13 +71,13 @@ def generate_fd_data(pars, s_type='bhb_PhenomD', det='TQ', show_y_slr=False):
     BHBwf = waveforms[s_type](**pars)
     amp, phase, tf = BHBwf.get_amp_phase(freq)
     amp, phase, tf = amp[(2, 2)], phase[(2, 2)], tf[(2, 2)]
+    h22 = amp * np.exp(1j*phase) * np.exp(2j*np.pi*freq*BHBwf.tc)
 
     det = detectors[det](tf)
-    h22 = amp * np.exp(1j*phase) * np.exp(2j*np.pi*freq*BHBwf.tc)
 
     if show_y_slr:
         st = time.time()
-        y_slr = trans_y_slr_fd(BHBwf.vec_k, BHBwf.p22, det, freq)[0]
+        y_slr = trans_y_slr_fd(BHBwf.vec_k, BHBwf.p_22, det, freq)[0]
         y_slr = {k: v*h22 for k, v in y_slr.items()}
         ed = time.time()
         print(f"time cost for the fd response is {ed-st} s")
@@ -90,8 +90,8 @@ def generate_fd_data(pars, s_type='bhb_PhenomD', det='TQ', show_y_slr=False):
         plt.legend()
         plt.tight_layout()
 
-    X, Y, Z = trans_XYZ_fd(BHBwf.vec_k, BHBwf.p22, det, freq)[0]*h22
-    A, E, T = trans_AET_fd(BHBwf.vec_k, BHBwf.p22, det, freq)[0]*h22
+    X, Y, Z = trans_XYZ_fd(BHBwf.vec_k, BHBwf.p_22, det, freq)[0]*h22
+    A, E, T = trans_AET_fd(BHBwf.vec_k, BHBwf.p_22, det, freq)[0]*h22
 
     plt.figure()
     plt.loglog(freq, np.abs(X), '-', label='X')
@@ -125,7 +125,7 @@ def generate_MBHB_with_PSD_joint(pars, s_type='bhb_PhenomD'):
 
     for d in ['TQ', 'LISA', 'Taiji']:
         det = detectors[d](tf)
-        SMBBH_A[d], _, _ = trans_AET_fd(BHBwf.vec_k, BHBwf.p22, det, freq)[0]*h22
+        SMBBH_A[d], _, _ = trans_AET_fd(BHBwf.vec_k, BHBwf.p_22, det, freq)[0]*h22
 
     plt.figure(figsize=(9, 6))
     plt.loglog(freq_, np.sqrt(TQ_A), 'k--', label='TQ noise')
@@ -168,7 +168,7 @@ def generate_SBHB_with_PSD_joint(par, s_type='bhb_EccFD'):
     smBBH_A_e0, smBBH_A_e1 = {}, {}
     for d in ['TQ', 'LISA', 'Taiji']:
         det = detectors[d](tf)
-        smBBH_A_e0[d], _, _ = trans_AET_fd(BHBwf.vec_k, BHBwf.p22, det, freq_e0)[0]*h22
+        smBBH_A_e0[d], _, _ = trans_AET_fd(BHBwf.vec_k, BHBwf.p_22, det, freq_e0)[0]*h22
         smBBH_A_e1[d], freq_e1 = ecc_wf.fd_tdi_response(det=d, delta_f=delta_f)
         
     plt.figure(figsize=(9, 6))

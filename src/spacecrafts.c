@@ -55,8 +55,8 @@ void spacecraft_LISA(double t, double *x, double *y, double *z)
         x[i] = cos(a) + 0.5*ecc_lisa*( (cos(2*a-b) - 3*cos(b)) 
             +0.25*ecc_lisa*(3*cos(3*a-2*b) - 10*cos(a) - 5*cos(a-2*b)) );
         y[i] = sin(a) + 0.5*ecc_lisa*( (sin(2*a-b) - 3*sin(b))
-            +0.25*ecc_lisa*(3*sin(3*a-2*b) - 10*cos(a) - 5*cos(a-2*b)) );
-        z[i] = -SQRT3*ecc_lisa*(cos(a-b) + 
+            +0.25*ecc_lisa*(3*sin(3*a-2*b) - 10*sin(a) + 5*sin(a-2*b)) );
+        z[i] = -SQRT3*ecc_lisa*(cos(a-b) -
                 ecc_lisa*(1 + sin(a-b)*sin(a-b)) );
         x[i] = AU_SI*x[i];
         y[i] = AU_SI*y[i];
@@ -75,8 +75,8 @@ void spacecraft_TaiJi(double t, double *x, double *y, double *z)
         x[i] = cos(a) + 0.5*ecc_tj*( (cos(2*a-b) - 3*cos(b)) 
             +0.25*ecc_tj*(3*cos(3*a-2*b) - 10*cos(a) - 5*cos(a-2*b)) );
         y[i] = sin(a) + 0.5*ecc_tj*( (sin(2*a-b) - 3*sin(b))
-            +0.25*ecc_tj*(3*sin(3*a-2*b) - 10*cos(a) - 5*cos(a-2*b)) );
-        z[i] = -SQRT3*ecc_tj*(cos(a-b) + 
+            +0.25*ecc_tj*(3*sin(3*a-2*b) - 10*sin(a) + 5*sin(a-2*b)) );
+        z[i] = -SQRT3*ecc_tj*(cos(a-b) -
                 ecc_tj*(1 + sin(a-b)*sin(a-b)) );
         x[i] = AU_SI*x[i];
         y[i] = AU_SI*y[i];

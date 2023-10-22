@@ -6,6 +6,8 @@
 # Mail: lienk@mail.sysu.edu.cn, wanghan657@mail2.sysu.edu.cn
 # Created Time: 2022-11-04 11:03:09
 # ==================================
+"""Space detectors' noises. Support noise in displacement or relative frequency units,
+ PSDs in different channels, sensitivity curve, etc."""
 
 import numpy as np
 from scipy import interpolate

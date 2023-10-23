@@ -6,10 +6,8 @@
 # Mail: lienk@mail.sysu.edu.cn, wanghan657@mail2.sysu.edu.cn
 # Created Time: 2023-08-11 23:05:45
 # ==================================
+"""Useful tools for some basic calculations or conversions."""
 
-import sys
-import time
-import yaml
 import numpy as np
 
 from gwspace.constants import C_SI, H0_SI, Omega_m_Planck2018
@@ -22,12 +20,8 @@ def to_m1m2(m_chirp, eta):
 
 
 def luminosity_distance_approx(z, omega_m=Omega_m_Planck2018):
-    """
-    An analytical approximation of the luminosity distance
-    in flat cosmologies
-    -------------------------
-    arxiv:1111.6396
-    """
+    """ An analytical approximation of the luminosity distance in flat cosmologies.
+     See arxiv:1111.6396 """
     x_z = (1-omega_m)/omega_m/(1+z)**3
     Phix = lambda x: ((1+320*x+0.4415*x*x+0.02656*x**3) / (1+392*x+0.5121*x*x+0.03944*x**2))
     return 2*C_SI/H0_SI*(1+z)/np.sqrt(omega_m)*(
@@ -56,183 +50,6 @@ def icrs_to_ecliptic(ra, dec, center='bary'):
     return cot.lon.rad, cot.lat.rad  # (Lambda, Beta)
 
 
-def deg2rad(deg):
-    """
-    Convert degree to radian
-    """
-    return deg/180*np.pi
-
-
-def rad2deg(rad):
-    """
-    Convert radian to degree
-    """
-    return rad/np.pi*180
-
-
-def yaml_readinpars(filename):
-    """
-    Read in parameters to dict from filename
-    """
-    with open(filename, 'r', encoding='utf-8') as fp:
-        temp = yaml.load(fp.read(), Loader=yaml.Loader)
-    return temp
-
-
-def readvalue(pars, so, s1):
-    """
-    Convert str in dict to float
-    Convert angles in degree to radian
-    Convert length to SI unit [m]
-    """
-    ss = pars[so][s1]['value']
-    try:
-        unit = pars[so][s1]['unit']
-    except:
-        unit = None
-
-    # print('the unit of %s is %s'%(ss, unit))
-
-    if type(ss) is list:
-        fs = np.array([float(s) for s in ss])
-    else:
-        fs = float(ss)
-
-    # degree to radian
-    if unit == 'degree' or unit == 'deg':
-        fs = deg2rad(fs)
-    elif (unit is None) or unit == 'radian' or unit == 'm' or unit == 's':
-        return fs
-    else:
-        fs *= eval(unit)
-
-    return fs
-
-
-def readvalue_dict(pars, so):
-    """
-    Convert str in dict to float
-    Convert angles in degree to radian
-    Convert length to SI unit [m]
-    """
-    ss = pars[so]['value']
-    try:
-        unit = pars[so]['unit']
-    except:
-        unit = None
-
-    # print('the unit of %s is %s'%(ss, unit))
-
-    if type(ss) is list:
-        fs = np.array([float(s) for s in ss])
-    else:
-        fs = float(ss)
-
-    # degree to radian
-    if unit == 'degree' or unit == 'deg':
-        fs = deg2rad(fs)
-    elif unit is None or unit == 'radian' or unit == 'm' or unit == 's':
-        return fs
-    else:
-        fs *= eval(unit)
-
-    return fs
-
-
-def VectorDirectProduct(u, v):
-    """
-    Vector direct product
-    ---------------------
-    Parameter:
-        u: array like of m dimension
-        v: array like of n dimension
-    Return:
-        u v: matrix of dimension (m,n)
-    """
-    # m = np.shape(u)[0]
-    # n = np.shape(v)[0]
-    # uv = np.zeros((m,n))
-    # for i in range(m):
-    #    for j in range(n):
-    #        uv[i,j] = u[i] * v[j]
-    # return uv
-    return np.outer(u, v)
-
-
-def DoubleContraction(A, B):
-    """
-    Double Contraction
-    ------------------
-    Parameter:
-        A: matrix, order is equal to or bigger than two
-        B: matrix, order is equal to or bigger than two
-        A and B must have the same dimension (m,n)
-    Return:
-        A:B = \sum_{ij} A_{ij}B^{ij}
-        one number
-    """
-    # m,n = np.shape(A)
-    # ss = 0
-    # for i in range(m):
-    #    for j in range(n):
-    #        ss += A[i,j] * B[i,j]
-    # return ss
-    return np.sum(A*B)
-
-
-"""
-def FourierTransformData(x, dt, wis=None):
-    '''
-    Fourier transform data
-    ---------------------------
-    Parameters:
-        x: the input data
-        dt: the step in the reference array
-    ---------------------------------------
-    Return:
-        transform of the data
-    '''
-    N = len(x)
-    yt = fft.empty_aligned(N, dtype="float64")
-    yf = fft.empty_aligned(int(N/2+1), dtype="complex128")
-    fft_object = fft.FFTW(yt, yf, flags=('FFTW_ESTIMATE', ))
-
-    yt = np.copy(x)
-    yf = np.copy(fft_object(yt*dt))
-
-    return (yf)
-"""
-
-
-# =======================================
-def Rotation_3D(axis, theta):
-    """
-    Rotation around the axis of theta.
-    -----------------------------------
-    Parameters:
-        axis: the axis of the index, number of 0,1,2 or x,y,z
-        theta: rotation of angle
-    Return:
-        3x3 matrix
-    """
-    if axis == 2 or axis == 'y':
-        ii = -1
-    elif axis == 'x':
-        ii = 0
-    elif axis == 'z':
-        ii = 2
-    else:
-        ii = axis
-
-    R = np.eye(3)
-    R[ii-1, ii-1] = np.cos(theta)
-    R[ii+1, ii+1] = np.cos(theta)
-    R[ii+1, ii-1] = np.sin(theta)
-    R[ii-1, ii+1] = -np.sin(theta)
-    return R
-
-
-# =======================================
 def dfridr(func, x, h, err=1e-14, *args):
     """
     Parameters:
@@ -279,7 +96,6 @@ def dfridr(func, x, h, err=1e-14, *args):
     return df
 
 
-# =======================================
 def QuadLagrange3(x, y):
     """
     Quadratic Lagrange interpolation polynomial of degree 2
@@ -319,13 +135,8 @@ def QuadLagrangeInterpolat(x, res):
     return ss
 
 
-# factorial
 def Factorial(n):
-    """
-    ------------------------------------------------------
-    Refs:
-    https://mathworld.wolfram.com/BinomialCoefficient.html
-    """
+    """ Ref: https://mathworld.wolfram.com/BinomialCoefficient.html """
     if n < 0:
         return np.inf
     elif n == 0:
@@ -333,7 +144,6 @@ def Factorial(n):
     return n*Factorial(n-1)
 
 
-# binominal coefficient
 def BinomialCoefficient(n, k):
     """
     Binomial Coefficient
@@ -356,24 +166,19 @@ def BinomialCoefficient(n, k):
     return 0
 
 
-# spin-weighted spherical harmonics
 def sYlm(s, l, m, theta, phi):
-    """
-    Spin Weighted Spherical Harmonics
-    ---------------------------------
-    the spin-weight
-    {}_s Y_{lm}(\theta, \phi)
-    -->
-    Parameters:
-        s: spin
-        l:
-        m:
-        theta:
-        phi:
+    r""" Spin Weighted Spherical Harmonics: {}_s Y_{lm}(\theta, \phi)
 
+    :param s: spin
+    :param l:
+    :param m:
+    :param theta:
+    :param phi:
     """
-    if l < abs(s): print(f"Error - abs spin |s| = {abs(s)} can not be larger than l = {l}")
-    if l < abs(m): print(f"Error - mode |m| = {abs(m)} can not be larger than l = {l}")
+    if l < abs(s):
+        raise ValueError(f"abs spin |s| = {abs(s)} can not be larger than l = {l}")
+    if l < abs(m):
+        raise ValueError(f"mode |m| = {abs(m)} can not be larger than l = {l}")
     tp = (-1)**(l+m-s)*np.sqrt((2*l+1)/4/np.pi)
     tp *= np.exp(1j*m*phi)
     snt = np.sin(theta/2)
@@ -398,7 +203,6 @@ def sYlm(s, l, m, theta, phi):
     return tp*d1*tps
 
 
-# ====================================
 def epsilon(i, j, k):
     """
     epsilon tensor or the permutation symbol or the Levi-Civita symbol
@@ -423,61 +227,6 @@ def epsilon(i, j, k):
     if sp == 0:
         return 1
     return -1
-
-
-class countdown(object):
-    def __init__(self, totalitems, interval=10000):
-        self.t0 = time.time()
-        self.total = totalitems
-        self.int = interval
-
-        self.items = 0
-        self.tlast = self.t0
-        self.ilast = 0
-
-        self.longest = 0
-
-    def pad(self, outstring):
-        if len(outstring) < self.longest:
-            return outstring+" "*(self.longest-len(outstring))
-        else:
-            self.longest = len(outstring)
-            return outstring
-
-    def status(self, local=False, status=None):
-        self.items = self.items+1
-
-        if self.items % self.int != 0:
-            return
-
-        t = time.time()
-
-        speed = float(self.items)/(t-self.t0)
-        localspeed = float(self.items-self.ilast)/(t-self.tlast)
-
-        if self.total != 0:
-            eta = (self.total-self.items)/speed
-            localeta = (self.total-self.items)/localspeed
-        else:
-            eta, localeta = 0, 0
-
-        self.tlast = t
-        self.ilast = self.items
-
-        print(self.pad("\r%d/%d done, %d s elapsed (%f/s), ETA %d s%s" % (self.items, self.total, t-self.t0,
-                                                                          localspeed if local else speed,
-                                                                          localeta if local else eta,
-                                                                          ", "+status if status else "")), end=' ')
-        sys.stdout.flush()
-
-    def end(self, status=None):
-        t = time.time()
-
-        speed = self.items/(t-self.t0)
-
-        print(self.pad(
-            "\r%d finished, %d s elapsed (%d/s)%s" % (self.items, t-self.t0, speed, ", "+status if status else "")))
-        sys.stdout.flush()
 
 
 # # FOR ARCHIVE ONLY

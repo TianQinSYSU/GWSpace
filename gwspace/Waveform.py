@@ -6,6 +6,7 @@
 # Mail: lienk@mail.sysu.edu.cn, wanghan657@mail2.sysu.edu.cn
 # Created Time: 2023-08-01 12:32:36
 # ==================================
+"""All available waveforms for different GW sources."""
 
 import numpy as np
 from numpy import sin, cos, sqrt
@@ -27,7 +28,7 @@ except ImportError:
 
 
 def p0_plus_cross(Lambda, Beta):
-    """See "LDC-manual-002.pdf" (Eq. 12, 13) & Marsat et al. (Eq. 14)"""
+    """See Marsat et al. (Eq. 14)"""
     sib, csb = sin(Beta), cos(Beta)
     sil, csl = sin(Lambda), cos(Lambda)
     sil2, csl2 = sin(2*Lambda), cos(2*Lambda)
@@ -41,7 +42,7 @@ def p0_plus_cross(Lambda, Beta):
     return p0_plus, p0_cross  # uu-vv, uv+vu
 
 
-# Note1: one can use __slots__=('mass1', 'mass2', 'etc') to fix the attributes
+# Note1: One can use __slots__=('mass1', 'mass2', 'etc') to fix the attributes
 #        then the class will not have __dict__ anymore, and attributes in __slots__ are read-only.
 # Note2: One can use @DynamicAttrs to avoid warnings of 'no attribute'.
 class BasicWaveform(object):
@@ -65,7 +66,7 @@ class BasicWaveform(object):
                  'phi_c', 'tc', 'iota', 'var_phi', 'psi', 'add_para')
 
     def __init__(self, mass1, mass2, T_obs, DL=1., Lambda=None, Beta=None,
-                 phi_c=0., tc=0., iota=0., var_phi=0., psi=0, **kwargs):
+                 phi_c=0., tc=0., iota=0., var_phi=0., psi=0., **kwargs):
         self.DL = DL
         self.mass1 = mass1
         self.mass2 = mass2
@@ -116,7 +117,6 @@ class BasicWaveform(object):
                          -sin(self.Beta)])  # Vector of sources
 
     def polarization(self):
-        """See "LDC-manual-002.pdf" (Eq. 19)"""
         p0_plus, p0_cross = p0_plus_cross(self.Lambda, self.Beta)
         p_plus = p0_plus*cos(2*self.psi) + p0_cross*sin(2*self.psi)
         p_cross = - p0_plus*sin(2*self.psi) + p0_cross*cos(2*self.psi)
@@ -140,10 +140,22 @@ class BurstWaveform(object):
 
 
 class BHBWaveform(BasicWaveform):
-    """ Waveform for binary black holes (BHB). TODO: Inherit docstrings
+    """ Waveform for binary black holes (BHB).
 
+    :param mass1: Primary mass (solar mass)
+    :param mass2: Secondary mass(solar mass)
+    :param T_obs: Observation time (s)
+    :param DL: Luminosity distance (Mpc)
+    :param Lambda: Longitude [0, 2pi]
+    :param Beta: Latitude **[pi/2, -pi/2]** [instead of [0, pi]]
+    :param phi_c: Coalescence phase [0, 2pi]
+    :param tc: Coalescence time (s)
+    :param iota: Inclination angle [0, pi]
+    :param var_phi: Observer phase [0, 2pi]
+    :param psi: Polarization angle [0, pi]
     :param chi1: Spin of the primary black hole (-1, 1)
     :param chi2: Spin of the secondary black hole (-1, 1)
+    :param kwargs: Additional parameters need to save
     """
     __slots__ = ('chi1', 'chi2')
     # _true_para_key = ('DL', 'Mc', 'eta', 'chi1', 'chi2', 'phi_c', 'iota', 'tc', 'var_phi', 'psi', 'Lambda', 'Beta')
@@ -169,7 +181,7 @@ class BHBWaveform(BasicWaveform):
     def f_min(self):
         return 5**(3/8)/(8*PI) * (MTSUN_SI*self.Mc)**(-5/8) * self.T_obs**(-3/8)
 
-    def p_lm(self, l=2, m=2):  # FIXME: Is that necessary to calculate both h_(l,m) and h_(l,-m)=h_(l,m)_conj?
+    def p_lm(self, l=2, m=2):
         """See Marsat et al. (Eq. 16) https://journals.aps.org/prd/abstract/10.1103/PhysRevD.103.083011"""
         p0_plus, p0_cross = p0_plus_cross(self.Lambda, self.Beta)
         y_lm = sYlm(-2, l, m, self.iota, self.var_phi)
@@ -179,7 +191,7 @@ class BHBWaveform(BasicWaveform):
 
     @property
     def p_22(self):
-        """See "LDC-manual-002.pdf" (Eq. 31)"""
+        """Equals to self.p_lm(2, 2)"""
         p0_plus, p0_cross = p0_plus_cross(self.Lambda, self.Beta)
         y22 = sqrt(5/4/PI) * cos(self.iota/2)**4 * np.exp(2j*self.var_phi)
         y2_2_conj = sqrt(5/4/PI) * sin(self.iota/2)**4 * np.exp(2j*self.var_phi)
@@ -242,7 +254,19 @@ class BHBWaveform(BasicWaveform):
 class BHBWaveformEcc(BasicWaveform):
     """ BHBWaveform including eccentricity, using `EccentricFD` Waveform.
 
+    :param mass1: Primary mass (solar mass)
+    :param mass2: Secondary mass(solar mass)
+    :param T_obs: Observation time (s)
+    :param DL: Luminosity distance (Mpc)
+    :param Lambda: Longitude [0, 2pi]
+    :param Beta: Latitude **[pi/2, -pi/2]** [instead of [0, pi]]
+    :param phi_c: Coalescence phase [0, 2pi]
+    :param tc: Coalescence time (s)
+    :param iota: Inclination angle [0, pi]
+    :param var_phi: Observer phase [0, 2pi]
+    :param psi: Polarization angle [0, pi]
     :param eccentricity: initial eccentricity at f_min, [0, 0.4)
+    :param kwargs: Additional parameters need to save
     """
     __slots__ = 'eccentricity'
 
@@ -310,36 +334,42 @@ class BHBWaveformEcc(BasicWaveform):
 class GCBWaveform(BasicWaveform):
     """ Waveform for GCB.
 
+    :param mass1: Primary mass (solar mass)
+    :param mass2: Secondary mass(solar mass)
+    :param T_obs: Observation time (s)
     :param phi0: Initial phase at t = 0
     :param f0: Frequency of the source
     :param fdot: Derivative of frequency, df/dt (default: None, calculated physically)
     :param fddot: Double derivative of frequency, d^2f/dt^2 (default: None, calculated physically)
+    :param DL: Luminosity distance (Mpc)
+    :param Lambda: Longitude [0, 2pi]
+    :param Beta: Latitude **[pi/2, -pi/2]** [instead of [0, pi]]
+    :param iota: Inclination angle [0, pi]
+    :param var_phi: Observer phase [0, 2pi]
+    :param psi: Polarization angle [0, pi]
+    :param kwargs: Additional parameters need to save
     """
+    __slots__ = ('phi0', 'f0', 'fdot', 'fddot', 'amp')
 
-    def __init__(self, mass1, mass2, T_obs, phi0, f0, fdot=None, fddot=None, DL=1., Lambda=None, Beta=None,
-                 phi_c=0., tc=0., iota=0., var_phi=0., psi=0, **kwargs):
+    def __init__(self, mass1, mass2, T_obs, phi0, f0, fdot=None, fddot=None,
+                 DL=1., Lambda=None, Beta=None, iota=0., var_phi=0., psi=0, **kwargs):
         BasicWaveform.__init__(self, mass1, mass2, T_obs, DL, Lambda, Beta,
-                               phi_c, tc, iota, var_phi, psi, **kwargs)
+                               np.inf, np.inf, iota, var_phi, psi, **kwargs)
         self.phi0 = phi0
         self.f0 = f0
         if fdot is None:
-            self.fdot = (96/5*PI**(8/3) *
-                         (G_SI*self.Mc*MSUN_SI/C_SI**3)**(5/3)
-                         * f0**(11/3))
+            self.fdot = 96/5*PI**(8/3) * (self.Mc*MTSUN_SI)**(5/3) * f0**(11/3)
         else:
             self.fdot = fdot
         if fddot is None:
             self.fddot = 11/3*self.fdot**2/f0
         else:
             self.fddot = fddot
-        self.amp = 2*(G_SI*self.Mc*MSUN_SI)**(5/3)
-        self.amp = self.amp/C_SI**4/(DL*MPC_SI)
-        self.amp = self.amp*(PI*f0)**(2/3)
+        self.amp = 2*(self.Mc*MTSUN_SI)**(5/3) * C_SI/(DL*MPC_SI) * (PI*f0)**(2/3)
 
     def get_hphc(self, t):
         # FIXME: use self.T_obs
-        phase = 2*PI*(self.f0+0.5*self.fdot*t +
-                      1/6*self.fddot*t*t)*t+self.phi0
+        phase = 2*PI*(self.f0 + 0.5*self.fdot*t + 1/6*self.fddot*t*t)*t + self.phi0
         csi = cos(self.iota)
 
         hp = self.amp*cos(phase) * (1+csi*csi)
@@ -397,7 +427,7 @@ class EMRIWaveform(BasicWaveform):
     :param Phi_phi0: (double, optional) Initial phase for :math:`\Phi_\phi`. Default is 0.0.
     :param Phi_theta0: (double, optional) Initial phase for :math:`\Phi_\Theta`. Default is 0.0.
     :param Phi_r0: (double, optional) Initial phase for :math:`\Phi_r`. Default is 0.0.
-    :param kwargs: (dict, optional) Dictionary with kwargs for online waveform generation.
+    :param kwargs: (dict, optional) Additional parameters need to save
     """
 
     def __init__(self, M, mu, a, p0, e0, x0, dist, qS, phiS, qK, phiK, T_obs,

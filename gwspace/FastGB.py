@@ -1,7 +1,7 @@
 import numpy as np
 
 from gwspace.constants import YRSID_SI
-from gwspace.wrap import FrequencyArray
+from gwspace.Waveform import GCBWaveform
 
 if __package__ or "." in __name__:
     from gwspace import libFastGB
@@ -9,69 +9,43 @@ else:
     import libFastGB
 
 
-class FastGB:
-    # FastBinaryCache = {}
-    def __init__(self, dt=15.0, Tobs=6.2914560e7, detector="TianQin"):
+class FastGB(GCBWaveform):
+    """ Calculate the GCB waveform using fast/slow """
 
-        self.Tobs = Tobs
-        self.dt = dt
-        self.detector = detector
-
-    def buffersize(self, f, A, algorithm='ldc', oversample=1):
+    def buffer_size(self, oversample=1):
         YEAR = YRSID_SI
-        # Acut = simplesnr(f,A,years=self.Tobs/YEAR)
         mult = 8
-        if (self.Tobs/YEAR) <= 8.0: mult = 8
-        if (self.Tobs/YEAR) <= 4.0: mult = 4
-        if (self.Tobs/YEAR) <= 2.0: mult = 2
-        if (self.Tobs/YEAR) <= 1.0: mult = 1
+        if (self.T_obs/YEAR) <= 8.0: mult = 8
+        if (self.T_obs/YEAR) <= 4.0: mult = 4
+        if (self.T_obs/YEAR) <= 2.0: mult = 2
+        if (self.T_obs/YEAR) <= 1.0: mult = 1
         N = 32*mult
-        if f > 0.001: N = 64*mult
-        if f > 0.01:  N = 256*mult
-        if f > 0.03:  N = 512*mult
-        if f > 0.1:   N = 1024*mult
+        if self.f0 > 0.001: N = 64*mult
+        if self.f0 > 0.01:  N = 256*mult
+        if self.f0 > 0.03:  N = 512*mult
+        if self.f0 > 0.1:   N = 1024*mult
 
-        # M = int(math.pow(2.0,1 + int(np.log(Acut)/np.log(2.0))))
+        return N*oversample
 
-        # if(M > 8192):
-        #  M = 8192
-        # M = 8192
+    def get_fastgb_fd_single(self, simulator='synthlisa', buffer=None, dt=15., oversample=1, detector='TianQin'):
+        # FIXME: assume T=T_obs below
+        N = self.buffer_size(oversample)
 
-        # M = N = max(M,N)
+        XLS = np.zeros(2*N, 'd')
+        YLS = np.zeros(2*N, 'd')
+        ZLS = np.zeros(2*N, 'd')
 
-        N *= oversample
+        XSL = np.zeros(2*N, 'd')
+        YSL = np.zeros(2*N, 'd')
+        ZSL = np.zeros(2*N, 'd')
 
-        return N
+        params = np.array([self.f0, self.fdot, self.Beta, self.Lambda, self.amp, self.iota, self.psi, self.phi0])
 
-    def onefourier(self, simulator='synthlisa', params=None, buffer=None, T=6.2914560e7, dt=15., algorithm='mldc',
-                   oversample=1):
-        if np.any(params) is not None:
-            self.Frequency, self.FrequencyDerivative, self.Amplitude = params[0], params[1], params[4]
-
-        # FIXME I assume that T=Tobs below
-        if T != self.Tobs:
-            print("times do not match:", T, self.Tobs)
-            raise NotImplementedError
-        N = self.buffersize(self.Frequency, self.Amplitude, algorithm, oversample)
-        M = N
-
-        XLS = np.zeros(2*M, 'd')
-        YLS = np.zeros(2*M, 'd')
-        ZLS = np.zeros(2*M, 'd')
-
-        XSL = np.zeros(2*M, 'd')
-        YSL = np.zeros(2*M, 'd')
-        ZSL = np.zeros(2*M, 'd')
-
-        # TestMe(XLS)
-
-        if np.any(params) is not None:
-            NP = 8
+        if np.all(params) is not None:
             # vector must be ordered as required by Fast_GB
             # Fast_GB(double *params, long N, double *XLS, double *ALS, double *ELS, int NP)
 
-            # ComputeXYZ_FD(params, N, self.Tobs, self.dt, XLS, YLS, ZLS, XSL, YSL, ZSL, self.detector)
-            libFastGB.ComputeXYZ_FD(params, N, T, dt, XLS, YLS, ZLS, XSL, YSL, ZSL, len(params), detector=self.detector)
+            libFastGB.ComputeXYZ_FD(params, N, self.T_obs, dt, XLS, YLS, ZLS, XSL, YSL, ZSL, len(params), detector=detector)
             # TODO Need to transform to SL if required
             Xf = XLS
             Yf = YLS
@@ -81,21 +55,19 @@ class FastGB:
                 Yf = YSL
                 Zf = ZSL
         else:
-            # FIXME
-            raise NotImplementedError
+            raise ValueError
 
-        f0 = self.Frequency
-        # f0 = self.Frequency + 0.5 * self.FrequencyDerivative * T
+        f0 = self.f0
         if buffer is None:
-            retX, retY, retZ = map(lambda a: FrequencyArray(a[::2]+1.j*a[1::2],
-                                                            dtype=np.complex128, kmin=int(f0*T)-M/2, df=1.0/T),
-                                   (Xf, Yf, Zf))
-            return retX, retY, retZ
+            retX, retY, retZ = [a[::2]+1.j*a[1::2] for a in (Xf, Yf, Zf)]
+            kmin = int(f0*self.T_obs)-N/2
+            df = 1.0/self.T_obs
+            f_range = np.linspace(kmin*df, (kmin+len(retX)-1)*df, len(retX))
+            return f_range, retX, retY, retZ
         else:
-            kmin, blen, alen = buffer[0].kmin, len(buffer[0]), 2*M
-            # print ("herak", kmin, blen, alen, len(Xf))
+            kmin, blen, alen = 0., len(buffer[0]), 2*N
 
-            beg, end = int(int(f0*T)-M/2), int(f0*T+M/2)  # for a full buffer, "a" begins and ends at these indices
+            beg, end = int(int(f0*self.T_obs)-N/2), int(f0*self.T_obs+N/2)  # for a full buffer, "a" begins and ends at these indices
             begb, bega = (beg-kmin, 0) if beg >= kmin else (
                 0, 2*(kmin-beg))  # left-side alignment of partial buffer with "a"
             endb, enda = (end-kmin, alen) if end-kmin <= blen else (blen, alen-2*(end-kmin-blen))
@@ -109,29 +81,31 @@ class FastGB:
             for i, a in enumerate((Xf, Yf, Zf)):
                 buffer[i][begb:endb] += a[bega:enda:2]+1j*a[(bega+1):enda:2]
 
-    def fourier(self, simulator='synthlisa', table=None, T=6.2914560e7, dt=15., algorithm='mldc', oversample=1, kmin=0,
-                length=None):
-        if np.any(table) is None:
-            return self.onefourier(simulator=simulator, T=T, dt=dt, algorithm=algorithm, oversample=oversample)
-        else:
-            if length is None:
-                length = int(0.5*T/dt)+1  # was "NFFT = int(T/dt)", and "NFFT/2+1" passed to numpy.zeros
+    def get_fastgb_fd(self, simulator='synthlisa', dt=15., oversample=1):
+        length = int(0.5*self.T_obs/dt)+1  # was "NFFT = int(T/dt)", and "NFFT/2+1" passed to numpy.zeros
+        buffer = tuple(np.zeros(length, dtype=np.complex128) for _ in range(3))
 
-            # length = int(length)
-            # print ("Stas", type(length), type(kmin), type(1.0/T))
-            buf = tuple(FrequencyArray(np.zeros(length, dtype=np.complex128), kmin=kmin, df=1.0/T) for _ in range(3))
+        # for _ in table:
+        self.get_fastgb_fd_single(simulator=simulator, buffer=buffer, dt=dt, oversample=oversample)
+        f = np.linspace(0, (len(buffer[0])-1)*1.0/self.T_obs, len(buffer[0]))
+        return (f, ) + buffer
 
-            for line in table:
-                self.onefourier(simulator=simulator, params=line, buffer=buf, T=T, dt=dt, algorithm=algorithm,
-                                oversample=oversample)
-                if status:
-                    c.status()
-            if status:
-                c.end()
+    def get_fastgb_td(self, dt=15.0, simulator='synthlisa', oversample=1):
+        f, X, Y, Z = self.get_fastgb_fd(simulator, dt=dt, oversample=oversample)
+        df = 1.0/self.T_obs
+        kmin = round(f[0]/df)
 
-            return buf
+        def ifft(arr):
+            # n = int(1.0/(dt*df))
+            n = round(1.0/(dt*df))
+            # by liyn (in case the int() function would cause loss of n)
 
-    def TDI(self, T=6.2914560e7, dt=15.0, simulator='synthlisa', table=None, algorithm='mldc', oversample=1):
-        X, Y, Z = self.fourier(simulator, table, T=T, dt=dt, algorithm=algorithm, oversample=oversample)
+            ret = np.zeros(int(n/2+1), dtype=arr.dtype)
+            ret[kmin:kmin+len(arr)] = arr[:]
+            ret *= n  # normalization, ehm, found empirically
 
-        return X.ifft(dt), Y.ifft(dt), Z.ifft(dt)
+            return np.fft.irfft(ret)
+
+        X, Y, Z = ifft(X), ifft(Y), ifft(Z)
+        t = np.arange(len(X))*dt
+        return t, X, Y, Z

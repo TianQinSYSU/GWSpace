@@ -123,7 +123,7 @@ def QuadLagrange3(x, y):
     return res
 
 
-def QuadLagrangeInterpolat(x, res):
+def QuadLagrangeInterpolate(x, res):
     """
     Quadratic Lagrange Interpolating Polynomials.
     --------------------------------------------------------
@@ -142,28 +142,6 @@ def Factorial(n):
     elif n == 0:
         return 1
     return n*Factorial(n-1)
-
-
-def BinomialCoefficient(n, k):
-    """
-    Binomial Coefficient
-    ---------------------
-    $$
-    \binom{n}{k} =
-        \begin{cases}
-            \frac{n!}{k! (n-k)!} & \text{ for } 0 \leq k < n \\
-            0 & \text{otherwise}
-        \end{cases}
-    $$
-    ---------------------------------------------------------
-    Refs:
-    https://mathworld.wolfram.com/BinomialCoefficient.html
-    """
-    if 0 <= k <= n:
-        return Factorial(n)/Factorial(k)/Factorial(n-k)
-    # else:
-    #    print("%d is not less than %d, or %d is smaller than 0\n"%(k, n, k))
-    return 0
 
 
 def sYlm(s, l, m, theta, phi):
@@ -201,32 +179,6 @@ def sYlm(s, l, m, theta, phi):
         tps += dslm(k)
 
     return tp*d1*tps
-
-
-def epsilon(i, j, k):
-    """
-    epsilon tensor or the permutation symbol or the Levi-Civita symbol
-    -------------------------------------------------------------------
-    Parameters:
-        i,j,k: three int values
-
-    Return:
-        epsilon_ijk =  0 if any two labels are the same
-                    =  1 if i,j,k is an even permutation of 1,2,3
-                    = -1 if i,j,k is an odd permutation of 1,2,3
-    Refs:
-    https://mathworld.wolfram.com/PermutationSymbol.html
-    """
-    if i == j or j == k or k == i:
-        return 0
-    ss = 0
-    if j < i: ss += 1
-    if k < j: ss += 1
-    if k < i: ss += 1
-    sp = ss % 2
-    if sp == 0:
-        return 1
-    return -1
 
 
 # # FOR ARCHIVE ONLY
@@ -286,3 +238,38 @@ def epsilon(i, j, k):
 #         return fac
 #     else:
 #         return fac*exp(1j*m*phi)
+
+
+def frequency_noise_from_psd(psd, delta_f, seed=None):
+    """ Create noise with a given psd.
+    Return noise coloured with the given psd. The return noise
+    FrequencySeries has the same length and frequency step as the
+    given psd. Note that if unique noise is desired a unique
+    seed should be provided.
+
+    :param psd: FrequencySeries
+        The noise weighting to color the noise.
+    :param delta_f:
+    :param seed: in range (0, int) or None
+        The seed to generate the noise. If None specified, the seed will not be reset.
+    :return: noise: FrequencySeries
+        A FrequencySeries containing gaussian noise colored by the given psd.
+    """
+    sigma = (0.5*psd/delta_f)**0.5
+    if seed is not None:
+        np.random.seed(seed)
+
+    not_zero = (sigma != 0)
+    sigma_red = sigma[not_zero]
+    noise_re = np.random.normal(0, sigma_red)
+    noise_im = np.random.normal(0, sigma_red)
+
+    # rr = lambda sig: np.random.multivariate_normal([0,0], np.eye(2)*sig)
+    # noise_re, noise_im = np.array(list(map(rr, sigma_red))).T
+
+    noise_red = noise_re+1j*noise_im
+
+    noise = np.zeros(len(sigma), dtype=complex)
+    noise[not_zero] = noise_red
+
+    return noise

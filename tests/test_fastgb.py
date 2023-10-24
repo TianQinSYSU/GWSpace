@@ -32,15 +32,15 @@ GCBpars = {"mass1": 0.5,
 # Amp = 6.37823e-23
 fastB = FB.FastGB(**GCBpars)
 
-oversample = 32768
-# 这里的32768是oversample的值，用于调节对“慢项”的降采样的程度。oversample值必须为2的倍数，否则傅里叶变换时无法用gsl_fft函数。
+oversample = 16384
+# 这里的16384是oversample的值，用于调节对“慢项”的降采样的程度。oversample值必须为2的倍数，否则傅里叶变换时无法用gsl_fft函数。
 # 在这里，原采样点数62914560/15=4194304，而“慢项”采样点数为128*oversample
 # （“128”的值根据T_obs和f0的不同而不同，具体可以本文档最后一部分）
-# 如果不进行降采样，则4194304=128*oversample，算出来oversample=32768刚好也是2的倍数，可以直接用。
+# 如果不进行降采样，则4194304=128*oversample，算出来oversample=16384刚好也是2的倍数，可以直接用。
 # 这样，就得到了不进行降采样情况下的J0806双星引力波频域波形。
 
 st = time.time()
-f, X, Y, Z = fastB.get_fastgb_fd_single(dt=dt, oversample=oversample)
+f, X, Y, Z = fastB.get_fastgb_fd(dt=dt, oversample=oversample)
 ed = time.time()
 print(f"time cost is {ed-st} s")
 

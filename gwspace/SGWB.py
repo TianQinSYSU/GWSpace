@@ -5,6 +5,8 @@
 # Author: Zhiyuan Li, Han Wang
 # Mail: wangh657@mail2.sysu.edu.cn
 # ==================================
+"""Generate the Gaussian-like SGWB signal and signal after being responsed in a space detector
+ in frequency domain. Support isotropy SGWB and SGWB from a specific orientation. """
 
 import numpy as np
 import healpy as hp
@@ -13,7 +15,7 @@ from sympy.physics.wigner import clebsch_gordan
 
 from gwspace.response import trans_XYZ_fd
 from gwspace.Orbit import detectors
-from gwspace.wrap import frequency_noise_from_psd
+from gwspace.utils import frequency_noise_from_psd
 from gwspace.Waveform import p0_plus_cross
 from gwspace.constants import H0_SI, PI, PI_2
 from scipy.special import sph_harm

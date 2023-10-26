@@ -1,13 +1,9 @@
 numpy
-PyYAML
 Cython
 setuptools
 matplotlib
 numba
 scipy
-requests
-h5py
-tqdm
 
 # requirements for SGWB
 healpy

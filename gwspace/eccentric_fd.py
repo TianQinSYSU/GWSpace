@@ -2,7 +2,8 @@
 # 2022 Han Wang
 # wangh657@mail2.sysu.edu.cn
 
-"""connect to EccFD library"""
+"""Functions used to connect the EccFD library,
+ which is automatically compiled during the `gwspace` installation. """
 import os
 from numpy import float64, complex128, frombuffer, pi, array, zeros
 from scipy.interpolate import InterpolatedUnivariateSpline as Spline

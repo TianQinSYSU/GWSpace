@@ -6,13 +6,17 @@
 # Mail: lienk@mail.sysu.edu.cn, wanghan657@mail2.sysu.edu.cn
 # Created Time: 2023-08-01 14:55:20
 # ==================================
+"""Generate space detector response for multiple TDI generations in both time domain and frequency domain.
+ Support 'XYZAET' channel currently. For t-domain, it will return the responsed waveform,
+ while for f-domain, it will return the transfer function,
+ and one should multiply it by the original waveform manually."""
 
 import numpy as np
-from numba import jit
+from numba import njit
 from gwspace.Orbit import detectors
 
 
-@jit(nopython=True)
+@njit
 def _matrix_res_pro(n, p):
     """TensorProduct(n, n) : P,  where A:B = A_ij B_ij"""
     return (n[0] * p[0, 0] * n[0] + n[0] * p[0, 1] * n[1] + n[0] * p[0, 2] * n[2]
@@ -166,7 +170,7 @@ def trans_y_slr_fd(vec_k, p, det, f):
                  (3, 2): y32_pre * n23pn23}
         return y_slr
 
-    if type(p) != tuple:
+    if type(p) is not tuple:
         p = (p, )
     return tuple(trans_response(p_0) for p_0 in p)
 

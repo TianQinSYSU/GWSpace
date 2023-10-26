@@ -6,9 +6,12 @@
 # Mail: lienk@mail.sysu.edu.cn, wanghan657@mail2.sysu.edu.cn
 # Created Time: 2023-08-01 10:23:11
 # ==================================
-"""Space detectors' orbits, note that the orbits are in nature unit(in second)"""
+"""Space detectors' orbits, note that the orbits are in nature unit(in second).
+ Support orbits of detector's three spacecrafts and its guiding center,
+ coordinates of unit vector between spacecrafts, sensitivity curve, etc."""
 
 import numpy as np
+
 from gwspace.constants import (C_SI, PI, PI_2, PI_3, G_SI, AU_T, J0806_phi, J0806_theta,
                                EarthOrbitFreq_SI, EarthEcc, Perihelion_Ang, EarthMass)
 
@@ -33,25 +36,26 @@ class Orbit(object):
 
     @property
     def R_T(self):
-        """semi-major axis of the spacecraft orbit (in second)"""
+        """Semi-major axis of the spacecraft orbit (in second)"""
         return self.armLength/(C_SI * 3**0.5)
 
     @property
     def f_0(self):
-        """orbital frequency"""
+        """Orbital frequency"""
         raise NotImplementedError("Subclasses should provide a property to calculate orbital frequency")
 
     @property
     def ecc(self):
-        """Eccentricity of the spacecraft."""
+        """Eccentricity of the spacecraft"""
         return 0.
 
     @property
     def p_0(self):
+        """Constellation center"""
         return np.sum(self.orbits, axis=0) / 3
 
     def uni_vec_ij(self, i, j):
-        """The unit vector between three spacecrafts:
+        """Calculate unit vector between any two of the three spacecrafts:
          Here we define uni_vec_12 = (orbit_2-orbit_1)/self.L_T"""
         return (self.orbits[j-1]-self.orbits[i-1])/self.L_T
 
@@ -69,7 +73,7 @@ class TianQinOrbit(Orbit):
         Orbit.__init__(self, kappa_earth)
         self.kappa0 = kappa0  # initial orbit phase of the first(n=1) spacecraft measured from \tilde{x} axis
 
-        # Spacecraft orbit phase of the nth TQ satellites
+        # Spacecraft orbit phase of the nth TQ spacecrafts
         alp_t1 = self.alpha_detector(time, n=1)
         alp_t2 = self.alpha_detector(time, n=2)
         alp_t3 = self.alpha_detector(time, n=3)
@@ -82,16 +86,16 @@ class TianQinOrbit(Orbit):
 
     @property
     def f_0(self):
-        """orbital frequency of the TianQin satellites around the Earth (~ 3.18e-6 Hz)"""
+        """Orbital frequency of the TianQin spacecrafts around the Earth (~ 3.18e-6 Hz)"""
         return (G_SI*EarthMass/(self.R_T*C_SI)**3)**0.5/(2*PI)
 
     def alpha_detector(self, time, n):
-        """The orbit phase of the n-th spacecraft in the detector plane."""
+        """Orbit phase of the n-th spacecraft in the detector plane."""
         kappa_n = 2*PI_3*(n-1) + self.kappa0
         return 2*PI * self.f_0 * time + kappa_n - self.beta0
 
     def alpha_earth(self, time):
-        """the mean orbital ecliptic longitude of the geocenter in the heliocentric-elliptic coordinate system."""
+        """Mean orbital ecliptic longitude of the geocenter in the heliocentric-elliptic coordinate system."""
         return 2*PI*EarthOrbitFreq_SI * time + self.kappa_earth - Perihelion_Ang
 
     def earth_orbit_xyz(self, time):
@@ -130,7 +134,7 @@ class TianQinOrbit(Orbit):
 
 
 class LISAOrbit(Orbit):
-    """See "LDC-manual-002.pdf" (Eq. 48-52)"""
+    """See https://arxiv.org/abs/gr-qc/0311069"""
     armLength = 2.5e9  # Arm-length (changed from 5e9 to 2.5e9 after 2017)
 
     def __init__(self, time, kappa_earth=0):
@@ -153,22 +157,24 @@ class LISAOrbit(Orbit):
 
     @property
     def kappa0(self):
-        """the initial azimuthal position of the guiding center in the ecliptic plane"""
+        """Initial azimuthal position of the guiding center in the ecliptic plane"""
         return self.kappa_earth - Perihelion_Ang - 20/180*PI
 
     def alpha_detector(self, time):
         return 2*PI * self.f_0 * time + self.kappa0
 
-    def detector_orbit_xyz(self, time, n):  # TODO: add 2nd order
+    def detector_orbit_xyz(self, time, n):
         beta = 2*PI_3*(n-1) + self.beta0
         snb, csb = np.sin(beta), np.cos(beta)
-        alpha_lisa = self.alpha_detector(time)
-        sin_alp_t, cos_alp_t = np.sin(alpha_lisa), np.cos(alpha_lisa)
+        alpha = self.alpha_detector(time)
+        sin_alp_t, cos_alp_t = np.sin(alpha), np.cos(alpha)
         ecc = self.ecc
 
-        x = AU_T * (cos_alp_t + ecc*(sin_alp_t*cos_alp_t*snb - (1+sin_alp_t**2)*csb))
-        y = AU_T * (sin_alp_t + ecc*(sin_alp_t*cos_alp_t*csb - (1+cos_alp_t**2)*snb))
-        z = -AU_T * np.sqrt(3) * ecc * np.cos(alpha_lisa - beta)
+        x = AU_T * (cos_alp_t + ecc*(sin_alp_t*cos_alp_t*snb - (1+sin_alp_t**2)*csb)
+                    + 0.125*ecc**2 * (3*np.cos(3*alpha-2*beta) - 10*cos_alp_t - 5*np.cos(alpha-2*beta)))
+        y = AU_T * (sin_alp_t + ecc*(sin_alp_t*cos_alp_t*csb - (1+cos_alp_t**2)*snb)
+                    + 0.125*ecc**2 * (3*np.sin(3*alpha-2*beta) - 10*sin_alp_t + 5*np.sin(alpha-2*beta)))
+        z = -AU_T * np.sqrt(3) * (ecc * np.cos(alpha - beta) - ecc**2 * (1 + np.sin(alpha-beta)**2))
         return np.array([x, y, z])
 
 
@@ -177,24 +183,17 @@ class TaijiOrbit(LISAOrbit):
 
     @property
     def kappa0(self):
-        """the initial azimuthal position of the guiding center in the ecliptic plane"""
+        """Initial azimuthal position of the guiding center in the ecliptic plane"""
         return self.kappa_earth - Perihelion_Ang + 20/180*PI
 
 
 def get_pos(tf, detector="TianQin", toT=True):
-    """
-    Calculate the orbit position with C code
-    ----------------------------------------
-    Parameters:
-    - tf: array of time
-    - detector: string of detector's name
-    - toT: bool parameter to determine return
-        in length unit or time unit
-    ----------------------------------------
-    Return:
-    - (x,y,z,LT)
-    ---> x,y,z: [0],[1],[2] for three spacecrafts' position
-    ---> LT = armLength/C_SI
+    """ Calculate the orbit position with C code.
+
+    :param tf: array of time
+    :param detector: string of detector's name
+    :param toT: bool parameter to determine return in length unit or time unit
+    :return: (x,y,z,LT) three spacecrafts' position & armLength/C_SI
     """
     N = tf.shape[0]
     x = np.zeros(3*N, 'd')

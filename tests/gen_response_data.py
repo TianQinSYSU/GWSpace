@@ -106,6 +106,46 @@ def generate_fd_data(pars, s_type='bhb_PhenomD', det='TQ', show_y_slr=False):
     plt.tight_layout()
 
 
+def generate_fastgb(dt=1., oversample=1, show_td=False):
+    GCBpars = {"mass1": 0.5,
+               "mass2": 0.5,
+               'T_obs': YRSID_SI*2,
+               "phi0": 3.1716561,
+               "f0": 0.00622028,
+               "fdot": 7.48528554e-16,
+               "psi": 2.91617795,
+               "iota": 0.645772,
+               "Lambda": 2.10225,  # ecliptic longitude [rad] J0806
+               "Beta": -0.082205,  # ecliptic latitude [rad]
+               }
+    fastB = waveforms['gcb'](**GCBpars)
+    # dt = 15.  # 1s for TianQin, 15s for LISA
+
+    st = time.time()
+    f, X, Y, Z = fastB.get_fastgb_fd_single(dt, oversample, detector='TianQin')
+    ed = time.time()
+    print(f"time cost is {ed-st} s")
+
+    plt.figure()
+    plt.loglog(f, np.abs(X), label='X')
+    plt.loglog(f, np.abs(Y), label='Y')
+    plt.loglog(f, np.abs(Z), label='Z')
+    plt.xlim(0.00620, 0.00624)
+    plt.tight_layout()
+
+    if show_td:
+        st = time.time()
+        t, X, Y, Z = fastB.get_fastgb_td(dt, oversample, detector='TianQin')
+        ed = time.time()
+        print(f"time cost is {ed-st} s")
+
+        plt.figure()
+        plt.plot(t, X, label='X')
+        plt.plot(t, Y, label='Y')
+        plt.plot(t, Z, label='Z')
+        plt.tight_layout()
+
+
 def generate_MBHB_with_PSD_joint(pars, s_type='bhb_PhenomD'):
     tq_noise = TianQinNoise()
     lisa_noise = LISANoise()
@@ -249,7 +289,8 @@ if __name__ == "__main__":
                }  # masses of GW150914
     # generate_td_data(GCBpars)
     # generate_td_data(EMRIpars, s_type='emri')
-    generate_fd_data(BHBpars, show_y_slr=False)
+    # generate_fd_data(BHBpars, show_y_slr=False)
+    generate_fastgb()
 
     # generate_MBHB_with_PSD_joint(BHBpars)
     # generate_SBHB_with_PSD_joint(ecc_par)

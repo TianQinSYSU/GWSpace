@@ -14,7 +14,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline as Spline
 
 from gwspace.Orbit import detectors
 from gwspace.utils import sYlm
-from gwspace.constants import MSUN_SI, MTSUN_SI, MPC_SI, YRSID_SI, PI, PI_2, C_SI, G_SI
+from gwspace.constants import MSUN_SI, MTSUN_SI, MPC_SI, YRSID_SI, PI, PI_2, C_SI
 from gwspace.response import trans_AET_fd
 
 from gwspace.eccentric_fd import gen_ecc_fd_and_tf, gen_ecc_fd_waveform
@@ -25,6 +25,11 @@ try:
 except ImportError:
     from gwspace.pyIMRPhenomD import IMRPhenomDh22AmpPhase as pyIMRD
     use_py_phd = False
+
+if __package__ or "." in __name__:
+    from gwspace import libFastGB
+else:
+    import libFastGB
 
 
 def p0_plus_cross(Lambda, Beta):
@@ -308,10 +313,10 @@ class BHBWaveformEcc(BasicWaveform):
          Although the eccentric waveform also have (l, m)=(2,2), it has eccentric harmonics,
          which should also calculate separately like what we should do for spherical harmonics."""
         if det not in detectors.keys():
-            raise ValueError(f"[SpaceResponse] Unknown detector {det}. "
+            raise ValueError(f"Unknown detector {det}. "
                              f"Supported detectors: {'|'.join(detectors.keys())}")
         # if channel not in 'XYZAET':  # <if not all([c in 'XYZAET' for c in channel])> for multichannel mode
-        #     raise ValueError(f"[SpaceResponse] Unknown channel {channel}. "
+        #     raise ValueError(f"Unknown channel {channel}. "
         #                      f"Supported channels: {'|'.join(['X', 'Y', 'Z', 'A', 'E', 'T'])}")
         det_class = detectors[det]
         wf, freq = self.gen_ori_waveform(delta_f, f_min, f_max)
@@ -349,7 +354,7 @@ class GCBWaveform(BasicWaveform):
     :param psi: Polarization angle [0, pi]
     :param kwargs: Additional parameters need to save
     """
-    __slots__ = ('phi0', 'f0', 'fdot', 'fddot', 'amp')
+    __slots__ = ('phi0', 'f0', 'fdot', 'fddot')
 
     def __init__(self, mass1, mass2, T_obs, phi0, f0, fdot=None, fddot=None,
                  DL=1., Lambda=None, Beta=None, iota=0., var_phi=0., psi=0, **kwargs):
@@ -365,20 +370,109 @@ class GCBWaveform(BasicWaveform):
             self.fddot = 11/3*self.fdot**2/f0
         else:
             self.fddot = fddot
-        self.amp = 2*(self.Mc*MTSUN_SI)**(5/3) * C_SI/(DL*MPC_SI) * (PI*f0)**(2/3)
+
+    @property
+    def amplitude(self):
+        return 2*(self.Mc*MTSUN_SI)**(5/3) * C_SI/(self.DL*MPC_SI) * (PI*self.f0)**(2/3)
 
     def get_hphc(self, t):
         # FIXME: use self.T_obs
         phase = 2*PI*(self.f0 + 0.5*self.fdot*t + 1/6*self.fddot*t*t)*t + self.phi0
         csi = cos(self.iota)
 
-        hp = self.amp*cos(phase) * (1+csi*csi)
-        hc = self.amp*sin(phase) * 2*csi
+        hp = self.amplitude*cos(phase)*(1+csi*csi)
+        hc = self.amplitude*sin(phase)*2*csi
         return hp, hc
 
+    def _buffer_size(self, det, oversample=1):
+        if det == 'TianQin':
+            fm = 3.1771266198541054e-6  # fsc_tq
+        elif det in ('LISA', 'Taiji'):
+            fm = 3.168753578692357e-8  # EarthOrbitFreq_SI
+        else:
+            raise ValueError(f"Unknown detector {det}.")
+        # N=f*T, minimal f should be >=2*f_max according to Nyquist sampling theorem,
+        # choose 3 for a conservative estimate.
+        N = (3*2*fm) * self.T_obs
+        N = 1 << int(np.ceil(np.log2(N)))  # next power of 2
+        return N*oversample
 
-class FastGBWaveform(GCBWaveform):
-    pass
+    def get_fastgb_fd_single(self, dt, oversample=1, detector='TianQin', buffer=None):
+        """ Calculate the GCB waveform using fast/slow decomposition.
+
+        :param dt: Sampling step of time
+        :param oversample: Should be a power of 2, or it will be not able to use gsl_fft
+        :param detector:
+        :param buffer: Should be a tuple with
+        """
+        # FIXME: assume T=T_obs below
+        N = self._buffer_size(detector, oversample)
+
+        XLS = np.zeros(2*N, 'd')
+        YLS = np.zeros(2*N, 'd')
+        ZLS = np.zeros(2*N, 'd')
+
+        XSL = np.zeros(2*N, 'd')
+        YSL = np.zeros(2*N, 'd')
+        ZSL = np.zeros(2*N, 'd')
+
+        params = np.array([self.f0, self.fdot, self.Beta, self.Lambda, self.amplitude, self.iota, self.psi, self.phi0])
+
+        if np.all(params) is not None:
+            libFastGB.ComputeXYZ_FD(params, N, self.T_obs, dt, XLS, YLS, ZLS, XSL, YSL, ZSL,
+                                    len(params), detector=detector)
+            # TODO Need to transform to SL if required
+            # Xf, Yf, Zf = XLS, YLS, ZLS
+            Xf, Yf, Zf = XSL, YSL, ZSL
+        else:
+            raise ValueError
+
+        Xf, Yf, Zf = Xf.view(np.complex128), Yf.view(np.complex128), Zf.view(np.complex128)
+        if buffer is None:
+            kmin = int(self.f0*self.T_obs-N/2)
+            df = 1.0/self.T_obs
+            f_range = np.linspace(kmin*df, (kmin+N-1)*df, N)
+            return f_range, Xf, Yf, Zf
+        else:
+            blen, alen = len(buffer[0]), N
+
+            # for a full buffer, "a" begins and ends at these indices
+            beg, end = int(self.f0*self.T_obs-N/2), int(self.f0*self.T_obs+N/2)
+            # alignment of partial buffer with "a"
+            begb, bega = max(beg, 0), max(0, -beg)
+            endb, enda = min(end, blen), alen-max(0, end-blen)
+
+            for i, a in enumerate((Xf, Yf, Zf)):
+                buffer[i][begb:endb] += a[bega:enda]
+
+    def get_fastgb_fd(self, dt, oversample=1, detector='TianQin'):
+        length = int(0.5*self.T_obs/dt)+1  # NFFT=int(T/dt), length=NFFT/2+1
+        buffer = tuple(np.zeros(length, dtype=np.complex128) for _ in range(3))
+
+        # for _ in table: TODO: make it support multiple sources?
+        self.get_fastgb_fd_single(dt, oversample, detector, buffer)
+        f = np.linspace(0, (length-1)*1.0/self.T_obs, length)
+        return (f, ) + buffer
+
+    def get_fastgb_td(self, dt, oversample=1, detector='TianQin'):
+        f, X, Y, Z = self.get_fastgb_fd(dt, oversample, detector)
+        df = 1.0/self.T_obs
+        kmin = round(f[0]/df)
+
+        def ifft(arr):
+            # n = int(1.0/(dt*df))
+            n = round(1.0/(dt*df))
+            # by liyn (in case the int() function would cause loss of n)
+
+            ret = np.zeros(int(n/2+1), dtype=arr.dtype)
+            ret[kmin:kmin+len(arr)] = arr[:]
+            ret *= n  # normalization, ehm, found empirically
+
+            return np.fft.irfft(ret)
+
+        X, Y, Z = ifft(X), ifft(Y), ifft(Z)
+        t = np.arange(len(X))*dt
+        return t, X, Y, Z
 
 
 class EMRIWaveform(BasicWaveform):
@@ -524,6 +618,5 @@ waveforms = {'burst': BurstWaveform,
              'bhb_PhenomD': BHBWaveform,
              'bhb_EccFD': BHBWaveformEcc,
              'gcb': GCBWaveform,
-             'gcb_fast': FastGBWaveform,
              'emri': EMRIWaveform,
              }  # all available waveforms

@@ -48,7 +48,7 @@ def func_ext(name, src):
 
 fastgb_ext = func_ext("libFastGB",
                       src=[
-                          "src/_FastGB.pyx",
+                          "src/FastGB.pyx",
                           "src/spacecrafts.c",
                           "src/GB.c",
                       ])
@@ -72,8 +72,8 @@ extensions.append(fastgb_ext)
 extensions.append(eccfd_ext)
 extensions.append(imrphd_ext)
 
-# translate the Constants.h to constants.py
-fp_const_h = "./include/Constants.h"
+# translate the constants.h to constants.py
+fp_const_h = "./include/constants.h"
 fp_const_py = "./gwspace/constants.py"
 
 with open(fp_const_h, "r") as fp_in:

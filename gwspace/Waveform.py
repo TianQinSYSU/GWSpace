@@ -15,7 +15,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline as Spline
 from gwspace.Orbit import detectors
 from gwspace.utils import sYlm
 from gwspace.constants import MSUN_SI, MTSUN_SI, MPC_SI, YRSID_SI, PI, PI_2, C_SI
-from gwspace.response import trans_AET_fd
+from gwspace.response import trans_AET_fd, trans_XYZ_fd
 
 from gwspace.eccentric_fd import gen_ecc_fd_and_tf, gen_ecc_fd_waveform
 try:
@@ -30,6 +30,21 @@ if __package__ or "." in __name__:
     from gwspace import libFastGB
 else:
     import libFastGB
+
+
+def check_detector_and_channel(det, channel):
+    if det not in detectors.keys():
+        raise ValueError(f"Unknown detector {det}. "
+                         f"Supported detectors: {'|'.join(detectors.keys())}")
+    if channel == 'AET':  # if not all([c in 'XYZAET' for c in channel])
+        trans_func = trans_AET_fd
+    elif channel == 'XYZ':
+        trans_func = trans_XYZ_fd
+    else:
+        raise ValueError(f"Unknown channel {channel}. "
+                         f"Supported channels: {'|'.join(['XYZ', 'AET'])}")
+    det_class = detectors[det]
+    return trans_func, det_class
 
 
 def p0_plus_cross(Lambda, Beta):
@@ -255,6 +270,21 @@ class BHBWaveform(BasicWaveform):
 
         return amp, phase, tf
 
+    def get_tdi_response(self, freq, channel='AET', det='TQ', TDIgen=1, **kwargs):
+        trans_func, det_class = check_detector_and_channel(det, channel)
+        amp, phase, tf = self.get_amp_phase(freq)
+
+        gw_tdi = np.zeros(shape=(3, len(freq)), dtype=np.complex128)
+        t_delay = np.exp(2j*PI*freq*self.tc)
+        for k in amp.keys():
+            h_lm = amp[k]*np.exp(1j*phase[k])
+
+            det = det_class(tf[k], **kwargs)
+            gw_tdi_lm = trans_func(self.vec_k, self.p_lm(*k), det, freq, TDIgen)[0]
+            gw_tdi += gw_tdi_lm * h_lm[None, :]
+
+        return gw_tdi*t_delay
+
 
 class BHBWaveformEcc(BasicWaveform):
     """ BHBWaveform including eccentricity, using `EccentricFD` Waveform.
@@ -295,7 +325,7 @@ class BHBWaveformEcc(BasicWaveform):
                 'eccentricity': self.eccentricity}
         return args
 
-    def gen_ori_waveform(self, delta_f=None, f_min=None, f_max=1., hphc=False):
+    def get_ori_waveform(self, delta_f=None, f_min=None, f_max=1., hphc=False):
         """ Generate F-Domain eccentric waveform for TDI response. (EccentricFD) """
         if not f_min:
             f_min = self.f_min
@@ -308,20 +338,14 @@ class BHBWaveformEcc(BasicWaveform):
         return gen_ecc_fd_and_tf(self.tc, **self.wave_para(), delta_f=delta_f,
                                  f_lower=f_min, f_final=f_max, obs_time=0)
 
-    def fd_tdi_response(self, channel='A', det='TQ', delta_f=None, f_min=None, f_max=1., **kwargs):
+    def get_tdi_response(self, delta_f=None, f_min=None, f_max=1., channel='AET', det='TQ', TDIgen=1, **kwargs):
         """ Generate F-Domain TDI response for eccentric waveform (EccentricFD).
          Although the eccentric waveform also have (l, m)=(2,2), it has eccentric harmonics,
          which should also calculate separately like what we should do for spherical harmonics."""
-        if det not in detectors.keys():
-            raise ValueError(f"Unknown detector {det}. "
-                             f"Supported detectors: {'|'.join(detectors.keys())}")
-        # if channel not in 'XYZAET':  # <if not all([c in 'XYZAET' for c in channel])> for multichannel mode
-        #     raise ValueError(f"Unknown channel {channel}. "
-        #                      f"Supported channels: {'|'.join(['X', 'Y', 'Z', 'A', 'E', 'T'])}")
-        det_class = detectors[det]
-        wf, freq = self.gen_ori_waveform(delta_f, f_min, f_max)
+        trans_func, det_class = check_detector_and_channel(det, channel)
+        wf, freq = self.get_ori_waveform(delta_f, f_min, f_max)
 
-        gw_tdi = np.zeros(shape=(len(freq), ), dtype=np.complex128)
+        gw_tdi = np.zeros(shape=(3, len(freq)), dtype=np.complex128)
         t_delay = np.exp(2j*PI*freq*self.tc)
         p_p, p_c = self.polarization()
         for i in range(10):
@@ -329,9 +353,8 @@ class BHBWaveformEcc(BasicWaveform):
             index = (h_p != 0).argmax()
 
             det = det_class(tf_vec[index:], **kwargs)
-            # FIXME: use channel!!!, here only store A channel
-            gw_tdi_p, gw_tdi_c = trans_AET_fd(self.vec_k, (p_p, p_c), det, freq[index:])
-            gw_tdi[index:] += gw_tdi_p[0]*h_p[index:] + gw_tdi_c[0]*h_c[index:]
+            gw_tdi_p, gw_tdi_c = trans_func(self.vec_k, (p_p, p_c), det, freq[index:], TDIgen)
+            gw_tdi[:, index:] += gw_tdi_p*h_p[None, index:] + gw_tdi_c*h_c[None, index:]
 
         return gw_tdi*t_delay, freq
 
@@ -421,7 +444,6 @@ class GCBWaveform(BasicWaveform):
         if np.all(params) is not None:
             libFastGB.ComputeXYZ_FD(params, N, self.T_obs, dt, XLS, YLS, ZLS, XSL, YSL, ZSL,
                                     len(params), detector=detector)
-            # TODO Need to transform to SL if required
             # Xf, Yf, Zf = XLS, YLS, ZLS
             Xf, Yf, Zf = XSL, YSL, ZSL
         else:

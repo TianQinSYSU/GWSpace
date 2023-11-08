@@ -180,7 +180,7 @@ def trans_XYZ_fd(vec_k, p, det, f, TDIgen=1):
      To get the responsed waveform, you need to multiply it by the original waveform manually.
 
     :param vec_k: the prop direction of GWs (x,y,z), which is determined by (lambda, beta)
-    :param p: p is a tuple, i.e. a series of P_lm (or P_x, P_+, i.e. e^+, e^x in $h = h_+ e^+ + h_x e^x$)
+    :param p: p is a tuple, which contains P_lm (or P_x & P_+, i.e. e^+ & e^x in $h = h_+ e^+ + h_x e^x$)
     :param det: GW detector Orbit object
     :param f: frequency array
     :param TDIgen: TDI generation
@@ -210,7 +210,7 @@ def trans_AET_fd(vec_k, p, det, f, TDIgen=1):
      To get the responsed waveform, you need to multiply it by the original waveform manually.
 
     :param vec_k: the prop direction of GWs (x,y,z), which is determined by (lambda, beta)
-    :param p: p is a tuple, i.e. a series of P_lm (or P_x, P_+, i.e. e^+, e^x in $h = h_+ e^+ + h_x e^x$)
+    :param p: p is a tuple, which contains P_lm (or P_x & P_+, i.e. e^+ & e^x in $h = h_+ e^+ + h_x e^x$)
     :param det: GW detector Orbit object
     :param f: frequency array
     :param TDIgen: TDI generation

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-  
 #==================================
-# File Name: _FastGB.pyx
+# File Name: FastGB.pyx
 # Author: ekli
 # Mail: lekf123@163.com
 # Created Time: 2023-09-06 19:39:21

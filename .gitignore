@@ -13,7 +13,7 @@ gitpush.sh
 tests/gwspace
 Waveforms
 
-src/_FastGB.c
+src/FastGB.c
 src/pyIMRPhenomD.c
 dist/
 *.egg-info/

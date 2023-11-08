@@ -115,13 +115,13 @@ class LISANoise(BasicNoise):
             sens += self._gal_conf(freq, wd_foreground)
         return sens
 
-    def noise_XYZ(self, freq, wd_foreground=0., unit="relative_frequency", TDIgen=1):
+    def noise_XYZ(self, freq, unit="relative_frequency", TDIgen=1, wd_foreground=0.):
         sx, sxy = super().noise_XYZ(freq, unit, TDIgen)
         if wd_foreground:
             sx += self.wd_foreground_X(freq, wd_foreground)
         return sx, sxy
 
-    def noise_AET(self, freq, wd_foreground=0., unit="relative_frequency", TDIgen=1):
+    def noise_AET(self, freq, unit="relative_frequency", TDIgen=1, wd_foreground=0.):
         ae, tt = super().noise_AET(freq, unit, TDIgen)
         if wd_foreground:
             ae += self.wd_foreground_AE(freq, wd_foreground)

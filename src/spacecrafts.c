@@ -26,7 +26,7 @@
 #include <string.h>
 
 #include "spacecrafts.h"
-#include "Constants.h"
+#include "constants.h"
 
 void spacecraft(char detector[], int N, double *t, double *x, double *y, double *z, double *Larm)
 {

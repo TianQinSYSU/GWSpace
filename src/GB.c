@@ -7,7 +7,7 @@
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_fft_complex.h>
 
-#include "Constants.h"
+#include "constants.h"
 #include "spacecrafts.h"
 #include "GB.h"
 

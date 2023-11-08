@@ -123,9 +123,9 @@ def test_BHB_ecc():
     print(strftime("%Y-%m-%d %H:%M:%S"))
     delta_f = 1e-5
     para = BHBWaveformEcc(**default, eccentricity=0.1)
-    wf, _ = para.gen_ori_waveform(delta_f=delta_f, hphc=True)
+    wf, _ = para.get_ori_waveform(delta_f=delta_f, hphc=True)
     para_ = BHBWaveformEcc(**default, eccentricity=0.)
-    wf_, _ = para_.gen_ori_waveform(delta_f=delta_f, hphc=True)
+    wf_, _ = para_.get_ori_waveform(delta_f=delta_f, hphc=True)
     print(strftime("%Y-%m-%d %H:%M:%S"), f'Finished in {time() - start_time: .5f}s', '\n')
 
     freq = delta_f * np.array(range(len(wf)))

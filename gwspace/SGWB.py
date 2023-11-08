@@ -73,7 +73,7 @@ class SGWB(object):
         Sgw = frequency_noise_from_psd(Sgw, 1/self.T_obs, seed=seed)
         return np.outer(self.skymap_inj, (2/self.T_obs) * np.real(Sgw*Sgw.conj()))
 
-    def get_response_signal(self, f_min, f_max, fn, t_segm, det='TQ'):
+    def get_response_signal(self, f_min, f_max, fn, t_segm, det='TQ', TDIgen=1):
         """ Generate a responsed (XYZ) signal for a given GW detector.
 
         :param f_min: (Hz) Minimum frequency
@@ -82,6 +82,7 @@ class SGWB(object):
         :param t_segm: Length of time segments (in seconds), usually choose ~ 3600s for TQ,
          the ORF error can be less than 3%
         :param det: str, for the detector type
+        :param TDIgen: TDI generation
         :return: (res_signal, frange): (ndarray: shape(fn, tf.size, 3, 3), ndarray: shape(fn, ))
         """
         frange = np.linspace(f_min, f_max, fn)
@@ -96,7 +97,7 @@ class SGWB(object):
         for i in range(self.npix):
             v_k, e_p_c = vec_k[i], e_plus_cross[i]
             for j in range(fn):
-                res_p, res_c = trans_XYZ_fd(v_k, e_p_c, det, frange[j])  # both with shape(3, tf.size)
+                res_p, res_c = trans_XYZ_fd(v_k, e_p_c, det, frange[j], TDIgen)  # both with shape(3, tf.size)
                 det_ORF_temp = (np.einsum("ml,nl->lmn", res_p.conj(), res_p)
                                 + np.einsum("ml,nl->lmn", res_c.conj(), res_c))
                 # res_signal = det_ORF * gaussian_signal

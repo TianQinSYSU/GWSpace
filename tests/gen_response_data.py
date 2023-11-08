@@ -106,6 +106,46 @@ def generate_fd_data(pars, s_type='bhb_PhenomD', det='TQ', show_y_slr=False):
     plt.tight_layout()
 
 
+def generate_fastgb(dt=1., oversample=1, show_td=False):
+    GCBpars = {"mass1": 0.5,
+               "mass2": 0.5,
+               'T_obs': YRSID_SI*2,
+               "phi0": 3.1716561,
+               "f0": 0.00622028,
+               "fdot": 7.48528554e-16,
+               "psi": 2.91617795,
+               "iota": 0.645772,
+               "Lambda": 2.10225,  # ecliptic longitude [rad] J0806
+               "Beta": -0.082205,  # ecliptic latitude [rad]
+               }
+    fastB = waveforms['gcb'](**GCBpars)
+    # dt = 15.  # 1s for TianQin, 15s for LISA
+
+    st = time.time()
+    f, X, Y, Z = fastB.get_fastgb_fd_single(dt, oversample, detector='TianQin')
+    ed = time.time()
+    print(f"time cost is {ed-st} s")
+
+    plt.figure()
+    plt.loglog(f, np.abs(X), label='X')
+    plt.loglog(f, np.abs(Y), label='Y')
+    plt.loglog(f, np.abs(Z), label='Z')
+    plt.xlim(0.00620, 0.00624)
+    plt.tight_layout()
+
+    if show_td:
+        st = time.time()
+        t, X, Y, Z = fastB.get_fastgb_td(dt, oversample, detector='TianQin')
+        ed = time.time()
+        print(f"time cost is {ed-st} s")
+
+        plt.figure()
+        plt.plot(t, X, label='X')
+        plt.plot(t, Y, label='Y')
+        plt.plot(t, Z, label='Z')
+        plt.tight_layout()
+
+
 def generate_MBHB_with_PSD_joint(pars, s_type='bhb_PhenomD'):
     tq_noise = TianQinNoise()
     lisa_noise = LISANoise()
@@ -118,14 +158,10 @@ def generate_MBHB_with_PSD_joint(pars, s_type='bhb_PhenomD'):
     BHBwf = waveforms[s_type](**pars)
     delta_f = 1e-6  # 1/BHBwf.T_obs
     freq = np.arange(np.ceil(BHBwf.f_min/delta_f)*delta_f, 1., delta_f)
-    amp, phase, tf = BHBwf.get_amp_phase(freq)
-    amp, phase, tf = amp[(2, 2)], phase[(2, 2)], tf[(2, 2)]
-    h22 = amp*np.exp(1j*phase)*np.exp(2j*np.pi*freq*BHBwf.tc)
     SMBBH_A = {}
 
     for d in ['TQ', 'LISA', 'Taiji']:
-        det = detectors[d](tf)
-        SMBBH_A[d], _, _ = trans_AET_fd(BHBwf.vec_k, BHBwf.p_22, det, freq)[0]*h22
+        SMBBH_A[d], _, _ = BHBwf.get_tdi_response(freq, det=d)
 
     plt.figure(figsize=(9, 6))
     plt.loglog(freq_, np.sqrt(TQ_A), 'k--', label='TQ noise')
@@ -160,17 +196,13 @@ def generate_SBHB_with_PSD_joint(par, s_type='bhb_EccFD'):
     BHBwf = waveforms['bhb_PhenomD'](**par)
     delta_f = 1e-5  # 1/BHBwf.T_obs
     freq_e0 = np.arange(np.ceil(BHBwf.f_min/delta_f)*delta_f, 1., delta_f)
-    amp, phase, tf = BHBwf.get_amp_phase(freq_e0)
-    amp, phase, tf = amp[(2, 2)], phase[(2, 2)], tf[(2, 2)]
-    h22 = amp*np.exp(1j*phase)*np.exp(2j*np.pi*freq_e0*BHBwf.tc)
 
     ecc_wf = waveforms[s_type](**par, eccentricity=0.1)
     smBBH_A_e0, smBBH_A_e1 = {}, {}
     for d in ['TQ', 'LISA', 'Taiji']:
-        det = detectors[d](tf)
-        smBBH_A_e0[d], _, _ = trans_AET_fd(BHBwf.vec_k, BHBwf.p_22, det, freq_e0)[0]*h22
-        smBBH_A_e1[d], freq_e1 = ecc_wf.fd_tdi_response(det=d, delta_f=delta_f)
-        
+        smBBH_A_e0[d], _, _ = BHBwf.get_tdi_response(freq_e0, det=d)
+        (smBBH_A_e1[d], _, _), freq_e1 = ecc_wf.get_tdi_response(det=d, delta_f=delta_f)
+
     plt.figure(figsize=(9, 6))
     plt.loglog(freq_, np.sqrt(TQ_A), 'k--', label='TQ noise')
     plt.loglog(freq_, np.sqrt(LISA_A), 'k-.', label='LISA noise')
@@ -249,7 +281,8 @@ if __name__ == "__main__":
                }  # masses of GW150914
     # generate_td_data(GCBpars)
     # generate_td_data(EMRIpars, s_type='emri')
-    generate_fd_data(BHBpars, show_y_slr=False)
+    # generate_fd_data(BHBpars, show_y_slr=False)
+    generate_fastgb()
 
     # generate_MBHB_with_PSD_joint(BHBpars)
     # generate_SBHB_with_PSD_joint(ecc_par)

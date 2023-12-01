@@ -17,3 +17,5 @@ src/pyIMRPhenomD.c
 dist/
 *.egg-info/
 *.egg
+
+tests/Untitled.ipynb

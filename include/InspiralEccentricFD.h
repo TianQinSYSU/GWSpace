@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <math.h>
 #include <complex.h>
 
@@ -84,7 +85,7 @@ int SimInspiralEccentricFD(Complex16FDWaveform **htilde,
                            double r,
                            double inclination_azimuth,
                            double e_min,
-                           double space_obs_T);
+                           bool space_cutoff);
 
 int SimInspiralEccentricFDAmpPhase(AmpPhaseFDWaveform ***h_amp_phase,
                                    double phiRef,
@@ -97,7 +98,7 @@ int SimInspiralEccentricFDAmpPhase(AmpPhaseFDWaveform ***h_amp_phase,
                                    double r,
                                    double inclination_azimuth,
                                    double e_min,
-                                   double space_obs_T);
+                                   bool space_cutoff);
 
 int SimInspiralEccentricFDAndPhase(AmpPhaseFDWaveform ***h_and_phase,
                                    double phiRef,
@@ -110,6 +111,6 @@ int SimInspiralEccentricFDAndPhase(AmpPhaseFDWaveform ***h_and_phase,
                                    double r,
                                    double inclination_azimuth,
                                    double e_min,
-                                   double space_obs_T);
+                                   bool space_cutoff);
 
 #endif //_INSPIRALECCENTRICFD_H

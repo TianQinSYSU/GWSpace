@@ -247,13 +247,11 @@ def frequency_noise_from_psd(psd, delta_f, seed=None):
     given psd. Note that if unique noise is desired a unique
     seed should be provided.
 
-    :param psd: FrequencySeries
-        The noise weighting to color the noise.
+    :param psd: The noise weighting to color the noise.
     :param delta_f:
     :param seed: in range (0, int) or None
         The seed to generate the noise. If None specified, the seed will not be reset.
-    :return: noise: FrequencySeries
-        A FrequencySeries containing gaussian noise colored by the given psd.
+    :return: noise: numpy array containing gaussian noise colored by the given psd.
     """
     sigma = (0.5*psd/delta_f)**0.5
     if seed is not None:
@@ -269,7 +267,7 @@ def frequency_noise_from_psd(psd, delta_f, seed=None):
 
     noise_red = noise_re+1j*noise_im
 
-    noise = np.zeros(len(sigma), dtype=complex)
+    noise = np.zeros(len(sigma), dtype=np.complex128)
     noise[not_zero] = noise_red
 
     return noise

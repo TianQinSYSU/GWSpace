@@ -74,15 +74,15 @@ class TianQinOrbit(Orbit):
         self.kappa0 = kappa0  # initial orbit phase of the first(n=1) spacecraft measured from \tilde{x} axis
 
         # Spacecraft orbit phase of the nth TQ spacecrafts
-        alp_t1 = self.alpha_detector(time, n=1)
-        alp_t2 = self.alpha_detector(time, n=2)
-        alp_t3 = self.alpha_detector(time, n=3)
+        # alp_t1 = self.alpha_detector(time, n=1)
+        # alp_t2 = self.alpha_detector(time, n=2)
+        # alp_t3 = self.alpha_detector(time, n=3)
 
         # 3D coordinate of each spacecraft vector (SSB)
         self._p_0 = self.earth_orbit_xyz(time)
-        self.orbits = (self._p_0+self.detector_orbit_xyz(alp_t1),
-                       self._p_0+self.detector_orbit_xyz(alp_t2),
-                       self._p_0+self.detector_orbit_xyz(alp_t3))
+        self.orbits = (self._p_0+self.detector_orbit_xyz(self.alpha_detector(time, n=1)),
+                       self._p_0+self.detector_orbit_xyz(self.alpha_detector(time, n=2)),
+                       self._p_0+self.detector_orbit_xyz(self.alpha_detector(time, n=3)))
 
     @property
     def f_0(self):
@@ -114,7 +114,7 @@ class TianQinOrbit(Orbit):
         return self._p_0
 
     def detector_orbit_xyz(self, alp_t):
-        sin_alp_t, cos_alp_t, cos_alp_2_t = np.sin(alp_t), np.cos(alp_t), np.cos(2*alp_t)
+        sin_alp_t, cos_alp_t = np.sin(alp_t), np.cos(alp_t)
         sn_ps, cs_ps = np.sin(self.phi_s), np.cos(self.phi_s)
         sn_ts, cs_ts = np.sin(self.theta_s), np.cos(self.theta_s)
         R_T = self.R_T
@@ -124,6 +124,7 @@ class TianQinOrbit(Orbit):
         z = -R_T * sin_alp_t * cs_ts
 
         if self.ecc:
+            cos_alp_2_t = np.cos(2*alp_t)
             x += R_T*(self.ecc*(0.5*(cos_alp_2_t-3)*sn_ps + cos_alp_t*cs_ps*sn_ts*sin_alp_t)
                       + self.ecc**2/4*sin_alp_t*((3*cos_alp_2_t-1)*cs_ps*sn_ts-6*cos_alp_t*sin_alp_t*sn_ps))
             y += R_T*(self.ecc*(-0.5*(cos_alp_2_t-3)*cs_ps + cos_alp_t*sn_ps*sn_ts*sin_alp_t)

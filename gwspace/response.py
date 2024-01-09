@@ -47,14 +47,13 @@ def get_y_slr_td(wf, tf, det, TDIgen=1):
     xi2 = (_matrix_res_pro(n2, p_p), _matrix_res_pro(n2, p_c))
     xi3 = (_matrix_res_pro(n3, p_p), _matrix_res_pro(n3, p_c))
 
-    kp1 = np.dot(k, p1)
-    kp2 = np.dot(k, p2)
-    kp3 = np.dot(k, p3)
+    tf_kp1 = tf - np.dot(k, p1)
+    tf_kp2 = tf - np.dot(k, p2)
+    tf_kp3 = tf - np.dot(k, p3)
     kn1 = np.dot(k, n1)
     kn2 = np.dot(k, n2)
     kn3 = np.dot(k, n3)
-
-    tf_kp1, tf_kp2, tf_kp3 = tf-kp1, tf-kp2, tf-kp3
+    del p1, p2, p3, n1, n2, n3, det
 
     # Here `i` is for `i*L` TDI_delay, in 1st generation TDI we consider delay up to 4,
     # i.e. t-0L, t-1L, t-2L, t-3L, t-4L. And then we calculate difference between each L delay
@@ -68,6 +67,7 @@ def get_y_slr_td(wf, tf, det, TDIgen=1):
     h2_p1 = h_tdi_delay(tf_kp1, *xi2)
     h1_p3 = h_tdi_delay(tf_kp3, *xi1)
     h1_p2 = h_tdi_delay(tf_kp2, *xi1)
+    del tf_kp1, tf_kp2, tf_kp3, xi1, xi2, xi3
 
     def get_y(hi_pj, hi_pk, denominator):
         return [(hi_pj[i+1]-hi_pk[i])/denominator for i in range(TDI_delay)]
@@ -128,34 +128,27 @@ def trans_y_slr_fd(vec_k, p, det, f):
     ls = det.L_T
     p_1, p_2, p_3 = det.orbits
 
-    x = np.pi * f * ls
-    # com_f = 1j/2 * x in (Marsat et al.) is because it was using the A,E,T which are 1/2 of their LDC definitions
+    # com_f = 1j/2*pi*f*ls in (Marsat et al.) is because it was using the A,E,T which are 1/2 of their LDC definitions
     # See (Eq. 2) of McWilliams et al. https://journals.aps.org/prd/abstract/10.1103/PhysRevD.81.064014
-    com_f = 1j * x
+    com_f = 1j*np.pi*f*ls
 
     vk12 = np.dot(vec_k, u12)
     vk23 = np.dot(vec_k, u23)
     vk13 = np.dot(vec_k, u13)
 
-    # In numpy, the sinc function is sin(pi x)/(pi x)
-    sin12 = np.sinc(f * ls * (1 - vk12))
-    sin23 = np.sinc(f * ls * (1 - vk23))
-    sin13 = np.sinc(f * ls * (1 - vk13))
-
-    sin21 = np.sinc(f * ls * (1 + vk12))
-    sin32 = np.sinc(f * ls * (1 + vk23))
-    sin31 = np.sinc(f * ls * (1 + vk13))
-
     exp12 = np.exp(1j * np.pi * f * (ls + np.dot(vec_k, p_1+p_2)))
     exp23 = np.exp(1j * np.pi * f * (ls + np.dot(vec_k, p_2+p_3)))
     exp31 = np.exp(1j * np.pi * f * (ls + np.dot(vec_k, p_3+p_1)))
+    del p_1, p_2, p_3, det
 
-    y12_pre = com_f * sin12 * exp12
-    y21_pre = com_f * sin21 * exp12
-    y13_pre = com_f * sin13 * exp31
-    y31_pre = com_f * sin31 * exp31
-    y23_pre = com_f * sin23 * exp23
-    y32_pre = com_f * sin32 * exp23
+    # In numpy, the sinc function is sin(pi x)/(pi x)
+    y12_pre = com_f * np.sinc(f * ls * (1 - vk12)) * exp12
+    y21_pre = com_f * np.sinc(f * ls * (1 + vk12)) * exp12
+    y13_pre = com_f * np.sinc(f * ls * (1 - vk13)) * exp31
+    y31_pre = com_f * np.sinc(f * ls * (1 + vk13)) * exp31
+    y23_pre = com_f * np.sinc(f * ls * (1 - vk23)) * exp23
+    y32_pre = com_f * np.sinc(f * ls * (1 + vk23)) * exp23
+    del vk12, vk23, vk13, exp12, exp31, exp23
 
     def trans_response(p_):
         n12pn12 = _matrix_res_pro(u12, p_)

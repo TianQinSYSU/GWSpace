@@ -43,19 +43,22 @@ class BasicNoise(object):
         Sp_nu = Sp_d*(2*PI*freq/C_SI)**2
         return Sa_nu, Sp_nu
 
+    def _check_noise_unit(self, freq, unit):
+        if unit == "relative_frequency":
+            return self.noises_relative_freq(freq)
+        elif unit == "displacement":
+            return self.noises_displacement(freq)
+        else:
+            raise ValueError(f"Unknown unit: {unit}. "
+                             f"Supported units: {'|'.join(['displacement', 'relative_frequency'])}")
+
     def sensitivity(self, freq):
         """ Sensitivity curve for **2** equivalent Michelson-like detectors (the prefactor is 20/3 not 10/3!) """
         Sa_d, Sp_d = self.noises_displacement(freq)
         return 20/3 / self.armLength**2 * (4*Sa_d + Sp_d) * (1 + 0.6*(freq/self.f_star)**2)
 
     def noise_XYZ(self, freq, unit="relative_frequency", TDIgen=1):
-        if unit == "relative_frequency":
-            Sa, Sp = self.noises_relative_freq(freq)
-        elif unit == "displacement":
-            Sa, Sp = self.noises_displacement(freq)
-        else:
-            raise ValueError(f"Unknown unit: {unit}. "
-                             f"Supported units: {'|'.join(['displacement', 'relative_frequency'])}")
+        Sa, Sp = self._check_noise_unit(freq, unit)
         u = 2*PI * freq * self.L_T
         s_x = 16 * np.sin(u)**2 * (2*(1+np.cos(u)**2)*Sa + Sp)
         s_xy = -8 * np.sin(u)**2 * np.cos(u) * (4*Sa + Sp)
@@ -68,11 +71,13 @@ class BasicNoise(object):
             raise NotImplementedError
 
     def noise_AET(self, freq, unit="relative_frequency", TDIgen=1):
-        # s_ae = 8 * np.sin(u)**2 * (4*(1+np.cos(u)+np.cos(u)**2)*Sa + (2+np.cos(u))*Sp)
-        # s_t = 16 * np.sin(u)**2 * (1-np.cos(u)) * (2*(1-np.cos(u))*Sa + Sp)
-        s_x, s_xy = self.noise_XYZ(freq, unit, TDIgen)
-        s_ae = s_x - s_xy
-        s_t = s_x + 2*s_xy
+        Sa, Sp = self._check_noise_unit(freq, unit)
+        u = 2*PI * freq * self.L_T
+        s_ae = 8 * np.sin(u)**2 * (4*(1+np.cos(u)+np.cos(u)**2)*Sa + (2+np.cos(u))*Sp)
+        s_t = 16 * np.sin(u)**2 * (1-np.cos(u)) * (2*(1-np.cos(u))*Sa + Sp)
+        # s_x, s_xy = self.noise_XYZ(freq, unit, TDIgen)
+        # s_ae = s_x - s_xy
+        # s_t = s_x + 2*s_xy
         return s_ae, s_t
 
 

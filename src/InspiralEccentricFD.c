@@ -410,7 +410,7 @@ int SimInspiralEccentricFD(
         const double r,                         /**< Distance of source (m) */
         const double inclination_azimuth,       /**< Azimuthal component of inclination angles [0, 2 PI]*/
         const double e_min,                     /**< Initial eccentricity at frequency f_min: range [0, 0.4] */
-        const double space_obs_T                /**< Observation time (Only required for space detector) (s) */
+        const bool space_cutoff                 /**< BOOL: if further cutoff the frequency (ONLY for space detector) */
 )
 {
     const double m1 = m1_SI / MSUN_SI;
@@ -448,7 +448,6 @@ int SimInspiralEccentricFD(
     if (fStart <= 0) ERROR(PD_EDOM, NULL);
     if (r <= 0) ERROR(PD_EDOM, NULL);
     if (fEnd < 0) ERROR(PD_EDOM, NULL);
-    if (space_obs_T < 0) ERROR(PD_EDOM, NULL);
 
 
     /* allocate htilde_p and htilde_c*/
@@ -457,9 +456,9 @@ int SimInspiralEccentricFD(
     else // End at user-specified freq.
         f_max = fEnd;
     n = (size_t) (f_max / deltaF + 1);
-    if (space_obs_T != 0.){
+    if (space_cutoff){
         fupper = (2.*fISCO > 1.) ? 1. : 2.*fISCO;
-        f_yr = pow(5., 3./8.)/(8*PI) * pow(mchirp, -5./8.) * pow(space_obs_T, -3./8.);
+        f_yr = fStart;
     }
 
     htilde_ = CreateComplex16FDWaveform(deltaF, n);
@@ -543,7 +542,7 @@ int SimInspiralEccentricFDAmpPhase(
         const double r,                         /**< Distance of source (m) */
         const double inclination_azimuth,       /**< Azimuthal component of inclination angles [0, 2 PI]*/
         const double e_min,                     /**< Initial eccentricity at frequency f_min: range [0, 0.4] */
-        const double space_obs_T                /**< Observation time (Only required for space detector) (s) */
+        const bool space_cutoff                 /**< BOOL: if further cutoff the frequency (ONLY for space detector) */
 )
 {
     const double m1 = m1_SI / MSUN_SI;
@@ -580,7 +579,6 @@ int SimInspiralEccentricFDAmpPhase(
     if (fStart <= 0) ERROR(PD_EDOM, NULL);
     if (r <= 0) ERROR(PD_EDOM, NULL);
     if (fEnd < 0) ERROR(PD_EDOM, NULL);
-    if (space_obs_T < 0) ERROR(PD_EDOM, NULL);
 
 
     /* allocate htilde_p and htilde_c*/
@@ -589,9 +587,9 @@ int SimInspiralEccentricFDAmpPhase(
     else // End at user-specified freq.
         f_max = fEnd;
     n = (size_t) (f_max / deltaF + 1);
-    if (space_obs_T != 0.){
+    if (space_cutoff){
         fupper = (2.*fISCO > 1.) ? 1. : 2.*fISCO;
-        f_yr = pow(5., 3./8.)/(8*PI) * pow(mchirp, -5./8.) * pow(space_obs_T, -3./8.);
+        f_yr = fStart;
     }
 
     *h_amp_phase = (AmpPhaseFDWaveform **) malloc(sizeof(AmpPhaseFDWaveform *) * 10);
@@ -669,7 +667,7 @@ int SimInspiralEccentricFDAndPhase(
         const double r,                         /**< Distance of source (m) */
         const double inclination_azimuth,       /**< Azimuthal component of inclination angles [0, 2 PI]*/
         const double e_min,                     /**< Initial eccentricity at frequency f_min: range [0, 0.4] */
-        const double space_obs_T                /**< Observation time (Only required for space detector) (s) */
+        const bool space_cutoff                 /**< BOOL: if further cutoff the frequency (ONLY for space detector) */
 )
 {
     const double m1 = m1_SI / MSUN_SI;
@@ -706,7 +704,6 @@ int SimInspiralEccentricFDAndPhase(
     if (fStart <= 0) ERROR(PD_EDOM, NULL);
     if (r <= 0) ERROR(PD_EDOM, NULL);
     if (fEnd < 0) ERROR(PD_EDOM, NULL);
-    if (space_obs_T < 0) ERROR(PD_EDOM, NULL);
 
 
     /* allocate htilde_p and htilde_c*/
@@ -715,9 +712,9 @@ int SimInspiralEccentricFDAndPhase(
     else // End at user-specified freq.
         f_max = fEnd;
     n = (size_t) (f_max / deltaF + 1);
-    if (space_obs_T != 0.){
+    if (space_cutoff){
         fupper = (2.*fISCO > 1.) ? 1. : 2.*fISCO;
-        f_yr = pow(5., 3./8.)/(8*PI) * pow(mchirp, -5./8.) * pow(space_obs_T, -3./8.);
+        f_yr = fStart;
     }
 
     *h_and_phase = (AmpPhaseFDWaveform **) malloc(sizeof(AmpPhaseFDWaveform *) * 10);

@@ -325,7 +325,7 @@ class BHBWaveformEcc(BasicWaveform):
                 'eccentricity': self.eccentricity}
         return args
 
-    def get_ori_waveform(self, delta_f=None, f_min=None, f_max=1., hphc=False):
+    def get_ori_waveform(self, delta_f=None, f_min=None, f_max=1., hphc=False, space_cutoff=False):
         """ Generate F-Domain eccentric waveform for TDI response. (EccentricFD) """
         if not f_min:
             f_min = self.f_min
@@ -334,16 +334,16 @@ class BHBWaveformEcc(BasicWaveform):
 
         if hphc:
             return gen_ecc_fd_waveform(**self.wave_para(), delta_f=delta_f,
-                                       f_lower=f_min, f_final=f_max, obs_time=0)
+                                       f_lower=f_min, f_final=f_max, space_cutoff=space_cutoff)
         return gen_ecc_fd_and_tf(self.tc, **self.wave_para(), delta_f=delta_f,
-                                 f_lower=f_min, f_final=f_max, obs_time=0)
+                                 f_lower=f_min, f_final=f_max, space_cutoff=space_cutoff)
 
     def get_tdi_response(self, delta_f=None, f_min=None, f_max=1., channel='AET', det='TQ', TDIgen=1, **kwargs):
         """ Generate F-Domain TDI response for eccentric waveform (EccentricFD).
          Although the eccentric waveform also have (l, m)=(2,2), it has eccentric harmonics,
          which should also calculate separately like what we should do for spherical harmonics."""
         trans_func, det_class = check_detector_and_channel(det, channel)
-        wf, freq = self.get_ori_waveform(delta_f, f_min, f_max)
+        wf, freq = self.get_ori_waveform(delta_f, f_min, f_max, space_cutoff=True)
 
         gw_tdi = np.zeros(shape=(3, len(freq)), dtype=np.complex128)
         t_delay = np.exp(2j*PI*freq*self.tc)

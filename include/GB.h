@@ -89,7 +89,7 @@ void alloc_waveform(struct Waveform *wfm);
 void free_waveform(struct Waveform *wfm);
 
 void fft_data(struct Waveform *wfm);
-void unpack_data(struct Waveform *wfm);
+void unpack_data(struct Waveform *wfm, double dt);
 void fill_time_series(struct Waveform *wfm, int n);
 
 long get_N(double *params, double Tobs);

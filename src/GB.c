@@ -63,7 +63,7 @@ void Fast_GB(double *params, long N, double Tobs, double dt,
 	}
 
 	fft_data(wfm);     // Numerical Fourier transform of slowly evolving signal
-	unpack_data(wfm);  // Unpack arrays from FFT and normalize
+	unpack_data(wfm, dt);  // Unpack arrays from FFT and normalize
 
 
 	//printf("Stas, Tobs = %f \n", Tobs);
@@ -139,25 +139,25 @@ void fill_time_series(struct Waveform *wfm, int n)
 	return;
 }
 
-void unpack_data(struct Waveform *wfm)
+void unpack_data(struct Waveform *wfm, double dt)
 {
 	long i;
 	long N = wfm->N;
 
 	for(i=0; i<N; i++)
 	{	// populate from most negative (Nyquist) to most positive (Nyquist-1)
-		wfm->a12[i]   = wfm->data12[N+i]/(double)N;
-		wfm->a21[i]   = wfm->data21[N+i]/(double)N;
-		wfm->a31[i]   = wfm->data31[N+i]/(double)N;
-		wfm->a12[i+N] = wfm->data12[i]/(double)N;
-		wfm->a21[i+N] = wfm->data21[i]/(double)N;
-		wfm->a31[i+N] = wfm->data31[i]/(double)N;
-		wfm->a13[i]   = wfm->data13[N+i]/(double)N;
-		wfm->a23[i]   = wfm->data23[N+i]/(double)N;
-		wfm->a32[i]   = wfm->data32[N+i]/(double)N;
-		wfm->a13[i+N] = wfm->data13[i]/(double)N;
-		wfm->a23[i+N] = wfm->data23[i]/(double)N;
-		wfm->a32[i+N] = wfm->data32[i]/(double)N;
+		wfm->a12[i]   = wfm->data12[N+i]/(double)N*(wfm->T/dt);
+		wfm->a21[i]   = wfm->data21[N+i]/(double)N*(wfm->T/dt);
+		wfm->a31[i]   = wfm->data31[N+i]/(double)N*(wfm->T/dt);
+		wfm->a12[i+N] = wfm->data12[i]/(double)N*(wfm->T/dt);
+		wfm->a21[i+N] = wfm->data21[i]/(double)N*(wfm->T/dt);
+		wfm->a31[i+N] = wfm->data31[i]/(double)N*(wfm->T/dt);
+		wfm->a13[i]   = wfm->data13[N+i]/(double)N*(wfm->T/dt);
+		wfm->a23[i]   = wfm->data23[N+i]/(double)N*(wfm->T/dt);
+		wfm->a32[i]   = wfm->data32[N+i]/(double)N*(wfm->T/dt);
+		wfm->a13[i+N] = wfm->data13[i]/(double)N*(wfm->T/dt);
+		wfm->a23[i+N] = wfm->data23[i]/(double)N*(wfm->T/dt);
+		wfm->a32[i+N] = wfm->data32[i]/(double)N*(wfm->T/dt);
 	}
 
 	//   Renormalize so that the resulting time series is real

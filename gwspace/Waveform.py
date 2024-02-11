@@ -144,7 +144,7 @@ class BasicWaveform(object):
 
 
 class BurstWaveform(object):
-    """ A sin-Gaussian waveforms for poorly modelled burst source. """
+    """ A sin-Gaussian waveform for poorly modelled burst source. """
 
     def __init__(self, amp, tau, fc, tc=0):
         self.amp = amp

@@ -29,7 +29,7 @@ The following waveform will be automatically complied during the installation un
 
   - `FastGB`:
     - A modified version of GCB waveform generation code `Galaxy` in the Mock LISA Data Challenge (MLDC).
-    - The code using a fast/slow decomposition of the waveform to reduce the computational cost, see [arXiv:0704.1808](https://arxiv.org/abs/0704.1808) for more details.
+    - It uses a fast/slow decomposition of the waveform to reduce the computational cost, see [arXiv:0704.1808](https://arxiv.org/abs/0704.1808) for more details.
   - GCB time-domain waveform generation using Python: See class `GCBWaveform`.
 
 - Binary black hole (BBH): `IMRPhenomD`

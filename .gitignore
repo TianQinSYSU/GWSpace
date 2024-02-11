@@ -8,8 +8,7 @@ gitpush.sh
 *.npy
 
 .idea
-.ipynb_checkpoints/
-*.ipynb
+*.ipynb_checkpoints/
 tests/gwspace
 Waveforms
 

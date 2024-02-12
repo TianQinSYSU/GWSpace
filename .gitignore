@@ -9,7 +9,7 @@ gitpush.sh
 
 .idea
 *.ipynb_checkpoints/
-tests/gwspace
+examples/gwspace
 Waveforms
 
 src/FastGB.c

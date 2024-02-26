@@ -8,9 +8,8 @@ gitpush.sh
 *.npy
 
 .idea
-.ipynb_checkpoints/
-*.ipynb
-tests/gwspace
+*.ipynb_checkpoints/
+examples/gwspace
 Waveforms
 
 src/FastGB.c

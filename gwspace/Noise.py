@@ -78,7 +78,13 @@ class BasicNoise(object):
         # s_x, s_xy = self.noise_XYZ(freq, unit, TDIgen)
         # s_ae = s_x - s_xy
         # s_t = s_x + 2*s_xy
-        return s_ae, s_t
+        if TDIgen == 1:
+            return s_ae, s_t
+        elif TDIgen == 2:  # TODO: check the 2nd generation TDI!!!
+            fact = 4*np.sin(2*u)**2
+            return s_ae*fact, s_t*fact
+        else:
+            raise NotImplementedError
 
 
 class TianQinNoise(BasicNoise):

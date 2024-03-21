@@ -12,6 +12,15 @@ import numpy as np
 
 from gwspace.constants import C_SI, H0_SI, Omega_m_Planck2018
 
+class GeneralPars:
+
+    def __init__(self, value, unit=None, info=None):
+        self.value = value
+        self.unit = unit
+        self.info = info
+
+    def __repr__(self):
+        return f"{self.value} {self.unit} \n{self.info}"
 
 def to_m1m2(m_chirp, eta):
     m1 = m_chirp/(2*eta**(3/5))*(1+(1-4*eta)**0.5)

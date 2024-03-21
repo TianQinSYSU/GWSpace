@@ -92,7 +92,7 @@ with open(fp_const_h, "r") as fp_in:
 
 setup(
     name='gwspace',
-    version='0.0.1',
+    version='0.1.0',
     ext_modules=cythonize(extensions),
     author='En-Kun Li, Han Wang',
     packages=find_packages(),

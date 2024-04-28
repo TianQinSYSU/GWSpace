@@ -53,11 +53,11 @@ fastgb_ext = func_ext("libFastGB",
                           "src/GB.c",
                       ])
 
-eccfd_ext = func_ext('libEccFD',  # name of the lib
-                     src=['src/InspiralEccentricFD.c',
-                          'src/InspiralEccentricFDBasic.c',
-                          'src/InspiralOptimizedCoefficientsEccentricityFD.c',
-                          ])
+# eccfd_ext = func_ext('libEccFD',  # name of the lib
+#                      src=['src/InspiralEccentricFD.c',
+#                           'src/InspiralEccentricFDBasic.c',
+#                           'src/InspiralOptimizedCoefficientsEccentricityFD.c',
+#                           ])
 
 imrphd_ext = func_ext('pyIMRPhenomD',
                       src=[
@@ -69,7 +69,7 @@ imrphd_ext = func_ext('pyIMRPhenomD',
 # add all extensions
 extensions = []
 extensions.append(fastgb_ext)
-extensions.append(eccfd_ext)
+# extensions.append(eccfd_ext)
 extensions.append(imrphd_ext)
 
 # translate the constants.h to constants.py

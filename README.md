@@ -11,7 +11,9 @@ For more details, see [doc file](./docs/GWSpace.pdf) or [arXiv:2309.15020](https
 ## Quick install
 
 ```shell
-python setup.py install --with-gsl=/your/gsl/path
+git clone --recurse-submodules https://github.com/TianQinSYSU/GWSpace
+cd /GWSpace
+pip install -r requirements.txt . --global-option="--with-gsl=/your/gsl/path"
 ```
 
 

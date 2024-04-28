@@ -17,7 +17,7 @@ from gwspace.utils import sYlm
 from gwspace.constants import MSUN_SI, MTSUN_SI, MPC_SI, YRSID_SI, PI, PI_2, C_SI
 from gwspace.response import trans_AET_fd, trans_XYZ_fd
 
-from gwspace.eccentric_fd import gen_ecc_fd_and_tf, gen_ecc_fd_waveform
+from pyEccentricFD import gen_ecc_fd_waveform, gen_ecc_fd_and_phase
 try:
     from PyIMRPhenomD import IMRPhenomD as pyIMRD
     from PyIMRPhenomD import IMRPhenomD_const as pyIMRc
@@ -335,8 +335,24 @@ class BHBWaveformEcc(BasicWaveform):
         if hphc:
             return gen_ecc_fd_waveform(**self.wave_para(), delta_f=delta_f,
                                        f_lower=f_min, f_final=f_max, space_cutoff=space_cutoff)
-        return gen_ecc_fd_and_tf(self.tc, **self.wave_para(), delta_f=delta_f,
-                                 f_lower=f_min, f_final=f_max, space_cutoff=space_cutoff)
+        else:
+            wf = gen_ecc_fd_and_phase(**self.wave_para(), delta_f=delta_f,
+                                      f_lower=f_min, f_final=f_max, space_cutoff=space_cutoff)
+            length = len(wf[10])
+            freq = delta_f*np.array(range(length))
+            # use the harmonic j=2 to calculate t_f, and rescale it for different harmonics
+            index = (wf[10] != 0).argmax()
+            phase = wf[10][index:]
+            tf_spline = Spline(freq[index:], -1/(2*np.pi)*(phase-phase[0])).derivative()
+            wf_tf = []
+
+            for i in range(10):
+                tf_vec = np.zeros(shape=(length,), dtype=np.float64)
+                h_p, h_c = wf[i]
+                index = (h_p != 0).argmax()
+                tf_vec[index:] = tf_spline(freq[index:])*((i+1)/2)**(8/3)+self.tc
+                wf_tf.append((h_p, h_c, tf_vec))
+            return tuple(wf_tf), freq
 
     def get_tdi_response(self, delta_f=None, f_min=None, f_max=1., channel='AET', det='TQ', TDIgen=1, **kwargs):
         """ Generate F-Domain TDI response for eccentric waveform (EccentricFD).

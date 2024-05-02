@@ -15,7 +15,8 @@ git clone --recurse-submodules https://github.com/TianQinSYSU/GWSpace
 cd /GWSpace
 pip install -r requirements.txt . --global-option="--with-gsl=/your/gsl/path"
 ```
-
+- Remove `-r requirements.txt` if you want to install GWSpace only.
+- If `--with-gsl` is not given, default `gsl` path is `/usr`.
 
 ## GW waveforms
 
@@ -43,8 +44,9 @@ The following waveform will be automatically complied during the installation un
 - Stellar-mass BBH (with eccentricity): `EccentricFD`
 
   - This is a modified version of `EccentricFD` waveform, which is specially for space-detector responses.
-  - If you want to check the original codes, see files in [LALSuite](https://github.com/lscsoft/lalsuite/tree/master/lalsimulation/lib)
-  - If you want a pure modified version of this waveform, check [this link](https://github.com/HumphreyWang/pyEccentricFD)
+  - If you want to check the original codes, see files in [LALSuite](https://github.com/lscsoft/lalsuite/tree/master/lalsimulation/lib).
+  - This has been linked as a **submodule** of GWSpace, click [here](https://github.com/HumphreyWang/pyEccentricFD) to check the submodule itself.
+    - This submodule is included in `requirements.txt`, it will be installed when installing this list.
 
 - Stochastic gravitational wave background (SGWB):
 

@@ -17,7 +17,6 @@ from gwspace.utils import sYlm
 from gwspace.constants import MSUN_SI, MTSUN_SI, MPC_SI, YRSID_SI, PI, PI_2, C_SI
 from gwspace.response import trans_AET_fd, trans_XYZ_fd
 
-from pyEccentricFD import gen_ecc_fd_waveform, gen_ecc_fd_and_phase
 try:
     from PyIMRPhenomD import IMRPhenomD as pyIMRD
     from PyIMRPhenomD import IMRPhenomD_const as pyIMRc
@@ -327,6 +326,8 @@ class BHBWaveformEcc(BasicWaveform):
 
     def get_ori_waveform(self, delta_f=None, f_min=None, f_max=1., hphc=False, space_cutoff=False):
         """ Generate F-Domain eccentric waveform for TDI response. (EccentricFD) """
+        from pyEccentricFD import gen_ecc_fd_waveform, gen_ecc_fd_and_phase
+
         if not f_min:
             f_min = self.f_min
         if delta_f is None:

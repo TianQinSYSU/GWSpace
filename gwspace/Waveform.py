@@ -324,43 +324,56 @@ class BHBWaveformEcc(BasicWaveform):
                 'eccentricity': self.eccentricity}
         return args
 
-    def get_ori_waveform(self, delta_f=None, f_min=None, f_max=1., hphc=False, space_cutoff=False):
-        """ Generate F-Domain eccentric waveform for TDI response. (EccentricFD) """
-        from pyEccentricFD import gen_ecc_fd_waveform, gen_ecc_fd_and_phase
+    def get_hphc(self, delta_f=None, f_min=None, f_max=1., f_ref=0., space_cutoff=False):
+        from pyEccentricFD import gen_ecc_fd_waveform
 
         if not f_min:
             f_min = self.f_min
         if delta_f is None:
             delta_f = 1/self.T_obs
 
-        if hphc:
-            return gen_ecc_fd_waveform(**self.wave_para(), delta_f=delta_f,
-                                       f_lower=f_min, f_final=f_max, space_cutoff=space_cutoff)
-        else:
-            wf = gen_ecc_fd_and_phase(**self.wave_para(), delta_f=delta_f,
+        return gen_ecc_fd_waveform(**self.wave_para(), f_ref=f_ref, delta_f=delta_f,
+                                   f_lower=f_min, f_final=f_max, space_cutoff=space_cutoff)
+
+    def get_ori_waveform(self, delta_f=None, f_min=None, f_max=1., f_ref=0., f_series=None, space_cutoff=False):
+        """ Generate F-Domain eccentric waveform for TDI response. (EccentricFD)
+         If f_series is not given, it will generate waveform using delta_f, f_min, f_max."""
+        from pyEccentricFD import gen_ecc_fd_and_phase, gen_ecc_fd_and_phase_sequence
+
+        if f_series is None:
+            if not f_min:
+                f_min = self.f_min
+            if delta_f is None:
+                delta_f = 1/self.T_obs
+
+            wf = gen_ecc_fd_and_phase(**self.wave_para(), f_ref=f_ref, delta_f=delta_f,
                                       f_lower=f_min, f_final=f_max, space_cutoff=space_cutoff)
-            length = len(wf[10])
-            freq = delta_f*np.array(range(length))
-            # use the harmonic j=2 to calculate t_f, and rescale it for different harmonics
-            index = (wf[10] != 0).argmax()
-            phase = wf[10][index:]
-            tf_spline = Spline(freq[index:], -1/(2*np.pi)*(phase-phase[0])).derivative()
-            wf_tf = []
+            f_series = delta_f*np.array(range(len(wf[10])))
+        else:
+            wf = gen_ecc_fd_and_phase_sequence(f_series, **self.wave_para(), f_ref=f_ref, space_cutoff=space_cutoff)
 
-            for i in range(10):
-                tf_vec = np.zeros(shape=(length,), dtype=np.float64)
-                h_p, h_c = wf[i]
-                index = (h_p != 0).argmax()
-                tf_vec[index:] = tf_spline(freq[index:])*((i+1)/2)**(8/3)+self.tc
-                wf_tf.append((h_p, h_c, tf_vec))
-            return tuple(wf_tf), freq
+        # use the harmonic j=2 to calculate t_f, and rescale it for different harmonics
+        index = (wf[10] != 0).argmax()
+        phase = wf[10][index:]
+        tf_spline = Spline(f_series[index:], -1/(2*np.pi)*(phase-phase[0])).derivative()
+        wf_tf = []
 
-    def get_tdi_response(self, delta_f=None, f_min=None, f_max=1., channel='AET', det='TQ', TDIgen=1, **kwargs):
+        for i in range(10):
+            tf_vec = np.zeros(shape=(len(f_series),), dtype=np.float64)
+            h_p, h_c = wf[i]
+            index = (h_p != 0).argmax()
+            tf_vec[index:] = tf_spline(f_series[index:])*((i+1)/2)**(8/3)+self.tc
+            wf_tf.append((h_p, h_c, tf_vec))
+        return tuple(wf_tf), f_series
+
+    def get_tdi_response(self, delta_f=None, f_min=None, f_max=1., f_ref=0., f_series=None,
+                         channel='AET', det='TQ', TDIgen=1, **kwargs):
         """ Generate F-Domain TDI response for eccentric waveform (EccentricFD).
+         If f_series is not given, it will generate waveform using delta_f, f_min, f_max.
          Although the eccentric waveform also have (l, m)=(2,2), it has eccentric harmonics,
          which should also calculate separately like what we should do for spherical harmonics."""
         trans_func, det_class = check_detector_and_channel(det, channel)
-        wf, freq = self.get_ori_waveform(delta_f, f_min, f_max, space_cutoff=True)
+        wf, freq = self.get_ori_waveform(delta_f, f_min, f_max, f_ref, f_series, space_cutoff=True)
 
         gw_tdi = np.zeros(shape=(3, len(freq)), dtype=np.complex128)
         t_delay = np.exp(2j*PI*freq*self.tc)

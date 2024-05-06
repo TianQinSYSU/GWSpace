@@ -1,0 +1,3 @@
+[submodule "pyEccentricFD"]
+	path = pyEccentricFD
+	url = https://github.com/HumphreyWang/pyEccentricFD

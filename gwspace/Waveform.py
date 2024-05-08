@@ -227,15 +227,21 @@ class BHBWaveform(BasicWaveform):
         dl_si = self.DL * MPC_SI
         return phi_ref, f_ref, m1_si, m2_si, chi1, chi2, dl_si
 
-    def get_amp_phase(self, freq, f_ref=0.):
+    def get_amp_phase(self, delta_f=None, f_min=None, f_max=1., f_ref=0., f_series=None):
         """ Generate amp and phase in frequency domain.
 
-        :param freq: Frequency list
+        :param delta_f:
+        :param f_min:
+        :param f_max:
         :param f_ref: Reference frequency (default: 0.)
+        :param f_series: Frequency list, if not given, it will generate waveform using delta_f, f_min, f_max
         :return: (amp, phase, tf (, tfp)): (amplitude, phase, t of f (, dt/df))
         """
+        if f_series is None:
+            f_series = np.arange(f_min, f_max, delta_f)
+
         if use_py_phd:
-            NF = freq.shape[0]
+            NF = f_series.shape[0]
 
             amp_imr = np.zeros(NF)
             phase_imr = np.zeros(NF)
@@ -248,38 +254,39 @@ class BHBWaveform(BasicWaveform):
             
             t0 = self.tc
             # Create structure for Amp/phase/time FD waveform
-            h22 = pyIMRD.AmpPhaseFDWaveform(NF, freq, amp_imr, phase_imr, time_imr, timep_imr, f_ref, t0)
+            h22 = pyIMRD.AmpPhaseFDWaveform(NF, f_series, amp_imr, phase_imr, time_imr, timep_imr, f_ref, t0)
             # Generate h22 FD amplitude and phase on a given set of frequencies
-            h22 = pyIMRD.IMRPhenomDGenerateh22FDAmpPhase(h22, freq, *self.wave_para_phenomd(f_ref))
+            h22 = pyIMRD.IMRPhenomDGenerateh22FDAmpPhase(h22, f_series, *self.wave_para_phenomd(f_ref))
 
             amp = {(2, 2): h22.amp}
             phase = {(2, 2): h22.phase}
             tf = {(2, 2): h22.time}
             # tfp = {(2, 2): h22.timep}
         else:
-            wf_phd_class = pyIMRD(freq, *self.wave_para_phenomd(f_ref))
-            freq, amp_22, phase_22 = wf_phd_class.GetWaveform()
+            wf_phd_class = pyIMRD(f_series, *self.wave_para_phenomd(f_ref))
+            f_series, amp_22, phase_22 = wf_phd_class.GetWaveform()
             # Note: these are actually cython pointers, we should also use .copy() to acquire ownership
-            freq, amp_22, phase_22 = freq.copy(), amp_22.copy(), phase_22.copy()
-            tf_spline = Spline(freq, 1/(2*PI)*(phase_22 - phase_22[0])).derivative()
-            tf_22 = tf_spline(freq) + self.tc
+            f_series, amp_22, phase_22 = f_series.copy(), amp_22.copy(), phase_22.copy()
+            tf_spline = Spline(f_series, 1/(2*PI)*(phase_22-phase_22[0])).derivative()
+            tf_22 = tf_spline(f_series)+self.tc
             amp = {(2, 2): amp_22}
             phase = {(2, 2): phase_22}
             tf = {(2, 2): tf_22}
 
         return amp, phase, tf
 
-    def get_tdi_response(self, freq, channel='AET', det='TQ', TDIgen=1, **kwargs):
+    def get_tdi_response(self, delta_f=None, f_min=None, f_max=1., f_ref=0., f_series=None,
+                         channel='AET', det='TQ', TDIgen=1, **kwargs):
         trans_func, det_class = check_detector_and_channel(det, channel)
-        amp, phase, tf = self.get_amp_phase(freq)
+        amp, phase, tf = self.get_amp_phase(delta_f, f_min, f_max, f_ref, f_series)
 
-        gw_tdi = np.zeros(shape=(3, len(freq)), dtype=np.complex128)
-        t_delay = np.exp(2j*PI*freq*self.tc)
+        gw_tdi = np.zeros(shape=(3, len(f_series)), dtype=np.complex128)
+        t_delay = np.exp(2j*PI*f_series*self.tc)
         for k in amp.keys():
             h_lm = amp[k]*np.exp(1j*phase[k])
 
             det = det_class(tf[k], **kwargs)
-            gw_tdi_lm = trans_func(self.vec_k, self.p_lm(*k), det, freq, TDIgen)[0]
+            gw_tdi_lm = trans_func(self.vec_k, self.p_lm(*k), det, f_series, TDIgen)[0]
             gw_tdi += gw_tdi_lm * h_lm[None, :]
 
         return gw_tdi*t_delay
@@ -299,7 +306,7 @@ class BHBWaveformEcc(BasicWaveform):
     :param iota: Inclination angle [0, pi]
     :param var_phi: Observer phase [0, 2pi]
     :param psi: Polarization angle [0, pi]
-    :param eccentricity: initial eccentricity at f_min, [0, 0.4)
+    :param eccentricity: initial eccentricity at f_ref, [0, 0.4)
     :param kwargs: Additional parameters need to save
     """
     __slots__ = 'eccentricity'
@@ -337,7 +344,9 @@ class BHBWaveformEcc(BasicWaveform):
 
     def get_ori_waveform(self, delta_f=None, f_min=None, f_max=1., f_ref=0., f_series=None, space_cutoff=False):
         """ Generate F-Domain eccentric waveform for TDI response. (EccentricFD)
-         If f_series is not given, it will generate waveform using delta_f, f_min, f_max."""
+         If f_series is not given, it will generate waveform using delta_f, f_min, f_max.
+         If f_ref=0, reference frequency will be automatically set as f_min, or starting frequency for f_series.
+         TODO: add more description here!"""
         from pyEccentricFD import gen_ecc_fd_and_phase, gen_ecc_fd_and_phase_sequence
 
         if f_series is None:

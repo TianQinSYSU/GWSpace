@@ -10,7 +10,7 @@
 
 import numpy as np
 
-from gwspace.constants import C_SI, H0_SI, Omega_m_Planck2018
+from gwspace.constants import C_SI, H0_SI, Omega_m_Planck2018, MTSUN_SI
 
 class GeneralPars:
 
@@ -27,6 +27,13 @@ def to_m1m2(m_chirp, eta):
     m2 = m_chirp/eta**(3/5)-m1
     return m1, m2
 
+def toff0PN(tc, t, Mc):
+    '''
+    Newtonian estimate of the relation f(deltat) (for the 22 mode freq) 
+    - gives the starting geometric frequency for a given time to merger and chirp mass 
+    - output in Hz
+    '''
+    return 1/(8*np.pi) * (MTSUN_SI*Mc)**(-5/8) * ((tc - t)/5)**(-3/8)
 
 def luminosity_distance_approx(z, omega_m=Omega_m_Planck2018):
     """ An analytical approximation of the luminosity distance in flat cosmologies.

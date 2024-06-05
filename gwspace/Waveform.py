@@ -13,7 +13,7 @@ from numpy import sin, cos, sqrt
 from scipy.interpolate import InterpolatedUnivariateSpline as Spline
 
 from gwspace.Orbit import detectors
-from gwspace.utils import sYlm
+from gwspace.utils import sYlm, toff0PN
 from gwspace.constants import MSUN_SI, MTSUN_SI, MPC_SI, YRSID_SI, PI, PI_2, C_SI
 from gwspace.response import trans_AET_fd, trans_XYZ_fd
 
@@ -197,9 +197,38 @@ class BHBWaveform(BasicWaveform):
     # def __eq__(self, other):
     #     return all([getattr(self, key) == getattr(other, key) for key in self._true_para_key])
 
+    #@property
+    #def f_min(self):
+    #    return 5**(3/8)/(8*PI) * (MTSUN_SI*self.Mc)**(-5/8) * self.T_obs**(-3/8)
+
     @property
     def f_min(self):
-        return 5**(3/8)/(8*PI) * (MTSUN_SI*self.Mc)**(-5/8) * self.T_obs**(-3/8)
+        '''
+        using the 0PN waveform to calculate the general minimal frequency
+        or the start frequency
+        '''
+        if (self.tc == 0.0):
+            tc = self.T_obs
+        else:
+            tc = self.tc
+        return max(toff0PN(tc, 0.0, self.Mc), 1e-4)
+
+    @property
+    def f_max(self):
+        '''
+        using the 0PN waveform to calculate the general minimal frequency
+        or the start frequency
+        '''
+        MfCUT_PhenomD = 0.2 - 1e-7
+        Ms = self.Mt * MTSUN_SI
+        fCUT_PhD = MfCUT_PhenomD / Ms
+
+        if (self.tc <= self.T_obs): # tc == 0 also in it
+            fc = fCUT_PhD
+        else:
+            fc = toff0PN(self.tc, self.T_obs, self.Mc)
+
+        return np.min([fCUT_PhD, fc, 1.0])
 
     def p_lm(self, l=2, m=2):
         """See Marsat et al. (Eq. 16) https://journals.aps.org/prd/abstract/10.1103/PhysRevD.103.083011"""
@@ -313,7 +342,33 @@ class BHBWaveformEcc(BasicWaveform):
 
     @property
     def f_min(self):
-        return 5**(3/8)/(8*PI) * (MTSUN_SI*self.Mc)**(-5/8) * self.T_obs**(-3/8)
+        '''
+        using the 0PN waveform to calculate the general minimal frequency
+        or the start frequency
+        '''
+        if (self.tc == 0.0):
+            tc = self.T_obs
+        else:
+            tc = self.tc
+        return max(toff0PN(tc, 0.0, self.Mc), 1e-4)
+
+    @property
+    def f_max(self):
+        '''
+        using the 0PN waveform to calculate the general minimal frequency
+        or the start frequency
+        '''
+        MfCUT_PhenomD = 0.2 - 1e-7
+        Ms = self.Mt * MTSUN_SI
+        fCUT_PhD = MfCUT_PhenomD / Ms
+
+        if (self.tc <= self.T_obs): # tc == 0 also in it
+            fc = fCUT_PhD
+        else:
+            fc = toff0PN(self.tc, self.T_obs, self.Mc)
+
+        return np.min([fCUT_PhD, fc, 1.0])
+
 
     def wave_para(self):
         args = {'mass1': self.mass1*MSUN_SI,
@@ -325,10 +380,13 @@ class BHBWaveformEcc(BasicWaveform):
                 'eccentricity': self.eccentricity}
         return args
 
-    def get_ori_waveform(self, delta_f=None, f_min=None, f_max=1., hphc=False, space_cutoff=False):
+    def get_ori_waveform(self, delta_f=None, f_min=None, f_max=None, hphc=False, space_cutoff=False):
         """ Generate F-Domain eccentric waveform for TDI response. (EccentricFD) """
         if not f_min:
             f_min = self.f_min
+        if not f_max:
+            f_max = self.f_max
+
         if delta_f is None:
             delta_f = 1/self.T_obs
 
@@ -338,7 +396,7 @@ class BHBWaveformEcc(BasicWaveform):
         return gen_ecc_fd_and_tf(self.tc, **self.wave_para(), delta_f=delta_f,
                                  f_lower=f_min, f_final=f_max, space_cutoff=space_cutoff)
 
-    def get_tdi_response(self, delta_f=None, f_min=None, f_max=1., channel='AET', det='TQ', TDIgen=1, **kwargs):
+    def get_tdi_response(self, delta_f=None, f_min=None, f_max=None, channel='AET', det='TQ', TDIgen=1, **kwargs):
         """ Generate F-Domain TDI response for eccentric waveform (EccentricFD).
          Although the eccentric waveform also have (l, m)=(2,2), it has eccentric harmonics,
          which should also calculate separately like what we should do for spherical harmonics."""

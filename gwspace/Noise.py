@@ -10,7 +10,8 @@
  PSDs in different channels, sensitivity curve, etc."""
 
 import numpy as np
-from scipy import interpolate
+import warnings
+from scipy.interpolate import interp1d
 
 from gwspace.constants import C_SI, PI
 
@@ -52,16 +53,24 @@ class BasicNoise(object):
             raise ValueError(f"Unknown unit: {unit}. "
                              f"Supported units: {'|'.join(['displacement', 'relative_frequency'])}")
 
-    def sensitivity(self, freq):
-        """ Sensitivity curve for **2** equivalent Michelson-like detectors (the prefactor is 20/3 not 10/3!) """
+    def sensitivity(self, freq, wd_foreground=0.):
+        """ Sensitivity curve for **1** equivalent Michelson-like detectors, note that the prefactor is 20/3,
+         if consider a combined sensitivity, then we should divide it by 2, i.e. 10/3. """
         Sa_d, Sp_d = self.noises_displacement(freq)
-        return 20/3 / self.armLength**2 * (4*Sa_d + Sp_d) * (1 + 0.6*(freq/self.f_star)**2)
+        sens = 20/3 / self.armLength**2 * (2*(1+np.cos(freq/self.f_star)**2)*Sa_d + Sp_d)  # low freq limit
+        sens *= 1 + 0.6*(freq/self.f_star)**2
+        if wd_foreground:
+            sens += self.confusion_noise(freq, wd_foreground)
+        return sens
 
-    def noise_XYZ(self, freq, unit="relative_frequency", TDIgen=1):
+    def noise_XYZ(self, freq, unit="relative_frequency", TDIgen=1, wd_foreground=0.):
         Sa, Sp = self._check_noise_unit(freq, unit)
         u = 2*PI * freq * self.L_T
         s_x = 16 * np.sin(u)**2 * (2*(1+np.cos(u)**2)*Sa + Sp)
         s_xy = -8 * np.sin(u)**2 * np.cos(u) * (4*Sa + Sp)
+        if wd_foreground:
+            s_x += self.wd_foreground_X(freq, wd_foreground)
+
         if TDIgen == 1:
             return s_x, s_xy
         elif TDIgen == 2:
@@ -70,7 +79,7 @@ class BasicNoise(object):
         else:
             raise NotImplementedError
 
-    def noise_AET(self, freq, unit="relative_frequency", TDIgen=1):
+    def noise_AET(self, freq, unit="relative_frequency", TDIgen=1, wd_foreground=0.):
         Sa, Sp = self._check_noise_unit(freq, unit)
         u = 2*PI * freq * self.L_T
         s_ae = 8 * np.sin(u)**2 * (4*(1+np.cos(u)+np.cos(u)**2)*Sa + (2+np.cos(u))*Sp)
@@ -78,6 +87,9 @@ class BasicNoise(object):
         # s_x, s_xy = self.noise_XYZ(freq, unit, TDIgen)
         # s_ae = s_x - s_xy
         # s_t = s_x + 2*s_xy
+        if wd_foreground:
+            s_ae += self.wd_foreground_AE(freq, wd_foreground)
+
         if TDIgen == 1:
             return s_ae, s_t
         elif TDIgen == 2:  # TODO: check the 2nd generation TDI!!!
@@ -85,6 +97,21 @@ class BasicNoise(object):
             return s_ae*fact, s_t*fact
         else:
             raise NotImplementedError
+
+    def confusion_noise(self, f, duration):
+        """Return the strain sensitivity curve for Galactic confusion noise."""
+        warnings.warn("You are trying to call Galactic confusion noise but with it unset, 0 will be returned.")
+        return 0
+
+    def wd_foreground_X(self, f, duration):
+        """duration: in [yr] """
+        u = 2*PI * f * self.L_T
+        t = 4. * u**2 * np.sin(u)**2  # TODO: check this!!!
+        Sg_sens = self.confusion_noise(f, duration)
+        return t * Sg_sens
+
+    def wd_foreground_AE(self, f, duration):
+        return 1.5 * self.wd_foreground_X(f, duration)
 
 
 class TianQinNoise(BasicNoise):
@@ -103,6 +130,33 @@ class TianQinNoise(BasicNoise):
         Sp_d = self.Np * np.ones_like(freq)
         return Sa_d, Sp_d
 
+    def confusion_noise(self, f, duration):
+        """See Table I in arxiv:2403.18709, valid for 0.5 mHz < f < 10 mHz.
+         See also https://journals.aps.org/prd/abstract/10.1103/PhysRevD.102.063021"""
+        t_obs = (0.5, 1, 2, 4, 5)
+        a0 = (-18.7, -18.7, -18.7, -18.7, -18.7)
+        a1 = (-1.23, -1.34, -1.39, -1.30, -1.32)
+        a2 = (-0.801, -0.513, -0.610, -0.872, -0.322)
+        a3 = (0.832, 0.0152, 0.577, 0.266, -1.68)
+        a4 = (-1.96, -1.53, 0.00242, -5.12, -4.49)
+        a5 = (3.09, 4.79, 0.578, 15.6, 21.6)
+        a6 = (-2.38, -5.01, -4.39, -15.5, -22.6)
+        try:
+            index = t_obs.index(duration)
+            coefficients = [a[index] for a in (a0, a1, a2, a3, a4, a5, a6)]
+        except ValueError:
+            warnings.warn(f"Input duration {duration}yr is not in {t_obs} [year(s)], interpolation will be used.")
+            coefficients = [interp1d(t_obs, a, kind='cubic')(duration) for a in (a0, a1, a2, a3, a4, a5, a6)]
+
+        sh_confusion = np.zeros_like(f)
+        ind = (f >= 5e-4) & (f <= 1e-2)
+        # 10/3 is the factor for sky-average, the original fit in the paper is not sky-averaged.
+        sh_confusion[ind] = 20./3*np.power(10, np.sum([a_i * np.log10(f[ind]*1e3)**i
+                                                       for i, a_i in enumerate(coefficients)], axis=0))**2
+        # # avoid the jump of values
+        # sh_confusion[(f > 3e-4) & (f < 5e-4)] = sh_confusion[(np.abs(f-5e-4)).argmin()]
+        return sh_confusion
+
 
 class LISANoise(BasicNoise):
     """ LISA noise, the model is SciRDv1 """
@@ -120,60 +174,12 @@ class LISANoise(BasicNoise):
         Sp_d = self.Np * (1+(2e-3/freq)**4)
         return Sa_d, Sp_d
 
-    def sensitivity(self, freq, wd_foreground=0.):
-        sens = super().sensitivity(freq)
-        if wd_foreground:
-            sens += self._gal_conf(freq, wd_foreground)
-        return sens
-
-    def noise_XYZ(self, freq, unit="relative_frequency", TDIgen=1, wd_foreground=0.):
-        sx, sxy = super().noise_XYZ(freq, unit, TDIgen)
-        if wd_foreground:
-            sx += self.wd_foreground_X(freq, wd_foreground)
-        return sx, sxy
-
-    def noise_AET(self, freq, unit="relative_frequency", TDIgen=1, wd_foreground=0.):
-        ae, tt = super().noise_AET(freq, unit, TDIgen)
-        if wd_foreground:
-            ae += self.wd_foreground_AE(freq, wd_foreground)
-        return ae, tt
-
-    def _gal_conf(self, f, duration):
-        day = 86400.0
-        month = 30.5*day
-        year = 365.25*day
-        if (duration < day/year) or (duration > 10.):
-            raise NotImplementedError
-        Tobs = duration * year
-
-        Amp = 3.26651613e-44
-        alpha = 1.18300266e+00
-
-        Xobs = [1.0*day, 3.0*month, 6.0*month, 1.0*year, 2.0*year, 4.0*year, 10.0*year]
-        Slope1 = [9.41315118e+02, 1.36887568e+03, 1.68729474e+03, 1.76327234e+03, 2.32678814e+03, 3.01430978e+03,
-                  3.74970124e+03]
-        knee = [1.15120924e-02, 4.01884128e-03, 3.47302482e-03, 2.77606177e-03, 2.41178384e-03, 2.09278117e-03,
-                1.57362626e-03]
-        Slope2 = [1.03239773e+02, 1.03351646e+03, 1.62204855e+03, 1.68631844e+03, 2.06821665e+03, 2.95774596e+03,
-                  3.15199454e+03]
-
-        tck1 = interpolate.splrep(Xobs, Slope1, k=1)
-        tck2 = interpolate.splrep(Xobs, knee, k=1)
-        tck3 = interpolate.splrep(Xobs, Slope2, k=1)
-        sl1 = interpolate.splev(Tobs, tck1)
-        kn = interpolate.splev(Tobs, tck2)
-        sl2 = interpolate.splev(Tobs, tck3)
-        return Amp*np.exp(-(f**alpha)*sl1)*(f**(-7./3.))*0.5*(1.0+np.tanh(-(f-kn)*sl2))
-
-    def wd_foreground_X(self, f, duration):
-        """duration: in [yr] """
-        u = 2*PI * f * self.L_T
-        t = 4. * u**2 * np.sin(u)**2
-        Sg_sens = self._gal_conf(f, duration)
-        return t * Sg_sens
-
-    def wd_foreground_AE(self, f, duration):
-        return 1.5 * self.wd_foreground_X(f, duration)
+    def confusion_noise(self, f, duration):
+        """Return analytic fit of the strain sensitivity curve for Galactic confusion noise.
+            See 2108.01167 Eq85-86 or Karnesis2021."""
+        f1 = np.power(10, -0.25*np.log10(duration) - 2.7)
+        fk = np.power(10, -0.27*np.log10(duration) - 2.47)
+        return 0.5*1.14e-44 * f**(-7/3) * np.exp(-(f/f1)**1.8) * (1.0+np.tanh((fk-f)/0.31e-3))
 
 
 class TaijiNoise(LISANoise):
@@ -181,11 +187,26 @@ class TaijiNoise(LISANoise):
     Np = 6.4e-23  # m^2/Hz, 8e-12**2
     armLength = 3e9
 
-    def _gal_conf(self, f, duration):
-        raise NotImplementedError
+    def confusion_noise(self, f, duration):
+        """Eq.(6) and Table(I) in <10.1103/PhysRevD.107.064021>, valid for 0.1 mHz < f < 10 mHz"""
+        t_obs = (0.5, 1, 2, 4)
+        a0 = (-85.3498, -85.4336, -85.3919, -85.5448)
+        a1 = (-2.64899, -2.46276, -2.69735, -3.23671)
+        a2 = (-0.0699707, -0.183175, -0.749294, -1.64187)
+        a3 = (-0.478447, -0.884147, -1.15302, -1.14711)
+        a4 = (-0.334821, -0.427176, -0.302761, 0.0325887)
+        a5 = (0.0658353, 0.128666, 0.175521, 0.187854)
+        try:
+            index = t_obs.index(duration)
+            coefficients = [a[index] for a in (a0, a1, a2, a3, a4, a5)]
+        except ValueError:
+            warnings.warn(f"Input duration {duration}yr is not in {t_obs} [year(s)], interpolation will be used.")
+            coefficients = [interp1d(t_obs, a, kind='cubic')(duration) for a in (a0, a1, a2, a3, a4, a5)]
 
-    def wd_foreground_X(self, f, duration):
-        raise NotImplementedError
+        sh_confusion = np.zeros_like(f)
+        ind = (f >= 1e-4) & (f <= 1e-2)
+        sh_confusion[ind] = np.exp(np.sum([a_i * np.log(f[ind]*1e3)**i for i, a_i in enumerate(coefficients)], axis=0))
+        return sh_confusion
 
 
 detector_noises = {'TQ': TianQinNoise,
@@ -226,3 +247,10 @@ class WhiteNoise:
     def get_series(self, npts: int) -> np.ndarray:
         """Retrieve an array of npts samples."""
         return self._rng.normal(loc=0., scale=self.rms, size=npts)
+
+
+if __name__ == '__main__':
+    tianqin = TianQinNoise()
+    re = tianqin.confusion_noise(np.arange(1e-4, 0.02, 1e-4), 4)
+    taiji = TaijiNoise()
+    re_tj = taiji.confusion_noise(np.arange(1e-4, 0.02, 1e-4), 4)

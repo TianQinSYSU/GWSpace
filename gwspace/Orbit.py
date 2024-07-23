@@ -8,7 +8,7 @@
 # ==================================
 """Space detectors' orbits, note that the orbits are in nature unit(in second).
  Support orbits of detector's three spacecrafts and its guiding center,
- coordinates of unit vector between spacecrafts, sensitivity curve, etc."""
+ coordinates of unit vector between spacecrafts, etc."""
 
 import numpy as np
 

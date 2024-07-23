@@ -53,6 +53,9 @@ class BasicNoise(object):
             raise ValueError(f"Unknown unit: {unit}. "
                              f"Supported units: {'|'.join(['displacement', 'relative_frequency'])}")
 
+    def _basic_response(self, freq):
+        return 1 / (20/3 * (1 + 0.6*(2*PI * freq * self.L_T)**2))
+
     def sensitivity(self, freq, wd_foreground=0.):
         """ Sensitivity curve for **1** equivalent Michelson-like detectors, note that the prefactor is 20/3,
          if consider a combined sensitivity, then we should divide it by 2, i.e. 10/3.
@@ -63,8 +66,8 @@ class BasicNoise(object):
         :return: array of the sensitivity curve
         """
         Sa_d, Sp_d = self.noises_displacement(freq)
-        sens = 20/3 / self.armLength**2 * (2*(1+np.cos(freq/self.f_star)**2)*Sa_d + Sp_d)  # low freq limit
-        sens *= 1 + 0.6*(freq/self.f_star)**2
+        sens = (2*(1+np.cos(freq/self.f_star)**2)*Sa_d + Sp_d) / self.armLength**2
+        sens /= self._basic_response(freq)
         if wd_foreground:
             sens += self.confusion_noise(freq, wd_foreground)
         return sens
@@ -131,7 +134,7 @@ class BasicNoise(object):
         """See (Eq. 56) in [arxiv:2108.01167]."""
         u = 2*PI * freq * self.L_T
         # t = 4 * u**2 * np.sin(u)**2  # TODO: check this!!!
-        t = (4*u)**2 * np.sin(u)**2 / (20/3 * (1 + 0.6 * u**2))
+        t = (4*u)**2 * np.sin(u)**2 * self._basic_response(freq)
         Sg_sens = self.confusion_noise(freq, duration)
         return t * Sg_sens
 
@@ -155,7 +158,8 @@ class TianQinNoise(BasicNoise):
         Sp_d = self.Np * np.ones_like(freq)
         return Sa_d, Sp_d
 
-    def confusion_noise(self, freq, duration):
+    @staticmethod
+    def _confusion_fit(freq, duration):
         """See Table I in [arxiv:2403.18709], valid for 0.5 mHz < f < 10 mHz.
          See also [10.1103/PhysRevD.102.063021]. """
         t_obs = (0.5, 1, 2, 4, 5)
@@ -173,13 +177,18 @@ class TianQinNoise(BasicNoise):
             warnings.warn(f"Input duration {duration}yr is not in {t_obs} [year(s)], interpolation will be used.")
             coefficients = [interp1d(t_obs, a, kind='cubic')(duration) for a in (a0, a1, a2, a3, a4, a5, a6)]
 
-        sh_confusion = np.zeros_like(freq)
+        conf_fit = np.zeros_like(freq)
         # Though in the paper low_frequency_cutoff=0.5mHz, it makes
         # sensitivity or PSD a drop-off, 0.3mHz is an acceptable extension.
         ind = (freq >= 3e-4) & (freq <= 1e-2)
-        sh_confusion[ind] = 20./3*np.power(10, np.sum([a_i * np.log10(freq[ind]*1e3)**i
-                                                       for i, a_i in enumerate(coefficients)], axis=0))**2
-        return sh_confusion
+        conf_fit[ind] = np.power(10, np.sum([a_i * np.log10(freq[ind]*1e3)**i
+                                             for i, a_i in enumerate(coefficients)], axis=0))
+        return conf_fit
+
+    def confusion_noise(self, freq, duration):
+        """See Table I in [arxiv:2403.18709], valid for 0.5 mHz < f < 10 mHz.
+         See also [10.1103/PhysRevD.102.063021]. """
+        return self._confusion_fit(freq, duration)**2 / self._basic_response(freq)
 
 
 class LISANoise(BasicNoise):

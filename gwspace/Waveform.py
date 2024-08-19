@@ -11,6 +11,8 @@
 import numpy as np
 from numpy import sin, cos, sqrt
 from scipy.interpolate import InterpolatedUnivariateSpline as Spline
+import lalsimulation as lalsim
+import lal
 
 from gwspace.Orbit import detectors
 from gwspace.utils import sYlm
@@ -673,6 +675,86 @@ class EMRIWaveform(BasicWaveform):
             hp = hpS
             hc = hcS
         return hp, hc
+
+
+class RingdownWaveform(BasicWaveform):
+    """ Waveform for Ringdown.
+
+    :param mass1: Primary mass (solar mass)
+    :param mass2: Secondary mass(solar mass)
+    :param T_obs: Observation time (s)
+    :param DL: Luminosity distance (Mpc)
+    :param Lambda: Longitude [0, 2pi]
+    :param Beta: Latitude **[pi/2, -pi/2]** [instead of [0, pi]]
+    :param phi_c: Coalescence phase [0, 2pi]
+    :param tc: Coalescence time (s)
+    :param iota: Inclination angle [0, pi]
+    :param var_phi: Observer phase [0, 2pi]
+    :param psi: Polarization angle [0, pi]
+    :param chi1: Spin of the primary black hole (-1, 1)
+    :param chi2: Spin of the secondary black hole (-1, 1)
+    :param modes: Gravitational waveform modes [(2, 2), (3, 3)]
+    :param delta_t: Gravitational waveform sample time, use to generate the origin waveform for spline.
+    :param kwargs: Additional parameters need to save
+    """
+    __slots__ = ('chi1', 'chi2', 'modes', 'delta_t', 'hp_func', 'hc_func')
+    # _true_para_key = ('DL', 'Mc', 'eta', 'chi1', 'chi2', 'phi_c', 'iota', 'tc', 'var_phi', 'psi', 'Lambda', 'Beta')
+    # fisher_key = ('Mc', 'eta', 'chi1', 'chi2', 'DL', 'phi_c', 'iota', 'tc', 'Lambda', 'Beta', 'psi')
+
+    def __init__(self, mass1, mass2, T_obs, DL=1., Lambda=None, Beta=None, phi_c=0., tc=0., iota=0.,
+                 var_phi=0., psi=0., chi1=0., chi2=0., modes=None, delta_t=1., **kwargs):
+
+        BasicWaveform.__init__(self, mass1, mass2, T_obs, DL, Lambda, Beta,
+                               phi_c, tc, iota, var_phi, psi, **kwargs)
+        self.chi1 = chi1
+        self.chi2 = chi2
+        self.modes = modes
+        self.delta_t = delta_t
+        self.hp_func, self.hc_func = self._generate_waveform()
+
+    @property
+    def f_min(self):
+        return 5**(3/8)/(8*PI) * (MTSUN_SI*self.Mc)**(-5/8) * self.T_obs**(-3/8)
+
+    def get_hphc(self, times):
+        hp = self.hp_func(times)
+        hc = self.hc_func(times)
+        return hp, hc
+
+    def _generate_waveform(self):
+        # define waveform parameters
+        m1_SI = self.mass1 * MSUN_SI
+        m2_SI = self.mass2 * MSUN_SI
+        s1 = [0.0, 0.0, self.chi1]
+        s2 = [0.0, 0.0, self.chi2]
+        distance_SI = self.DL * MPC_SI
+        inc = self.iota
+        phase = self.var_phi
+        longAscNodes, eccentricity, meanPerAno = 0.0, 0.0, 0.0
+        delta_t = self.delta_t
+        f_min = self.f_min
+        f_ref = 0.0
+
+        # add modes to parameters' dict
+        lalparams = lal.CreateDict()
+        ModeArray = lalsim.SimInspiralCreateModeArray()
+        for mode in self.modes:
+            lalsim.SimInspiralModeArrayActivateMode(ModeArray, mode[0], mode[1])
+
+        lalsim.SimInspiralWaveformParamsInsertModeArray(lalparams, ModeArray)
+        lalsim.SimInspiralWaveformParamsInsertPhenomXHMThresholdMband(lalparams, 0)
+
+        # generate waveform
+        hp, hc = lalsim.SimInspiralChooseTDWaveform(
+            m1_SI, m2_SI, s1[0], s1[1], s1[2], s2[0], s2[1], s2[2],
+            distance_SI, inc, phase, longAscNodes, eccentricity, meanPerAno, delta_t, f_min, f_ref,
+            lalparams, lalsim.IMRPhenomXHM)
+
+        shift = hp.epoch.gpsSeconds + hp.epoch.gpsNanoSeconds / 1e9
+        times = np.arange(len(hp.data.data)) * delta_t + shift + self.tc
+        hp_func = Spline(times, hp.data.data)
+        hc_func = Spline(times, hc.data.data)
+        return hp_func, hc_func
 
 
 waveforms = {'burst': BurstWaveform,

@@ -8,3 +8,6 @@ scipy
 # requirements for SGWB
 healpy
 sympy
+
+# Install submodule pyEccentricFD
+./pyEccentricFD

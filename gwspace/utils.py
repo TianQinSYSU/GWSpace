@@ -287,3 +287,65 @@ def frequency_noise_from_psd(psd, delta_f, seed=None):
     noise[not_zero] = noise_red
 
     return noise
+
+def CholeskyDecomp(A):
+    '''
+    This is a simple code to do the Cholesky decomposition
+    '''
+    N = A.shape[0]
+    L = np.zeros_like(A)
+    for i in range(N):
+        for j in range(i+1):
+            ss = A[i,j]
+            for k in range(j):
+                ss -= A[i,k]*A[j,k]
+            if (i==j):
+                if np.any(ss) <= 0:
+                    raise ValueError("Cholesky decomposition failed: matrix is not positive definite.")
+                L[i,j] = np.sqrt(ss)
+            else:
+                L[i,j] = ss/L[j,j] 
+    return L
+
+def get_correlated_noise(L_XYZ):
+    white = lambda psd: np.random.normal(0, np.ones_like(psd))
+    white_noise_meta = lambda psd: 0.5*(white(psd) + 1j*white(psd)) 
+    # Here using 0.5 but not sqrt(0.5), due to Unilateral power spectrum
+    
+    n1 = white_noise_meta(L_XYZ[0,0])
+    n2 = white_noise_meta(L_XYZ[0,0])
+    n3 = white_noise_meta(L_XYZ[0,0])
+    
+    tqxf = L_XYZ[0,0]* n1
+    tqyf = L_XYZ[1,0]* n1 + L_XYZ[1,1]* n2
+    tqzf = L_XYZ[2,0]* n1 + L_XYZ[2,1]* n2 + L_XYZ[2,2]* n3
+    return tqxf, tqyf, tqzf
+
+def calculate_cov(n1, n2, N=64):
+    '''
+    A simple method to calculate the covariance matrix of two data
+    '''
+    ndim = n1.shape[0]//N
+    nrem = n1.shape[0]%N
+
+    mean_x = lambda i,j, nx, ny: [np.sum(nx[i:j])/(j-i), np.sum(ny[i:j])/(j-i)]
+
+    means = np.array([mean_x(i*N, (i+1)*N, n1, n2) for i in range(ndim)])
+    if nrem != 0:
+        nrr = np.array([mean_x(ndim*N,ndim*N+nrem,n1,n2)])
+        means = np.append(means, nrr, axis=0).T
+    
+    cov = np.zeros((4, ndim+1), dtype=np.complex128)
+    cov_x = lambda i,j,k,nx,ny: np.sum((nx[i:j] - means[0,k])*(np.conjugate(ny[i:j]-means[1,k]))/(j-i-1))
+    for i in range(ndim):
+        cov[0, i] = cov_x(i*N,(i+1)*N,i,n1,n1)
+        cov[1, i] = cov_x(i*N,(i+1)*N,i,n1,n2)
+        cov[2, i] = cov_x(i*N,(i+1)*N,i,n2,n1)
+        cov[3, i] = cov_x(i*N,(i+1)*N,i,n2,n2)
+    if nrem != 0:
+        cov[0, ndim] = cov_x(ndim*N,ndim*N+nrem,ndim,n1,n1)
+        cov[1, ndim] = cov_x(ndim*N,ndim*N+nrem,ndim,n1,n2)
+        cov[2, ndim] = cov_x(ndim*N,ndim*N+nrem,ndim,n2,n1)
+        cov[3, ndim] = cov_x(ndim*N,ndim*N+nrem,ndim,n2,n2)
+
+    return means, cov

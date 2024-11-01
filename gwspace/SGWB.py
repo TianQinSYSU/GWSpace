@@ -13,10 +13,9 @@ import healpy as hp
 from healpy import Alm
 from sympy.physics.wigner import clebsch_gordan
 
-from gwspace.response import trans_XYZ_fd
+from gwspace.response import trans_XYZ_fd, trans_AET_fd
 from gwspace.Orbit import detectors
-from gwspace.utils import frequency_noise_from_psd
-from gwspace.Waveform import p0_plus_cross
+from gwspace.utils import frequency_noise_from_psd, p0_plus_cross
 from gwspace.constants import H0_SI, PI, PI_2
 from scipy.special import sph_harm
 
@@ -159,3 +158,44 @@ class SGWB(object):
         return np.array([-np.sin(self.thetas)*np.cos(self.phis),
                          -np.sin(self.thetas)*np.sin(self.phis),
                          -np.cos(self.thetas)]).T  # Vector of sources
+
+
+    def get_ORF(self, f_min, f_max, fn, t_segm, det='TQ', TDIgen=1, TDIchan="XYZ"):
+        """ 
+        Generate a ORF for a given GW detector.
+
+        :param f_min: (Hz) Minimum frequency
+        :param f_max: (Hz) Maximum frequency
+        :param fn: The number of frequency segments
+        :param t_segm: Length of time segments (in seconds), usually choose ~ 3600s for TQ,
+         the ORF error can be less than 3%
+        :param det: str, for the detector type
+        :param TDIgen: TDI generation
+        :return: (res_signal, frange): (ndarray: shape(fn, tf.size, 3, 3), ndarray: shape(fn, ))
+        """
+        if TDIchan == "XYZ":
+            trans_fd = trans_XYZ_fd
+        elif TDIchan == "AET":
+            trans_fd = trans_AET_fd
+        else:
+            raise ValueError(f"There is no such TDI channel of {TDIchan}")
+
+        frange = np.linspace(f_min, f_max, fn)
+        tf = np.arange(0, self.T_obs, t_segm)
+
+        vec_k = self.vec_k
+        e_plus_cross = [p0_plus_cross(p, PI_2-t) for p, t in np.column_stack((self.phis, self.thetas))]
+        det = detectors[det](tf)
+
+        ORF = np.zeros((self.npix, fn, tf.size, 3, 3), dtype=np.complex128)
+        for i in range(self.npix):
+            v_k, e_p_c = vec_k[i], e_plus_cross[i]
+            for j in range(fn):
+                res_p, res_c = trans_fd(v_k, e_p_c, det, frange[j], TDIgen)  # both with shape(3, tf.size)
+                det_ORF_temp = (np.einsum("ml,nl->lmn", res_p.conj(), res_p)
+                                + np.einsum("ml,nl->lmn", res_c.conj(), res_c))
+                # ekli: there is some bug here, I am not sure why divide ORF by 2pifl and 4
+                ORF[i,j] = det_ORF_temp / (8*PI) / (2*PI*frange[j]*det.L_T)**2
+
+        return ORF*(4*PI)/self.npix/4, frange
+

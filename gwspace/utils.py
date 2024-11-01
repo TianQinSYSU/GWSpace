@@ -22,6 +22,10 @@ class GeneralPars:
     def __repr__(self):
         return f"{self.value} {self.unit} \n{self.info}"
 
+##===========================
+## some functions for GWs
+##===========================
+
 def to_m1m2(m_chirp, eta):
     m1 = m_chirp/(2*eta**(3/5))*(1+(1-4*eta)**0.5)
     m2 = m_chirp/eta**(3/5)-m1
@@ -42,6 +46,20 @@ def luminosity_distance_approx(z, omega_m=Omega_m_Planck2018):
     Phix = lambda x: ((1+320*x+0.4415*x*x+0.02656*x**3) / (1+392*x+0.5121*x*x+0.03944*x**2))
     return 2*C_SI/H0_SI*(1+z)/np.sqrt(omega_m)*(
             Phix(0)-Phix(x_z)/np.sqrt(1+z))
+
+def p0_plus_cross(Lambda, Beta):
+    """See Marsat et al. (Eq. 14)"""
+    sib, csb = np.sin(Beta), np.cos(Beta)
+    sil, csl = np.sin(Lambda), np.cos(Lambda)
+    sil2, csl2 = np.sin(2*Lambda), np.cos(2*Lambda)
+
+    p0_plus = np.array([-sib**2*csl**2+sil**2, (sib**2+1)*(-sil*csl), sib*csb*csl,
+                        (sib**2+1)*(-sil*csl), -sib**2*sil**2+csl**2, sib*csb*sil,
+                        sib*csb*csl, sib*csb*sil, -csb**2]).reshape(3, 3)
+    p0_cross = np.array([-sib*sil2, sib*csl2, csb*sil,
+                         sib*csl2, sib*sil2, -csb*csl,
+                         csb*sil, -csb*csl, 0]).reshape(3, 3)
+    return p0_plus, p0_cross  # uu-vv, uv+vu
 
 
 def icrs_to_ecliptic(ra, dec, center='bary'):
@@ -65,6 +83,10 @@ def icrs_to_ecliptic(ra, dec, center='bary'):
         raise ValueError("'center' should be 'bary' or 'geo'")
     return cot.lon.rad, cot.lat.rad  # (Lambda, Beta)
 
+
+##================================
+## some mathematical methods
+##================================
 
 def dfridr(func, x, h, err=1e-14, *args):
     """

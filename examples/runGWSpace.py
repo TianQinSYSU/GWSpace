@@ -20,36 +20,39 @@ from gwspace.response import get_XYZ_td, tdi_XYZ2AET
 
 from gwspace.utils import frequency_noise_from_psd, CholeskyDecomp, get_correlated_noise, calculate_cov
 
-# print path
-print(f"The code is installed at {gwspace.__path__}\n")
 
-# define argument parser
-parser = argparse.ArgumentParser(description="Using GWSpace to calculate the GW data that from space based detectors")
-
-# add args
-parser.add_argument("-i", "--ini-file", type=str, help="Initial files with source parameters")#, required=True)
-parser.add_argument("-s", "--source", type=str, help="Source type, such as gcb, bhb, emri, sgwb") #, required=True)
-parser.add_argument("-d", "--detector", type=str, help="Detector's name, such as TianQin, LISA, Taiji", default="TianQin")
-#parser.add_argument("-G", "--TDI-gen", type=int, help="Generation of TDI method", default=1)
-parser.add_argument("-C", "--TDI-channel", type=str, help="TDI channels, such as XYZ, AET", default="AET")
-parser.add_argument("-T", "--Tobs", type=str, help="Total observational times, for example: 1*DAY, 3*MONTH, 1*YEAR, etc", default="3*MONTH")
-parser.add_argument("-R", "--sample-rate", type=float, help="The sample rate in [Hz]", default=1)
-parser.add_argument("-o", "--output", type=str, help="Filename of the output file", default=None)
-
-parser.add_argument("--show-pars", action="store_true", help="Whether show the parameters and the run processes")
-
-parser.add_argument("--check-orbit", action="store_true", help="Check or calculate the orbit of different detectors")
-parser.add_argument("--check-wave", action="store_true", help="Check or calculate the original source waveforms of different sources")
-parser.add_argument("--check-response", action="store_true", help="Check or calculate the response functions of different detectors")
-parser.add_argument("--check-noise", action="store_true", help="Check or calculate the noise of different detectors")
-parser.add_argument("--check-gendata", action="store_true", help="Check or calculate the generate data pipeline, return the responsed signals and noise")
-
-parser.add_argument("--show-figs", action="store_true", help="Whether show the figures with the calculated data")
-
-parser.add_argument("--generate-catalog", action="store_true", help="Generate the catalogue")
-# Analysis args
-args = parser.parse_args()
-
+def main():
+    # print path
+    print(f"The code is installed at {gwspace.__path__}\n")
+    
+    # define argument parser
+    parser = argparse.ArgumentParser(description="Using GWSpace to calculate the GW data that from space based detectors")
+    
+    # add args
+    parser.add_argument("-i", "--ini-file", type=str, help="Initial files with source parameters")#, required=True)
+    parser.add_argument("-s", "--source", type=str, help="Source type, such as gcb, bhb, emri, sgwb") #, required=True)
+    parser.add_argument("-d", "--detector", type=str, help="Detector's name, such as TianQin, LISA, Taiji", default="TianQin")
+    #parser.add_argument("-G", "--TDI-gen", type=int, help="Generation of TDI method", default=1)
+    parser.add_argument("-C", "--TDI-channel", type=str, help="TDI channels, such as XYZ, AET", default="AET")
+    parser.add_argument("-T", "--Tobs", type=str, help="Total observational times, for example: 1*DAY, 3*MONTH, 1*YEAR, etc", default="3*MONTH")
+    parser.add_argument("-R", "--sample-rate", type=float, help="The sample rate in [Hz]", default=1)
+    parser.add_argument("-o", "--output", type=str, help="Filename of the output file", default=None)
+    
+    parser.add_argument("--show-pars", action="store_true", help="Whether show the parameters and the run processes")
+    
+    parser.add_argument("--check-orbit", action="store_true", help="Check or calculate the orbit of different detectors")
+    parser.add_argument("--check-wave", action="store_true", help="Check or calculate the original source waveforms of different sources")
+    parser.add_argument("--check-response", action="store_true", help="Check or calculate the response functions of different detectors")
+    parser.add_argument("--check-noise", action="store_true", help="Check or calculate the noise of different detectors")
+    parser.add_argument("--check-gendata", action="store_true", help="Check or calculate the generate data pipeline, return the responsed signals and noise")
+    
+    parser.add_argument("--show-figs", action="store_true", help="Whether show the figures with the calculated data")
+    
+    parser.add_argument("--generate-catalog", action="store_true", help="Generate the catalogue")
+    # Analysis args
+    args = parser.parse_args()
+    return args
+    
 
 ##=========================================
 def dict_to_json(pars_dict, filename):
@@ -655,6 +658,9 @@ class ConvertPars:
 
 ##=========================================
 if __name__ == "__main__":
+    # readin the args in the terminal
+    args = main()
+
     if args.generate_catalog:
         input_tps = input("Input the type or types of sources: (using space for separation)")
         tps = input_tps.split()

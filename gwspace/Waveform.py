@@ -13,7 +13,7 @@ from numpy import sin, cos, sqrt
 from scipy.interpolate import InterpolatedUnivariateSpline as Spline
 
 from gwspace.Orbit import detectors
-from gwspace.utils import sYlm, toff0PN
+from gwspace.utils import sYlm, toff0PN, p0_plus_cross
 from gwspace.constants import MSUN_SI, MTSUN_SI, MPC_SI, YRSID_SI, PI, PI_2, C_SI
 from gwspace.response import trans_AET_fd, trans_XYZ_fd
 
@@ -44,22 +44,6 @@ def check_detector_and_channel(det, channel):
                          f"Supported channels: {'|'.join(['XYZ', 'AET'])}")
     det_class = detectors[det]
     return trans_func, det_class
-
-
-def p0_plus_cross(Lambda, Beta):
-    """See Marsat et al. (Eq. 14)"""
-    sib, csb = sin(Beta), cos(Beta)
-    sil, csl = sin(Lambda), cos(Lambda)
-    sil2, csl2 = sin(2*Lambda), cos(2*Lambda)
-
-    p0_plus = np.array([-sib**2*csl**2+sil**2, (sib**2+1)*(-sil*csl), sib*csb*csl,
-                        (sib**2+1)*(-sil*csl), -sib**2*sil**2+csl**2, sib*csb*sil,
-                        sib*csb*csl, sib*csb*sil, -csb**2]).reshape(3, 3)
-    p0_cross = np.array([-sib*sil2, sib*csl2, csb*sil,
-                         sib*csl2, sib*sil2, -csb*csl,
-                         csb*sil, -csb*csl, 0]).reshape(3, 3)
-    return p0_plus, p0_cross  # uu-vv, uv+vu
-
 
 # Note1: One can use __slots__=('mass1', 'mass2', 'etc') to fix the attributes
 #        then the class will not have __dict__ anymore, and attributes in __slots__ are read-only.

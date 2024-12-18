@@ -9,6 +9,7 @@
 """Useful tools for some basic calculations or conversions."""
 
 import numpy as np
+from scipy.special import factorial
 
 from gwspace.constants import C_SI, H0_SI, Omega_m_Planck2018
 
@@ -139,9 +140,8 @@ def Factorial(n):
     """ Ref: https://mathworld.wolfram.com/BinomialCoefficient.html """
     if n < 0:
         return np.inf
-    elif n == 0:
-        return 1
-    return n*Factorial(n-1)
+    else:
+        return factorial(n)
 
 
 def sYlm(s, l, m, theta, phi):

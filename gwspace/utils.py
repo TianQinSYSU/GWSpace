@@ -51,6 +51,53 @@ def icrs_to_ecliptic(ra, dec, center='bary'):
     return cot.lon.rad, cot.lat.rad  # (Lambda, Beta)
 
 
+def ssb_to_tianqin_frame(lam, beta):
+    """Convert Ecliptic frame to TianQin detector frame.
+     Matrix of ecliptic to detector: see Hu et al. https://iopscience.iop.org/article/10.1088/1361-6382/aab52f
+     Reminder: Both beta & latitude range (-pi/2, pi/2).
+    :param lam: float, ecliptic longitude (Lambda)
+    :param beta: float, ecliptic latitude (Beta)
+    :return: longitude, latitude: float
+    """
+    from astropy.coordinates import cartesian_to_spherical
+
+    # from gwspace.constants import J0806_phi, J0806_theta
+    # phi_j, theta_j = J0806_phi, np.pi/2 - J0806_theta
+    # rz = np.array([[np.sin(phi_j), np.cos(phi_j), 0],
+    #                [-np.cos(phi_j), np.sin(phi_j), 0],
+    #                [0, 0, 1]])
+    # rx = np.array([[1, 0, 0],
+    #                [0, np.sin(theta_j), np.cos(theta_j)],
+    #                [0, -np.cos(theta_j), np.sin(theta_j)]])
+    # trans = rz.dot(rx)
+    # trans_inv = np.linalg.inv(trans)
+
+    car = np.array([np.cos(beta)*np.cos(lam), np.cos(beta)*np.sin(lam), np.sin(beta)])
+    trans_inv = np.array([[0.8616291604415259,   0.5075383629607039,   0.],
+                          [0.04158693653353248, -0.07060060839873289, -0.9966373868180366],
+                          [-0.5058317077710601,  0.8587318348686612,  -0.08193850863004093]])
+    car_t = cartesian_to_spherical(*trans_inv.dot(car))
+    return car_t[2].rad, car_t[1].rad  # lon, lat
+
+
+def tianqin_frame_to_ssb(lon, lat):
+    """Convert TianQin detector frame to Ecliptic frame.
+     Matrix of ecliptic to detector: see Hu et al. https://iopscience.iop.org/article/10.1088/1361-6382/aab52f
+     Reminder: Both beta & latitude range (-pi/2, pi/2).
+    :param lon: float, longitude in detector frame
+    :param lat: float, latitude in detector frame
+    :return: Lambda, Beta: float
+    """
+    from astropy.coordinates import cartesian_to_spherical
+
+    car = np.array([np.cos(lat)*np.cos(lon), np.cos(lat)*np.sin(lon), np.sin(lat)])
+    trans = np.array([[0.8616291604415259,  0.04158693653353248, -0.5058317077710601],
+                      [0.5075383629607039, -0.07060060839873289,  0.8587318348686612],
+                      [0.,                 -0.9966373868180366,  -0.08193850863004093]])
+    car_t = cartesian_to_spherical(*trans.dot(car))
+    return car_t[2].rad, car_t[1].rad  # (Lambda, Beta)
+
+
 def dfridr(func, x, h, err=1e-14, *args):
     """
     Parameters:

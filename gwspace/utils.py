@@ -300,7 +300,7 @@ def frequency_noise_from_psd(psd, delta_f, seed=None):
         The seed to generate the noise. If None specified, the seed will not be reset.
     :return: noise: numpy array containing gaussian noise colored by the given psd.
     """
-    sigma = (0.5*psd/delta_f)**0.5
+    sigma = 0.5*(psd/delta_f)**0.5
     if seed is not None:
         np.random.seed(seed)
 

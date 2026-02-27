@@ -3,7 +3,7 @@
 GWSpace is a multi-mission science data simulator for space-based gravitational wave detection.
 It is a Python package that can compute correlated gravitational wave signals that could be detected by TianQin, LISA and Taiji simultaneously in a possible joint detection scenario,
 either in time domain (GCB, EMRI and Burst) or in frequency domain (BHB and SGWB).
-For more details, see [doc file](./docs/GWSpace.pdf) or [arXiv:2309.15020](https://arxiv.org/abs/2309.15020).
+For more details, see [doc file](./docs/GWSpace.pdf), [arXiv:2309.15020](https://arxiv.org/abs/2309.15020), or the published version in [Classical and Quantum Gravity, 42, 165005 (2025)](https://iopscience.iop.org/article/10.1088/1361-6382/adf409) ([DOI:10.1088/1361-6382/adf409](https://doi.org/10.1088/1361-6382/adf409)).
 
 ![gwspace-structure](./docs/gwspace-structure.png?raw=true "gwspace-structure")
 

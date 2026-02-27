@@ -105,4 +105,5 @@ export C_INCLUDE_PATH=$C_INCLUDE_PATH:/xxx/lapack-3.11.0/LAPACKE/include
 - [En-Kun Li](https://github.com/ekli-sysu)
 - [Han Wang](https://github.com/HumphreyWang)
 - [Ya-Nan Li](https://github.com/liyn55)
+- [Yi-Ming Hu](https://github.com/yiminghu-SYSU)
 - ...

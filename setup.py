@@ -1,69 +1,42 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# ==================================
-# File Name: setup.py
-# Author: En-Kun Li, Han Wang
-# Mail: lienk@mail.sysu.edu.cn, wanghan657@mail2.sysu.edu.cn
-# Created Time: 2023-09-06 19:43:34
-# ==================================
+import os
+from pathlib import Path
 
 import numpy as np
-from setuptools import find_packages
 from Cython.Build import cythonize
-from distutils.core import setup, Extension
-import sys
+from setuptools import Extension, setup
 
-argv_replace = []
+gsl_prefix = Path(os.environ.get("GSL_PREFIX", os.environ.get("CONDA_PREFIX", "/usr")))
 
-gsl_prefix = '/usr'
+include_dirs = ["include", np.get_include(), str(gsl_prefix / "include")]
+library_dirs = [str(gsl_prefix / "lib")]
+libraries = ["gsl", "gslcblas", "m"]
 
-for arg in sys.argv:
-    if arg.startswith('--with-gsl='):
-        gsl_prefix = arg.split('=', 1)[1]
-    else:
-        argv_replace.append(arg)
-
-sys.argv = argv_replace
-
-lib_gsl_dir = gsl_prefix+"/lib"
-include_gsl_dir = gsl_prefix+"/include"
-
-# Update these paths accordingly
-
-# extensions
-code_lib = 'gwspace'
-
-
-def func_ext(name, src):
-    return Extension(
-        code_lib+"."+name,
-        sources=src,
-        include_dirs=["include",
-                      include_gsl_dir, np.get_include()],
+extensions = [
+    Extension(
+        "gwspace.libFastGB",
+        sources=[
+            "src/FastGB.pyx",
+            "src/spacecrafts.c",
+            "src/GB.c",
+        ],
+        include_dirs=include_dirs,
+        library_dirs=library_dirs,
+        libraries=libraries,
         extra_compile_args=["-std=c99", "-O3"],
-        libraries=['gsl', 'gslcblas', 'm'],
-        library_dirs=[lib_gsl_dir],
-    )
-
-
-fastgb_ext = func_ext("libFastGB",  # name of the lib
-                      src=[
-                          "src/FastGB.pyx",
-                          "src/spacecrafts.c",
-                          "src/GB.c",
-                      ])
-
-imrphd_ext = func_ext('pyIMRPhenomD',
-                      src=[
-                          'src/pyIMRPhenomD.pyx',
-                          'src/IMRPhenomD.c',
-                          'src/IMRPhenomD_internals.c',
-                      ])
-
-# add all extensions
-extensions = []
-extensions.append(fastgb_ext)
-extensions.append(imrphd_ext)
+    ),
+    Extension(
+        "gwspace.pyIMRPhenomD",
+        sources=[
+            "src/pyIMRPhenomD.pyx",
+            "src/IMRPhenomD.c",
+            "src/IMRPhenomD_internals.c",
+        ],
+        include_dirs=include_dirs,
+        library_dirs=library_dirs,
+        libraries=libraries,
+        extra_compile_args=["-std=c99", "-O3"],
+    ),
+]
 
 # translate the constants.h to constants.py
 fp_const_h = "./include/constants.h"
@@ -84,9 +57,6 @@ with open(fp_const_h, "r") as fp_in:
                         continue
 
 setup(
-    name='gwspace',
-    version='0.0.1',
-    ext_modules=cythonize(extensions),
-    author='En-Kun Li, Han Wang',
-    packages=find_packages(),
+    ext_modules=cythonize(extensions,
+                          compiler_directives={"language_level": "3"},)
 )

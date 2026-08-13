@@ -1,0 +1,51 @@
+[build-system]
+requires = [
+    "setuptools>=77",
+    "Cython>=3.0",
+    "numpy>=1.23",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gwspace"
+version = "0.1.0"
+description = "Multi-mission science data simulator for space-based gravitational-wave detection"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
+authors = [
+    {name = "En-Kun Li"},
+    {name = "Han Wang"},
+    {name = "Ya-Nan Li"},
+    {name = "Zhi-Yuan Li"},
+    {name = "Yi-Ming Hu"},
+    {name = "Yu-Xin Yang"},
+    {name = "Hong-Yu Chen"},
+]
+dependencies = [
+    "numpy>=1.23",
+    "scipy>=1.9",
+    "numba>=0.57",
+    "astropy",
+]
+
+[project.optional-dependencies]
+eccentric = [
+    "pyEccentricFD @ https://github.com/HumphreyWang/pyEccentricFD/archive/refs/tags/v0.2.0.tar.gz#sha256=471f3313e9f17c12d81aeac1fd91c5ff0a0244935c14e21834dd59d889b0535f",
+]
+examples = ["matplotlib"]
+sgwb = [
+    "healpy",
+    "sympy",
+]
+emri = ["fastemriwaveforms>=2.0.0"]
+ringdown = ["lalsuite"]
+
+[project.urls]
+Homepage = "https://github.com/TianQinSYSU/GWSpace"
+Repository = "https://github.com/TianQinSYSU/GWSpace"
+#Documentation = "https://github.com/TianQinSYSU/GWSpace/blob/main/docs/GWSpace.pdf"
+
+[tool.setuptools]
+packages = ["gwspace"]

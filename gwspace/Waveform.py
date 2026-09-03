@@ -581,7 +581,7 @@ class EMRIWaveform(BasicWaveform):
 
         self.wave_func = self._gen_wave_func()
         self.theta, self.phi = self.wave_func._get_viewing_angles(qS, phiS, qK, phiK)  # get view angle
-        BasicWaveform.__init__(self, M, mu, T_obs, dist*1000., Lambda=self.phi, Beta=PI_2-self.theta, **kwargs)
+        BasicWaveform.__init__(self, M, mu, T_obs, dist*1000., Lambda=phiS, Beta=PI_2-qS, **kwargs)
 
     @staticmethod
     def _gen_wave_func():

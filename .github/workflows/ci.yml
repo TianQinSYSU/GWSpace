@@ -27,8 +27,6 @@ jobs:
         include:
           - os: macos-15-intel
             python-version: "3.9"
-          - os: macos-15-intel
-            python-version: "3.14"
 
     steps:
       - uses: actions/checkout@v6

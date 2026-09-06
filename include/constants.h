@@ -59,7 +59,7 @@ extern "C" {
 /**************** Physical constants in SI units **********************/
 
 #define C_SI 299792458.
-#define G_SI 6.67259e-11
+#define G_SI 6.67430e-11  // CODATA2022
 #define MSUN_SI 1.988546954961461467461011951140572744e30
 #define MTSUN_SI 4.9254923218988636432342917247829673e-6 // G_SI*MSUN_SI/C_SI**3
 #define PC_SI 3.085677581491367278913937957796471611e16

@@ -1,0 +1,11 @@
+name: gwspace
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python>=3.9
+  - gsl
+  - pip
+  - pip:
+      - .[eccentric,examples,sgwb]

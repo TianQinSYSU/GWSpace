@@ -3,30 +3,62 @@
 GWSpace is a multi-mission science data simulator for space-based gravitational wave detection.
 It is a Python package that can compute correlated gravitational wave signals that could be detected by TianQin, LISA and Taiji simultaneously in a possible joint detection scenario,
 either in time domain (GCB, EMRI and Burst) or in frequency domain (BHB and SGWB).
-For more details, see [doc file](./docs/GWSpace.pdf), [arXiv:2309.15020](https://arxiv.org/abs/2309.15020), or the published version in [Classical and Quantum Gravity, 42, 165005 (2025)](https://iopscience.iop.org/article/10.1088/1361-6382/adf409) ([DOI:10.1088/1361-6382/adf409](https://doi.org/10.1088/1361-6382/adf409)).
+For more details, see the [GWSpace documentation](https://github.com/TianQinSYSU/GWSpace/blob/main/docs/GWSpace.pdf), [arXiv:2309.15020](https://arxiv.org/abs/2309.15020), or the published version in [Classical and Quantum Gravity, 42, 165005 (2025)](https://iopscience.iop.org/article/10.1088/1361-6382/adf409) ([DOI:10.1088/1361-6382/adf409](https://doi.org/10.1088/1361-6382/adf409)).
 
-![gwspace-structure](./docs/gwspace-structure.png?raw=true "gwspace-structure")
+![gwspace-structure](https://raw.githubusercontent.com/TianQinSYSU/GWSpace/main/docs/gwspace-structure.png "gwspace-structure")
 
+## Installation
 
-## Quick install
+GWSpace requires a C compiler and [GSL](https://www.gnu.org/software/gsl/) to build its extension modules.
+
+### Conda (recommended)
+
+The environment file installs GSL with Conda and installs GWSpace with all documented optional features except the separately maintained EMRI and ringdown backends:
 
 ```shell
-git clone --recurse-submodules https://github.com/TianQinSYSU/GWSpace
-cd /GWSpace
-pip install -r requirements.txt . --global-option="--with-gsl=/your/gsl/path"
+git clone https://github.com/TianQinSYSU/GWSpace
+cd GWSpace
+conda env create --file environment.yml
+conda activate gwspace
 ```
-- Remove `-r requirements.txt` if you want to install GWSpace only.
-- If `--with-gsl` is not given, default `gsl` path is `/usr`.
+
+### pip
+
+Install GSL first, for example with `brew install gsl` on macOS or `sudo apt-get install libgsl-dev` on Ubuntu. Then run:
+
+```shell
+git clone https://github.com/TianQinSYSU/GWSpace
+cd GWSpace
+python -m pip install .
+```
+
+The build locates GSL through `GSL_PREFIX`, `gsl-config`, the active Conda environment, or `/usr`, in that order. To use a non-standard installation:
+
+```shell
+GSL_PREFIX=/path/to/gsl python -m pip install .
+```
+
+The same environment variable is used while building the eccentric-waveform extra. Set it explicitly when Python and GSL come from different environment managers.
+
+Optional Python dependencies are grouped by feature:
+
+```shell
+python -m pip install ".[eccentric]"    # pyEccentricFD v0.2.0
+python -m pip install ".[sgwb]"         # stochastic-background support
+python -m pip install ".[emri]"         # EMRI support; requires Python 3.12+
+python -m pip install ".[ringdown]"     # ringdown waveform support
+# Several groups can be installed together, for example:
+python -m pip install ".[eccentric,emri,ringdown]"
+```
 
 ## GW waveforms
 
-As seen in the figure above, different gravitational wave sources requires different waveforms.
-The following waveform will be automatically complied during the installation unless otherwise noted:
+As seen in the figure above, different gravitational-wave sources require different waveforms.
+The following waveforms are included in GWSpace unless otherwise noted:
 
 - EMRI: `FastEMRIWaveforms` (`few`)
 
-  - We use [FastEMRIWaveforms](https://github.com/BlackHolePerturbationToolkit/FastEMRIWaveforms) for EMRI. If you want to do data analysis of EMRI, **you need to install it manually.**
-  - It requires `gsl` and `lapack`.
+  - GWSpace supports FastEMRIWaveforms 2.x. Install it with `python -m pip install ".[emri]"` using Python 3.12 or newer.
 
 - Galactic compact binary (GCB): `FastGB` and `GCBWaveform`
 
@@ -44,61 +76,12 @@ The following waveform will be automatically complied during the installation un
 - Stellar-mass BBH (with eccentricity): `EccentricFD`
 
   - This is a modified version of `EccentricFD` waveform, which is specially for space-detector responses.
-  - If you want to check the original codes, see files in [LALSuite](https://github.com/lscsoft/lalsuite/tree/master/lalsimulation/lib).
-  - This has been linked as a **submodule** of GWSpace, click [here](https://github.com/HumphreyWang/pyEccentricFD) to check the submodule itself.
-    - This submodule is included in `requirements.txt`, it will be installed when installing this list.
+    - Original codes see files in [LALSuite](https://github.com/lscsoft/lalsuite/tree/master/lalsimulation/lib)
+  - GWSpace uses the separately maintained [pyEccentricFD](https://github.com/HumphreyWang/pyEccentricFD) package.
 
 - Stochastic gravitational wave background (SGWB):
 
   - With the help of `healpy` to generate a SGWB signal of power law type.
-
-
-## Library dependence
-
-### C language: gsl:
-
-All waveforms will be compiled with `gsl`.
-
-- To find the lib path of `gsl`:
-```shell
-echo $LD_LIBIARY_PATH | grep gsl
-```
-
-- To find the software installed manually:
-```shell
-ldconfig -p | grep gsl
-```
-
-- Install `gsl` **only if** no such library in your system. In Ubuntu, you can install it by
-```shell
-sudo apt-get install libgsl-dev
-```
-
-### Python package:
-
-Please check `requirements.txt` for details, or you can directly install them by
-```shell
-pip install -r requirements.txt
-```
-
-### For EMRI: install `lapack` & `lapacke`
-
-- After [downloading](https://www.netlib.org/lapack/) `lapack`, compile both `lapack` and `lapacke`, for example
-```shell
-cd lapack-3.11.0
-cp make.inc.example make.inc
-make lapacklib
-make lapackelib
-```
-
-- Copy the `liblapacke.a` and `liblapack.a` to your lib path (e.g. `/usr/local/lib`)
-- Copy files in the `./LAPACKE/include` to your include path (e.g. `/usr/local/include`)
-
-- *If you cannot do copy above*, you need to add lapack path to your environment variables, e.g. add PATH to `~/.bashrc`
-```shell
-export LIBRARY_PATH=$LIBRARY_PATH:/xxx/lapack-3.11.0
-export C_INCLUDE_PATH=$C_INCLUDE_PATH:/xxx/lapack-3.11.0/LAPACKE/include
-```
 
 ## Author lists
 

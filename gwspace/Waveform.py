@@ -588,47 +588,47 @@ class EMRIWaveform(BasicWaveform):
         from few.waveform import GenerateEMRIWaveform
 
         model = "FastSchwarzschildEccentricFlux"
-        use_gpu = False
+        backend = "cpu"
         # keyword arguments for inspiral generator (RunSchwarzEccFluxInspiral)
         inspiral_kwargs = {"DENSE_STEPPING": 0,  # we want a sparsely sampled trajectory
-                           "max_init_len": int(1e3)}  # all the trajectories will be well under len = 1000
+                           "buffer_length": int(1e3)}  # all the trajectories will be well under len = 1000
         # keyword arguments for inspiral generator (RomanAmplitude)
-        amplitude_kwargs = {"use_gpu": use_gpu,
-                            "max_init_len": int(1e3)}  # all the trajectories will be well under len = 1000
+        amplitude_kwargs = {"buffer_length": int(1e3)}  # all the trajectories will be well under len = 1000
         # keyword arguments for Ylm generator (GetYlms)
-        Ylm_kwargs = {"assume_positive_m": False}  # if we assume positive m, it will generate negative m for all m>0
+        Ylm_kwargs = {"include_minus_m": False}
         # keyword arguments for summation generator (InterpolatedModeSum)
-        sum_kwargs = {"use_gpu": use_gpu, "pad_output": False}
-        return GenerateEMRIWaveform(model, use_gpu=use_gpu, inspiral_kwargs=inspiral_kwargs,
+        sum_kwargs = {"pad_output": False}
+        return GenerateEMRIWaveform(model, force_backend=backend, inspiral_kwargs=inspiral_kwargs,
                                     amplitude_kwargs=amplitude_kwargs, Ylm_kwargs=Ylm_kwargs, sum_kwargs=sum_kwargs)
 
-    def get_harmonic_mode(self, eps=1e-5, model_insp="SchwarzEccFlux", use_gpu=False):
+    def get_harmonic_mode(self, eps=1e-5, backend="cpu"):
         """ Calculate harmonic modes
 
         :param eps: tolerance on mode contribution to total power
-        :param model_insp: str (default: "SchwarzEccFlux")
-        :param use_gpu: bool (default: False)
+        :param backend: FEW backend name (default: "cpu")
         """
         from few.trajectory.inspiral import EMRIInspiral
+        from few.trajectory.ode import SchwarzEccFlux
         from few.amplitude.romannet import RomanAmplitude
         from few.utils.ylm import GetYlms
         from few.utils.modeselector import ModeSelector
 
         # first, lets get amplitudes for a trajectory
-        traj = EMRIInspiral(func=model_insp)
+        traj = EMRIInspiral(func=SchwarzEccFlux)
         t, p, e, x, Phi_phi, Phi_theta, Phi_r = traj(self.M, self.mu, self.a, self.p0, self.e0, 1.0)
 
         # get amplitudes along trajectory
-        amp = RomanAmplitude()
+        amp = RomanAmplitude(force_backend=backend)
 
-        teuk_modes = amp(p, e)
+        teuk_modes = amp(self.a, p, e, x)
         # get ylms
-        ylm_gen = GetYlms(assume_positive_m=True, use_gpu=use_gpu)
+        ylm_gen = GetYlms(include_minus_m=True, force_backend=backend)
         ylms = ylm_gen(amp.unique_l, amp.unique_m, self.theta, self.phi).copy()[amp.inverse_lm]
         modeinds = [amp.l_arr, amp.m_arr, amp.n_arr]
-        mode_selector = ModeSelector(amp.m0mask, use_gpu=use_gpu)
+        mode_selector = ModeSelector(amp.l_arr_no_mask, amp.m_arr_no_mask, amp.n_arr_no_mask,
+                                     force_backend=backend)
 
-        (teuk_modes_in, ylms_in, ls, ms, ns) = mode_selector(teuk_modes, ylms, modeinds, eps=eps)
+        (teuk_modes_in, ylms_in, ls, ms, ns) = mode_selector(teuk_modes, ylms, modeinds, mode_selection_threshold=eps)
         return teuk_modes_in, ylms_in, ls, ms, ns
 
     def get_hphc_source(self, T_obs, dt, eps=1e-5, modes=None):
@@ -649,7 +649,8 @@ class EMRIWaveform(BasicWaveform):
         """
         para_list = (self.M, self.mu, self.a, self.p0, self.e0, self.x0, self.dist,
                      self.qS, self.phiS, self.qK, self.phiK, self.Phi_phi0, self.Phi_theta0, self.Phi_r0)
-        h = self.wave_func(*para_list, T=T_obs, dt=dt, eps=eps, mode_selection=modes)
+        h = self.wave_func(*para_list, T=T_obs, dt=dt,
+                           mode_selection_threshold=eps, mode_selection=modes)
         return h.real, h.imag
 
     def get_hphc(self, tf, eps=1e-5, modes=None):

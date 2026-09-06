@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+        # setup-python does not provide Python 3.9 or 3.10 for arm64 macOS.
+        exclude:
+          - os: macos-latest
+            python-version: "3.9"
+          - os: macos-latest
+            python-version: "3.10"
+        # Keep boundary coverage for the remaining Intel macOS runner.
+        include:
+          - os: macos-15-intel
+            python-version: "3.9"
+          - os: macos-15-intel
+            python-version: "3.14"
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install GSL on Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libgsl-dev
+
+      - name: Install GSL on macOS
+        if: runner.os == 'macOS'
+        run: |
+          brew install gsl
+          echo "GSL_PREFIX=$(brew --prefix gsl)" >> "$GITHUB_ENV"
+
+      - name: Build wheel
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build
+          python -m build --wheel
+
+      - name: Install wheel
+        run: python -m pip install dist/*.whl
+
+      - name: Run tests
+        working-directory: ${{ runner.temp }}
+        run: python -m unittest discover -s "$GITHUB_WORKSPACE/tests" -v
+
+      - name: Check installed dependencies
+        run: python -m pip check

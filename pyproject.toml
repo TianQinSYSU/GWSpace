@@ -32,7 +32,7 @@ dependencies = [
 
 [project.optional-dependencies]
 eccentric = [
-    "pyEccentricFD @ https://github.com/HumphreyWang/pyEccentricFD/archive/refs/tags/v0.2.0.tar.gz#sha256=471f3313e9f17c12d81aeac1fd91c5ff0a0244935c14e21834dd59d889b0535f",
+    "pyEccentricFD @ https://github.com/HumphreyWang/pyEccentricFD/archive/refs/tags/v0.2.2.tar.gz",
 ]
 examples = ["matplotlib"]
 sgwb = [

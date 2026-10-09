@@ -76,6 +76,8 @@ extern "C" {
 
 // https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
 #define EarthMass 5.9722e24 // # [kg]
+// TianQin geocentric circular-orbit radius [m], shared with Python at build time.
+#define TianQinOrbitRadius_SI 1.0e8
 #define EarthEcc 0.01671022
 /* Orbital eccentricity for earth:
 * https://handwiki.org/wiki/Astronomy:Orbital_eccentricity

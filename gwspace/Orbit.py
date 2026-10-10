@@ -10,7 +10,8 @@
 import numpy as np
 
 from gwspace.constants import (C_SI, PI, PI_2, PI_3, G_SI, AU_T, J0806_phi, J0806_theta,
-                               EarthOrbitFreq_SI, EarthEcc, Perihelion_Ang, EarthMass)
+                               EarthOrbitFreq_SI, EarthEcc, Perihelion_Ang, EarthMass,
+                               TianQinOrbitRadius_SI)
 
 if __package__ or "." in __name__:
     from gwspace import libFastGB
@@ -60,7 +61,7 @@ class Orbit(object):
 class TianQinOrbit(Orbit):
     """See Hu et al. https://iopscience.iop.org/article/10.1088/1361-6382/aab52f"""
     __slots__ = '_p_0'
-    armLength = 3**0.5 * 1.0e8
+    armLength = 3**0.5 * TianQinOrbitRadius_SI
     # ecliptic lon & lat of J0806.3+1527
     theta_s = PI_2 - J0806_theta
     phi_s = J0806_phi

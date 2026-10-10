@@ -35,6 +35,7 @@ YEAR = 31536000
 EarthOrbitOmega_SI = 1.99098659277e-7
 EarthOrbitFreq_SI = 3.168753578692357e-8
 EarthMass = 5.9722e24
+TianQinOrbitRadius_SI = 1.0e8
 EarthEcc = 0.01671022
 Perihelion_Ang = 1.7967674211761813
 J0806_phi = 2.103121748653167

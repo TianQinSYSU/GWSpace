@@ -4,6 +4,9 @@
 #ifndef SPACECRAFTS_H
 #define SPACECRAFTS_H
 
+#include <math.h>
+#include "constants.h"
+
 
 /* Photon shot noise power */
 #define Sps 8.321000e-23
@@ -39,10 +42,10 @@
 #define fstar_tj 0.01590448386412314
 
 // parameters for tianqin spacecrafts
-// #define fsc_tq 3.1709791983764586e-06 // 3.65 day
-#define Omega_tq 1.9923849908611068e-05 // 2 pi f_sc // sqrt{GM_earth/R^3}
+// Kepler angular frequency, using the same physical inputs as TianQinOrbit.f_0.
+#define Omega_tq sqrt(G_SI * EarthMass / (Radius_tq * Radius_tq * Radius_tq))
 #define armLength_tq 1.7320508075688772e8
-#define Radius_tq 1.0e8 
+#define Radius_tq TianQinOrbitRadius_SI
 #define kappa_tq 0.0
 #define lambda_tq 0.00
 #define fstar_tq 0.27547374120820667 // c/(2pi L_tq)
